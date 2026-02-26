@@ -6,7 +6,7 @@ description = "GEDCOM query utility"
 dependencies = []
 
 [tool.setuptools]
-packages = ["gedinfo"]
+packages = {find = {where = ["."]}}
 
 [project.optional-dependencies]
 dev = ["pytest", "pytest-cov", "ruff", "black"]
