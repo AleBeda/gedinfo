@@ -36,6 +36,7 @@ def main() -> None:
         ancestors as ancestors_cmd,
         roots as roots_cmd,
         leaves as leaves_cmd,
+        stat as stat_cmd,
     )
 
     name_cmd.register(subparsers)
@@ -44,6 +45,7 @@ def main() -> None:
     ancestors_cmd.register(subparsers)
     roots_cmd.register(subparsers)
     leaves_cmd.register(subparsers)
+    stat_cmd.register(subparsers)
 
     args = parser.parse_args()
 
