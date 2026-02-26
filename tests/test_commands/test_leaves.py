@@ -18,13 +18,13 @@ def test_leaves_default():
     code, out, err = run_cmd(["leaves", str(FIXTURES / "simple.ged")])
     assert code == 0
     lines = [line for line in out.splitlines() if line.strip()]
-    assert lines == ["@I003@  Alice Smith", "@I004@  Bob Smith"]
+    assert lines == ["I003  Alice Smith", "I004  Bob Smith"]
 
 
 def test_leaves_id_only():
     code, out, err = run_cmd(["leaves", "-i", str(FIXTURES / "simple.ged")])
     assert code == 0
-    assert out.strip().splitlines() == ["@I003@", "@I004@"]
+    assert out.strip().splitlines() == ["I003", "I004"]
 
 
 def test_leaves_name_only():

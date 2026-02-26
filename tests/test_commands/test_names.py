@@ -30,7 +30,7 @@ def test_names_partial_found(tmp_path):
     code, out, err = run_cmd(["names", str(ids), str(FIXTURES / "simple.ged")])
     assert code == 0
     lines = [line.rstrip() for line in out.splitlines()]
-    assert lines == ["John Smith", "@I999@: (not found)"]
+    assert lines == ["John Smith", "I999: (not found)"]
 
 
 def test_names_ids_file_missing():
