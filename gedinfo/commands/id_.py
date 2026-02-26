@@ -7,6 +7,7 @@ from typing import Any
 
 from ..parser import parse
 from ..queries import find_by_name
+from ._output import strip_id_delimiters
 
 
 def register(subparsers: argparse._SubParsersAction) -> None:  # type: ignore
@@ -22,4 +23,4 @@ def run(args: Any) -> None:
     data = parse(args.gedcom_file)
     matches = find_by_name(data, args.name)
     for indi in matches:
-        print(indi.id)
+        print(strip_id_delimiters(indi.id))

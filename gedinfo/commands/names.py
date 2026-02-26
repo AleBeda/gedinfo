@@ -7,6 +7,7 @@ from typing import Any
 
 from ..parser import parse
 from ..queries import display_name, find_by_id
+from ._output import strip_id_delimiters
 
 
 def register(subparsers: argparse._SubParsersAction) -> None:  # type: ignore
@@ -38,6 +39,6 @@ def run(args: Any) -> None:
             continue
         indi = find_by_id(data, s)
         if indi is None:
-            print(f"{s}: (not found)")
+            print(f"{strip_id_delimiters(s)}: (not found)")
         else:
             print(display_name(indi))

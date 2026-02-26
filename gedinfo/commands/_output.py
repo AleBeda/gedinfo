@@ -14,6 +14,14 @@ from ..queries import display_name
 from ..models import Individual
 
 
+def strip_id_delimiters(s: str) -> str:
+    """Return the ID without surrounding '@' characters.
+
+    Accepts values like '@I123@' or 'I123' and returns 'I123'.
+    """
+    return s.strip().strip("@").strip()
+
+
 def add_output_options(parser: argparse.ArgumentParser) -> None:
     """Add mutually exclusive `-i`/`-n` flags to *parser*.
 
@@ -54,7 +62,7 @@ def format_individual(ind: Individual, mode: Literal["id", "name", "both"]) -> s
     - `'both'`: returns `<id>  <display_name>` (two spaces)
     """
     if mode == "id":
-        return ind.id
+        return strip_id_delimiters(ind.id)
     if mode == "name":
         return display_name(ind)
-    return f"{ind.id}  {display_name(ind)}"
+    return f"{strip_id_delimiters(ind.id)}  {display_name(ind)}"
