@@ -1,0 +1,29 @@
+0 HEAD
+1 NOTE /* deep.ged: four-generation straight line Adam->Ben->Carl->Dan */
+1 SOUR gedinfo
+1 GEDC
+0 @I001@ INDI
+1 NAME Adam /Elder/
+1 SEX M
+0 @F001@ FAM
+1 HUSB @I001@
+1 CHIL @I002@
+0 @I002@ INDI
+1 NAME Ben /Elder/
+1 SEX M
+1 FAMC @F001@
+0 @F002@ FAM
+1 HUSB @I002@
+1 CHIL @I003@
+0 @I003@ INDI
+1 NAME Carl /Elder/
+1 SEX M
+1 FAMC @F002@
+0 @F003@ FAM
+1 HUSB @I003@
+1 CHIL @I004@
+0 @I004@ INDI
+1 NAME Dan /Elder/
+1 SEX M
+1 FAMC @F003@
+0 TRLR

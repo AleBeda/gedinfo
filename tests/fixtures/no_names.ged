@@ -1,0 +1,13 @@
+0 HEAD
+1 NOTE /* no_names.ged: four individuals demonstrating missing/empty name tags */
+1 SOUR gedinfo
+1 GEDC
+0 @I001@ INDI
+1 NAME 
+0 @I002@ INDI
+1 NAME /Smith/
+0 @I003@ INDI
+1 NAME Jane
+0 @I004@ INDI
+1 SEX F
+0 TRLR

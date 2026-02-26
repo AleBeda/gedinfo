@@ -1,0 +1,27 @@
+0 HEAD
+1 NOTE /* multi_tree.ged: two disconnected trees with one parent-child each */
+1 SOUR gedinfo
+1 GEDC
+0 @I001@ INDI
+1 NAME Wilhelm /Braun/
+1 SEX M
+1 FAMS @F001@
+0 @I002@ INDI
+1 NAME Hans /Braun/
+1 SEX M
+1 FAMC @F001@
+0 @F001@ FAM
+1 HUSB @I001@
+1 CHIL @I002@
+0 @I003@ INDI
+1 NAME Sofia /Rossi/
+1 SEX F
+1 FAMS @F002@
+0 @I004@ INDI
+1 NAME Luca /Rossi/
+1 SEX M
+1 FAMC @F002@
+0 @F002@ FAM
+1 WIFE @I003@
+1 CHIL @I004@
+0 TRLR

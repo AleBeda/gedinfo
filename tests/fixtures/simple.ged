@@ -1,0 +1,26 @@
+0 HEAD
+1 NOTE /* simple.ged: four individuals (two parents, two children) and one family linking them */
+1 SOUR gedinfo
+1 GEDC
+0 @I001@ INDI
+1 NAME John /Smith/
+1 SEX M
+1 FAMS @F001@
+0 @I002@ INDI
+1 NAME Mary /Jones/
+1 SEX F
+1 FAMS @F001@
+0 @I003@ INDI
+1 NAME Alice /Smith/
+1 SEX F
+1 FAMC @F001@
+0 @I004@ INDI
+1 NAME Bob /Smith/
+1 SEX M
+1 FAMC @F001@
+0 @F001@ FAM
+1 HUSB @I001@
+1 WIFE @I002@
+1 CHIL @I003@
+1 CHIL @I004@
+0 TRLR

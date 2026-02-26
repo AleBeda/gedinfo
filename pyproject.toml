@@ -1,0 +1,19 @@
+[project]
+name = "gedinfo"
+version = "0.1.0"
+requires-python = ">=3.10"
+description = "GEDCOM query utility"
+dependencies = []
+
+[tool.setuptools]
+packages = ["gedinfo"]
+
+[project.optional-dependencies]
+dev = ["pytest", "pytest-cov", "ruff", "black"]
+
+[project.entry-points."console_scripts"]
+gedinfo = "gedinfo.cli:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--tb=short"
