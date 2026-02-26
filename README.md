@@ -60,7 +60,6 @@ Implemented so far:
 - GEDCOM parser (`gedinfo/parser.py`) and parsing tests
 - Query utilities (`gedinfo/queries.py`) and tests
 - CLI skeleton (`gedinfo/cli.py`) and basic commands: `name`, `id`, `names`
-- `ancestors` command (implemented)
+- `ancestors`, `roots`, and `leaves` commands (implemented)
 
-Next steps: continue implementing remaining commands (`roots`, `leaves`,
-`stat`, `disjoint`) and polishing tests and coverage.
+Next steps: continue implementing remaining commands (`stat`, `disjoint`) and polishing tests and coverage.
