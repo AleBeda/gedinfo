@@ -20,9 +20,12 @@ def add_output_options(parser: argparse.ArgumentParser) -> None:
     The flags indicate whether to print IDs only (`-i`) or names only
     (`-n`). If neither is supplied, the default is to print both.
     """
-    group = parser.add_mutually_exclusive_group()
-    group.add_argument("-i", "--id", action="store_true", help="Print IDs only")
-    group.add_argument("-n", "--name", action="store_true", help="Print names only")
+    # we deliberately do not use argparse's mutually-exclusive group here
+    # because we want to handle conflicts ourselves and exit with code 1
+    # (argparse would otherwise exit with code 2).  The `validate_output_mode`
+    # helper checks for both flags and prints an appropriate error message.
+    parser.add_argument("-i", "--id", action="store_true", help="Print IDs only")
+    parser.add_argument("-n", "--name", action="store_true", help="Print names only")
 
 
 def validate_output_mode(args: argparse.Namespace) -> Literal["id", "name", "both"]:

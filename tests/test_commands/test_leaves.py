@@ -31,3 +31,9 @@ def test_leaves_name_only():
     code, out, err = run_cmd(["leaves", "-n", str(FIXTURES / "simple.ged")])
     assert code == 0
     assert out.strip().splitlines() == ["Alice Smith", "Bob Smith"]
+
+
+def test_leaves_conflicting_flags():
+    code, out, err = run_cmd(["leaves", "-i", "-n", str(FIXTURES / "simple.ged")])
+    assert code == 1
+    assert "Conflicting output flags" in err

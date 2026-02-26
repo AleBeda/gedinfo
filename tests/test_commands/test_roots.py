@@ -31,3 +31,9 @@ def test_roots_name_only():
     code, out, err = run_cmd(["roots", "-n", str(FIXTURES / "simple.ged")])
     assert code == 0
     assert out.strip().splitlines() == ["John Smith", "Mary Jones"]
+
+
+def test_roots_conflicting_flags():
+    code, out, err = run_cmd(["roots", "-i", "-n", str(FIXTURES / "simple.ged")])
+    assert code == 1
+    assert "Conflicting output flags" in err
