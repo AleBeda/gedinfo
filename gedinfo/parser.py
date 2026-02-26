@@ -36,7 +36,10 @@ def parse(path: str | Path) -> GedcomData:
         raise GedcomParseError(f"File not found: {path}")
 
     try:
-        with p.open(encoding="utf-8", errors="replace") as f:
+        # Use 'utf-8-sig' to silently handle files that start with a
+        # UTF-8 BOM (U+FEFF). Opening with 'utf-8' leaves the BOM in
+        # the first line which breaks the "0 HEAD" check.
+        with p.open(encoding="utf-8-sig", errors="replace") as f:
             raw_lines = [line.rstrip("\r\n") for line in f]
     except Exception as exc:  # pragma: no cover - defensive
         raise GedcomParseError(str(exc))
