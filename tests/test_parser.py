@@ -1,11 +1,9 @@
-import os
 from pathlib import Path
 
 import pytest
 
 from gedinfo import parser
 from gedinfo.parser import GedcomParseError
-from gedinfo.models import Individual, Family
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -83,3 +81,52 @@ def test_parse_no_head(tmp_path):
     bad.write_text("0 @I1@ INDI\n")
     with pytest.raises(GedcomParseError):
         parser.parse(bad)
+
+
+def test_parse_name_no_slashes(tmp_path):
+    """NAME without slashes: last token becomes surname."""
+    text = "0 HEAD\n0 @I001@ INDI\n1 NAME John Smith\n0 TRLR\n"
+    f = tmp_path / "noslash.ged"
+    f.write_text(text)
+    data = parser.parse(f)
+    indi = data.individuals["@I001@"]
+    assert indi.first_name == "John"
+    assert indi.last_name == "Smith"
+
+
+def test_parse_name_empty(tmp_path):
+    """Empty NAME field results in None for first and last names."""
+    text = "0 HEAD\n0 @I001@ INDI\n1 NAME \n0 TRLR\n"
+    f = tmp_path / "emptyname.ged"
+    f.write_text(text)
+    data = parser.parse(f)
+    indi = data.individuals["@I001@"]
+    assert indi.first_name is None and indi.last_name is None
+
+
+def test_parse_sex_unknown_value(tmp_path):
+    """Sex tag with non-M/F should default to 'U'."""
+    text = "0 HEAD\n0 @I001@ INDI\n1 SEX X\n0 TRLR\n"
+    f = tmp_path / "sexunknown.ged"
+    f.write_text(text)
+    data = parser.parse(f)
+    assert data.individuals["@I001@"].sex == "U"
+
+
+def test_parse_malformed_line():
+    """Malformed level value in a line triggers the ValueError branch."""
+    from gedinfo.parser import _parse_line
+
+    lvl, tag, val, xref = _parse_line("X THIS IS BAD")
+    assert lvl == -1
+    assert tag == "THIS"
+    assert val == "IS BAD"
+
+
+def test_parse_encoding_replace(tmp_path):
+    """Non-UTF-8 bytes are replaced rather than causing an error."""
+    bad = b"0 HEAD\n1 NOTE \xff\xff\xff\n0 TRLR\n"
+    f = tmp_path / "bad.ged"
+    f.write_bytes(bad)
+    data = parser.parse(f)
+    assert len(data.individuals) == 0

@@ -17,7 +17,7 @@ def run_cmd(args):
 def test_leaves_default():
     code, out, err = run_cmd(["leaves", str(FIXTURES / "simple.ged")])
     assert code == 0
-    lines = [l for l in out.splitlines() if l.strip()]
+    lines = [line for line in out.splitlines() if line.strip()]
     assert lines == ["@I003@  Alice Smith", "@I004@  Bob Smith"]
 
 

@@ -15,7 +15,13 @@ def register(subparsers: argparse._SubParsersAction) -> None:  # type: ignore
     sub = subparsers.add_parser(
         "ancestors", help="Print distinct last names of all ancestors"
     )
-    sub.add_argument("-g", "--generations", type=int, default=None, help="Limit traversal to N generations (>=1)")
+    sub.add_argument(
+        "-g",
+        "--generations",
+        type=int,
+        default=None,
+        help="Limit traversal to N generations (>=1)",
+    )
     sub.add_argument("indi_id", help="Individual ID to inspect")
     sub.add_argument("gedcom_file", help="Path to GEDCOM file")
     sub.set_defaults(func=run)

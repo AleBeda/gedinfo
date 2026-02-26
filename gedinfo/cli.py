@@ -9,9 +9,8 @@ from __future__ import annotations
 
 import argparse
 import sys
-from typing import Any
 
-from .parser import GedcomParseError, parse
+from .parser import GedcomParseError
 
 # import command modules lazily to avoid circular imports
 
@@ -19,12 +18,8 @@ from .parser import GedcomParseError, parse
 def main() -> None:
     """Entry point invoked by the ``gedinfo`` console script."""
     parser = argparse.ArgumentParser(prog="gedinfo")
-    parser.add_argument(
-        "--version", action="store_true", help="Print version and exit"
-    )
-    parser.add_argument(
-        "--debug", action="store_true", help="Show tracebacks on error"
-    )
+    parser.add_argument("--version", action="store_true", help="Print version and exit")
+    parser.add_argument("--debug", action="store_true", help="Show tracebacks on error")
     subparsers = parser.add_subparsers(dest="command")
     subparsers.required = True
 
@@ -37,6 +32,7 @@ def main() -> None:
         roots as roots_cmd,
         leaves as leaves_cmd,
         stat as stat_cmd,
+        disjoint as disjoint_cmd,
     )
 
     name_cmd.register(subparsers)
@@ -46,6 +42,7 @@ def main() -> None:
     roots_cmd.register(subparsers)
     leaves_cmd.register(subparsers)
     stat_cmd.register(subparsers)
+    disjoint_cmd.register(subparsers)
 
     args = parser.parse_args()
 

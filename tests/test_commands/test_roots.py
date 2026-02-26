@@ -17,7 +17,7 @@ def run_cmd(args):
 def test_roots_default():
     code, out, err = run_cmd(["roots", str(FIXTURES / "simple.ged")])
     assert code == 0
-    lines = [l for l in out.splitlines() if l.strip()]
+    lines = [line for line in out.splitlines() if line.strip()]
     assert lines == ["@I001@  John Smith", "@I002@  Mary Jones"]
 
 

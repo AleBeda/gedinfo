@@ -104,7 +104,9 @@ def get_leaves(data: GedcomData) -> List[Individual]:
     return sorted(leaves, key=lambda i: i.id)
 
 
-def get_ancestors(data: GedcomData, indi_id: str, max_generations: Optional[int] = None) -> List[str]:
+def get_ancestors(
+    data: GedcomData, indi_id: str, max_generations: Optional[int] = None
+) -> List[str]:
     """Return distinct last names of ancestors of the given individual.
 
     The list is sorted alphabetically and deduplicated.  Generation counting
@@ -185,7 +187,9 @@ def get_connected_components(data: GedcomData) -> List[List[Individual]]:
 
 def count_no_name(data: GedcomData) -> int:
     """Number of individuals with neither first nor last name."""
-    return sum(1 for i in data.individuals.values() if not i.first_name and not i.last_name)
+    return sum(
+        1 for i in data.individuals.values() if not i.first_name and not i.last_name
+    )
 
 
 def count_incomplete_name(data: GedcomData) -> int:
@@ -208,7 +212,11 @@ def count_families_with_unnamed_parent(data: GedcomData) -> int:
             return False
         return not indi.first_name or not indi.last_name
 
-    return sum(1 for fam in data.families.values() if unnamed(fam.husband_id) or unnamed(fam.wife_id))
+    return sum(
+        1
+        for fam in data.families.values()
+        if unnamed(fam.husband_id) or unnamed(fam.wife_id)
+    )
 
 
 def count_families_no_children(data: GedcomData) -> int:

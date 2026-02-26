@@ -19,7 +19,7 @@ def test_names_all_found(tmp_path):
     ids.write_text("@I001@\n@I002@\n")
     code, out, err = run_cmd(["names", str(ids), str(FIXTURES / "simple.ged")])
     assert code == 0
-    lines = [l.strip() for l in out.splitlines() if l.strip()]
+    lines = [line.strip() for line in out.splitlines() if line.strip()]
     assert lines == ["John Smith", "Mary Jones"]
     assert err == ""
 
@@ -29,11 +29,13 @@ def test_names_partial_found(tmp_path):
     ids.write_text("@I001@\n@I999@\n")
     code, out, err = run_cmd(["names", str(ids), str(FIXTURES / "simple.ged")])
     assert code == 0
-    lines = [l.rstrip() for l in out.splitlines()]
+    lines = [line.rstrip() for line in out.splitlines()]
     assert lines == ["John Smith", "@I999@: (not found)"]
 
 
 def test_names_ids_file_missing():
-    code, out, err = run_cmd(["names", "no_such_file.txt", str(FIXTURES / "simple.ged")])
+    code, out, err = run_cmd(
+        ["names", "no_such_file.txt", str(FIXTURES / "simple.ged")]
+    )
     assert code == 1
     assert "IDs file not found" in err

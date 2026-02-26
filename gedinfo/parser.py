@@ -9,7 +9,7 @@ and ignores unrecognised tags.  Errors during parsing are wrapped in a
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Iterable, Optional, Tuple
+from typing import Optional, Tuple
 
 from .models import Family, GedcomData, Individual
 
@@ -82,6 +82,7 @@ def parse(path: str | Path) -> GedcomData:
 
 
 # helpers
+
 
 def _parse_line(line: str) -> Tuple[int, str, str, Optional[str]]:
     """Return ``(level, tag, value, xref)`` for a given GEDCOM line.

@@ -38,6 +38,21 @@ def test_find_by_id_normalises():
     assert find_by_id(data, "I001") is not None
 
 
+def test_normalise_id_various():
+    # explicit and implicit forms
+    assert normalise_id("@I123@") == "@I123@"
+    assert normalise_id("I123") == "@I123@"
+    assert normalise_id("I123@") == "@I123@"
+
+
+def test_root_leaf_overlap():
+    # in no_names.ged every individual has no parents and no children
+    data = load("no_names.ged")
+    roots = {i.id for i in get_roots(data)}
+    leaves = {i.id for i in get_leaves(data)}
+    assert roots == leaves
+
+
 def test_display_name_both():
     ind = parser.parse(FIXTURES / "simple.ged").individuals["@I001@"]
     assert display_name(ind) == "John Smith"

@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import argparse
 import sys
-from typing import Literal, Optional
+from typing import Literal
 
 from ..queries import display_name
 from ..models import Individual
@@ -34,7 +34,10 @@ def validate_output_mode(args: argparse.Namespace) -> Literal["id", "name", "bot
     Returns one of: `'id'`, `'name'`, `'both'`.
     """
     if getattr(args, "id", False) and getattr(args, "name", False):
-        print("Conflicting output flags: -i and -n are mutually exclusive", file=sys.stderr)
+        print(
+            "Conflicting output flags: -i and -n are mutually exclusive",
+            file=sys.stderr,
+        )
         sys.exit(1)
     if getattr(args, "id", False):
         return "id"
