@@ -50,10 +50,10 @@ Examples:
 
 ```bash
 # using the wrapper script
-./bin/gedinfo name @I001@ tests/fixtures/simple.ged
+./bin/gedinfo name I001 tests/fixtures/simple.ged
 ./bin/gedinfo id "John Smith" tests/fixtures/simple.ged
 ./bin/gedinfo names ids.txt tests/fixtures/simple.ged
-./bin/gedinfo ancestors -g 3 @I004@ tests/fixtures/deep.ged
+./bin/gedinfo ancestors -g 3 I004 tests/fixtures/deep.ged
 ```
 
 Testing
