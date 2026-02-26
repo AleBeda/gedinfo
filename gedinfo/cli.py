@@ -29,11 +29,12 @@ def main() -> None:
     subparsers.required = True
 
     # register built-in subcommands
-    from .commands import id_ as id_cmd, name as name_cmd, names as names_cmd
+    from .commands import id_ as id_cmd, name as name_cmd, names as names_cmd, ancestors as ancestors_cmd
 
     name_cmd.register(subparsers)
     id_cmd.register(subparsers)
     names_cmd.register(subparsers)
+    ancestors_cmd.register(subparsers)
 
     args = parser.parse_args()
 
