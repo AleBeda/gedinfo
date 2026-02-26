@@ -1,0 +1,54 @@
+"""Shared output formatting helpers for `gedinfo` commands.
+
+Provides mutually-exclusive `-i`/`-n` output flags and formatting helpers
+used by `roots`, `leaves`, and `disjoint` commands.
+"""
+
+from __future__ import annotations
+
+import argparse
+import sys
+from typing import Literal, Optional
+
+from ..queries import display_name
+from ..models import Individual
+
+
+def add_output_options(parser: argparse.ArgumentParser) -> None:
+    """Add mutually exclusive `-i`/`-n` flags to *parser*.
+
+    The flags indicate whether to print IDs only (`-i`) or names only
+    (`-n`). If neither is supplied, the default is to print both.
+    """
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument("-i", "--id", action="store_true", help="Print IDs only")
+    group.add_argument("-n", "--name", action="store_true", help="Print names only")
+
+
+def validate_output_mode(args: argparse.Namespace) -> Literal["id", "name", "both"]:
+    """Return the effective output mode or exit with a usage error.
+
+    Returns one of: `'id'`, `'name'`, `'both'`.
+    """
+    if getattr(args, "id", False) and getattr(args, "name", False):
+        print("Conflicting output flags: -i and -n are mutually exclusive", file=sys.stderr)
+        sys.exit(1)
+    if getattr(args, "id", False):
+        return "id"
+    if getattr(args, "name", False):
+        return "name"
+    return "both"
+
+
+def format_individual(ind: Individual, mode: Literal["id", "name", "both"]) -> str:
+    """Format an `Individual` according to *mode*.
+
+    - `'id'`: returns the ID
+    - `'name'`: returns the display name
+    - `'both'`: returns `<id>  <display_name>` (two spaces)
+    """
+    if mode == "id":
+        return ind.id
+    if mode == "name":
+        return display_name(ind)
+    return f"{ind.id}  {display_name(ind)}"
