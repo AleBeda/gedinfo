@@ -27,7 +27,7 @@ htmlcov/
 .coverage
 coverage.xml
 
-# Development docs and prompts (only docs excluded)
+# Development docs
 dev_docs/
 
 # Misc
