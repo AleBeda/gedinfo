@@ -13,6 +13,7 @@ from gedinfo.queries import (
     count_incomplete_name,
     count_families_with_unnamed_parent,
     count_families_no_children,
+    get_ancestor_details,
 )
 
 FIX = Path = __import__("pathlib").Path
@@ -134,6 +135,61 @@ def test_get_ancestors_unknown_id():
     data = load("deep.ged")
     with pytest.raises(ValueError):
         get_ancestors(data, "@I999@")
+
+
+def test_get_ancestor_details_all():
+    data = parser.parse(FIXTURES / "long_ancestors.ged")
+    res = get_ancestor_details(data, "@I001@")
+    ids = {r["individual"].id for r in res}
+    assert ids == {"@I002@", "@I003@", "@I004@", "@I005@", "@I006@", "@I007@", "@I008@", "@I009@"}
+    # spot checks
+    found = {r["individual"].id: r for r in res}
+    assert found["@I004@"]["generation"] == 3
+    assert found["@I004@"]["path"] == "pp"
+    assert found["@I009@"]["generation"] == 4
+    assert found["@I009@"]["path"] == "pp?"
+
+
+def test_get_ancestor_details_g2():
+    data = parser.parse(FIXTURES / "long_ancestors.ged")
+    res = get_ancestor_details(data, "@I001@", max_generations=2)
+    ids = [r["individual"].id for r in res]
+    assert set(ids) == {"@I002@", "@I003@"}
+
+
+def test_get_ancestor_details_g3():
+    data = parser.parse(FIXTURES / "long_ancestors.ged")
+    res = get_ancestor_details(data, "@I001@", max_generations=3)
+    assert len(res) == 6
+
+
+def test_get_ancestor_details_cycle(tmp_path):
+    content = (
+        "0 HEAD\n"
+        "0 @I1@ INDI\n"
+        "1 FAMC @F1@\n"
+        "0 @I2@ INDI\n"
+        "1 FAMC @F2@\n"
+        "0 @F1@ FAM\n"
+        "1 HUSB @I2@\n"
+        "1 CHIL @I1@\n"
+        "0 @F2@ FAM\n"
+        "1 HUSB @I1@\n"
+        "1 CHIL @I2@\n"
+        "0 TRLR\n"
+    )
+    f = tmp_path / "cycle.ged"
+    f.write_text(content)
+    data = parser.parse(f)
+    res = get_ancestor_details(data, "@I1@")
+    # should terminate and return without infinite loop
+    assert isinstance(res, list)
+
+
+def test_get_ancestor_details_unknown_id():
+    data = parser.parse(FIXTURES / "long_ancestors.ged")
+    with pytest.raises(ValueError):
+        get_ancestor_details(data, "@I999@")
 
 
 def test_get_connected_components_single():

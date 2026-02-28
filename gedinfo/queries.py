@@ -185,6 +185,66 @@ def get_connected_components(data: GedcomData) -> List[List[Individual]]:
     return result
 
 
+def get_ancestor_details(
+    data: GedcomData, indi_id: str, max_generations: Optional[int] = None
+) -> List[dict]:
+    """BFS upward from ``indi_id``, returning details for each ancestor.
+
+    Each returned dict has keys:
+      - 'individual': Individual
+      - 'generation': int (2 for parents, ...)
+      - 'path': str (e.g. 'pp?')
+
+    The subject (generation 1) is NOT included. Raises ``ValueError`` if
+    ``indi_id`` is unknown. Traversal is cycle-safe (tracks visited IDs).
+    """
+    if max_generations is not None and max_generations < 1:
+        raise ValueError("max_generations must be >= 1")
+    root = find_by_id(data, indi_id)
+    if root is None:
+        raise ValueError(f"Unknown individual ID: {indi_id}")
+
+    results: List[dict] = []
+    visited: Set[str] = set()
+    # queue items: (Individual, generation:int, path:str)
+    q = deque()
+    q.append((root, 1, ""))
+    visited.add(root.id)
+
+    while q:
+        current, gen, path = q.popleft()
+        # do not include subject
+        if gen > 1:
+            results.append({"individual": current, "generation": gen, "path": path})
+        if max_generations is not None and gen >= max_generations:
+            continue
+        # enqueue parents
+        for fam_id in current.family_ids_as_child:
+            fam = data.families.get(fam_id)
+            if not fam:
+                continue
+            for parent_id in (fam.husband_id, fam.wife_id):
+                if not parent_id:
+                    continue
+                parent = data.individuals.get(parent_id)
+                if not parent:
+                    continue
+                if parent.id in visited:
+                    continue
+                # determine path char based on parent's sex
+                sex = (parent.sex or "U").upper()
+                if sex == "M":
+                    ch = "p"
+                elif sex == "F":
+                    ch = "m"
+                else:
+                    ch = "?"
+                visited.add(parent.id)
+                q.append((parent, gen + 1, path + ch))
+
+    return results
+
+
 def count_no_name(data: GedcomData) -> int:
     """Number of individuals with neither first nor last name."""
     return sum(
