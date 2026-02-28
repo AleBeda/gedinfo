@@ -51,14 +51,14 @@ def run(args: Any) -> None:
         sys.exit(1)
     data = parse(args.gedcom_file)
     try:
-        if args.long:
+        if getattr(args, "long", False):
             records = get_ancestor_details(data, args.indi_id, max_generations=g)
         else:
             surnames = get_ancestors(data, args.indi_id, max_generations=g)
     except ValueError as exc:
         raise ValueError(str(exc))
 
-    if not args.long:
+    if not getattr(args, "long", False):
         for s in surnames:
             print(s)
         return
