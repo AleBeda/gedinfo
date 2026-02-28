@@ -186,17 +186,10 @@ $ gedinfo ancestors -l I001 tests/fixtures/long_ancestors.ged
 
 # Long mode: limit to 3 generations
 $ gedinfo ancestors -l -g 3 I001 tests/fixtures/long_ancestors.ged
-<<<<<<< HEAD
-3       pm      Bauer           I005
-3       mp      Muller          I006
-3       mm      Weber           I007
-3       pp      Novak           I004
-=======
 3       pp      Novak           I004
 3       pm      Bauer           I005
 3       mp      Muller          I006
 3       mm      Weber           I007
->>>>>>> 72399c3 (docs: expand README with detailed command documentation)
 
 # Long mode: sort by generation
 $ gedinfo ancestors -l -s generation I001 tests/fixtures/long_ancestors.ged
