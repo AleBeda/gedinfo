@@ -46,7 +46,7 @@ def run(args: Any) -> None:
     if g is not None and g < 1:
         print("Invalid generations value: must be >= 1", file=sys.stderr)
         sys.exit(1)
-    if args.sort and not args.long:
+    if getattr(args, "sort", None) and not getattr(args, "long", False):
         print("--sort requires --long", file=sys.stderr)
         sys.exit(1)
     data = parse(args.gedcom_file)
@@ -84,7 +84,7 @@ def run(args: Any) -> None:
     tips = [r for r in records if is_branch_tip(r)]
 
     # Sorting
-    sort_key = args.sort
+    sort_key = getattr(args, "sort", None)
     if sort_key is None:
         sort_key = "path"
 

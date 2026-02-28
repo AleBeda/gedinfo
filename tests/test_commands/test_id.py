@@ -16,7 +16,7 @@ def run_cmd(args):
 def test_id_single():
     code, out, err = run_cmd(["id", "John Smith", str(FIXTURES / "simple.ged")])
     assert code == 0
-    assert out.strip() == "@I001@"
+    assert out.strip() == "I001"
     assert err == ""
 
 
