@@ -83,25 +83,32 @@ def run(args: Any) -> None:
 
     tips = [r for r in records if is_branch_tip(r)]
 
+    # Helper to convert path string to a sortable tuple (paternal-to-maternal order)
+    def path_to_sort_key(path: str) -> tuple:
+        """Convert path 'ppm...' to tuple where p=0, ?=1, m=2 for proper ordering."""
+        char_map = {'p': 0, '?': 1, 'm': 2}
+        return tuple(char_map.get(ch, 3) for ch in path)
+
     # Sorting
     sort_key = getattr(args, "sort", None)
     if sort_key is None:
         sort_key = "path"
 
     if sort_key == "generation":
-        tips.sort(key=lambda r: (r["generation"], r["path"]))
+        tips.sort(key=lambda r: (r["generation"], path_to_sort_key(r["path"])))
     elif sort_key == "path":
-        tips.sort(key=lambda r: (r["path"], (r["individual"].last_name or "").lower(), r["individual"].id))
+        tips.sort(key=lambda r: (path_to_sort_key(r["path"]), (r["individual"].last_name or "").lower(), r["individual"].id))
     elif sort_key == "name":
         # last_name None sorts last
-        tips.sort(key=lambda r: ((r["individual"].last_name or "").lower() if r["individual"].last_name else "~", r["path"], r["individual"].id))
+        tips.sort(key=lambda r: ((r["individual"].last_name or "").lower() if r["individual"].last_name else "~", path_to_sort_key(r["path"]), r["individual"].id))
     elif sort_key == "id":
         tips.sort(key=lambda r: r["individual"].id)
 
-    # Format: generation, path, last_name (or (unknown)), id (with @)
+    # Format: generation, path, last_name (or (unknown)), id (without @)
     for r in tips:
         indi = r["individual"]
         gen = r["generation"]
         path = r["path"]
         last = indi.last_name or "(unknown)"
-        print(f"{gen}\t{path}\t{last}\t{indi.id}")
+        id_str = indi.id.replace("@", "")
+        print(f"{gen}\t{path}\t{last}\t{id_str}")
