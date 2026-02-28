@@ -184,7 +184,7 @@ def test_long_sort_id():
     ])
     assert code == 0
     lines = [ln for ln in out.strip().splitlines() if ln.strip()]
-    ids = [ln.split("\t")[3] for ln in lines]
+    ids = [ln.split("\t")[-1] for ln in lines]
     assert ids == ["I005", "I006", "I007", "I008", "I009"]
 
 

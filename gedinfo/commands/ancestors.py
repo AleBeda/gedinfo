@@ -105,10 +105,12 @@ def run(args: Any) -> None:
         tips.sort(key=lambda r: r["individual"].id)
 
     # Format: generation, path, last_name (or (unknown)), id (without @)
+    # Add extra tab if last_name is shorter than 8 chars for ID alignment
     for r in tips:
         indi = r["individual"]
         gen = r["generation"]
         path = r["path"]
         last = indi.last_name or "(unknown)"
         id_str = indi.id.replace("@", "")
-        print(f"{gen}\t{path}\t{last}\t{id_str}")
+        extra_tab = "\t" if len(last) < 8 else ""
+        print(f"{gen}\t{path}\t{last}{extra_tab}\t{id_str}")
