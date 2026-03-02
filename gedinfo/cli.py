@@ -21,7 +21,7 @@ def main() -> None:
     parser.add_argument("--version", action="store_true", help="Print version and exit")
     parser.add_argument("--debug", action="store_true", help="Show tracebacks on error")
     subparsers = parser.add_subparsers(dest="command")
-    subparsers.required = True
+    subparsers.required = False
 
     # register built-in subcommands
     from .commands import (
@@ -49,6 +49,10 @@ def main() -> None:
     if args.version:
         print("gedinfo 0.1.0")
         sys.exit(0)
+
+    if not args.command:
+        parser.print_help()
+        sys.exit(1)
 
     try:
         # dispatch to subcommand handler attached by register()
