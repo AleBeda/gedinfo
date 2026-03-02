@@ -7,6 +7,7 @@ from typing import Any
 
 from ..parser import parse
 from ..queries import find_by_name, display_name
+from ._output import strip_id_delimiters
 
 
 def register(subparsers: argparse._SubParsersAction) -> None:  # type: ignore
@@ -16,7 +17,8 @@ def register(subparsers: argparse._SubParsersAction) -> None:  # type: ignore
         help=(
             "Search for individuals by partial name match. The query is matched "
             "case-insensitively as a substring against the first name and last name "
-            "independently. Prints one line per match: the ID, a tab, and the full name."
+            "independently. Prints one line per match: the ID (without @), a tab, and "
+            "the full name."
         ),
     )
     sub.add_argument(
@@ -36,4 +38,4 @@ def run(args: Any) -> None:
     data = parse(args.gedcom_file)
     matches = find_by_name(data, args.name)
     for indi in matches:
-        print(f"{indi.id}\t{display_name(indi)}")
+        print(f"{strip_id_delimiters(indi.id)}\t{display_name(indi)}")

@@ -17,7 +17,7 @@ def run_cmd(args):
 def test_id_single_match():
     code, out, err = run_cmd(["id", "Robert", str(FIXTURES / "refinements.ged")])
     assert code == 0
-    assert out == "@I005@\tRobert Smith\n"
+    assert out == "I005\tRobert Smith\n"
 
 
 def test_id_multiple_matches_last_name():
@@ -26,16 +26,16 @@ def test_id_multiple_matches_last_name():
     lines = [ln for ln in out.splitlines() if ln.strip()]
     assert len(lines) == 3
     assert lines == [
-        "@I001@\tJohn Smith",
-        "@I002@\tMary Smithson",
-        "@I005@\tRobert Smith",
+        "I001\tJohn Smith",
+        "I002\tMary Smithson",
+        "I005\tRobert Smith",
     ]
 
 
 def test_id_first_name_partial():
     code, out, err = run_cmd(["id", "ali", str(FIXTURES / "refinements.ged")])
     assert code == 0
-    assert out == "@I004@\tAlice Brown\n"
+    assert out == "I004\tAlice Brown\n"
 
 
 def test_id_no_match():
@@ -46,7 +46,7 @@ def test_id_no_match():
 
 def test_id_nameless_not_returned():
     code, out, err = run_cmd(["id", "smith", str(FIXTURES / "refinements.ged")])
-    assert "@I006@" not in out
+    assert "I006" not in out
 
 
 def test_id_slash_syntax():
@@ -74,5 +74,5 @@ def test_id_tab_separator():
     line = out.strip()
     parts = line.split("\t")
     assert len(parts) == 2
-    assert parts[0] == "@I005@"
+    assert parts[0] == "I005"
     assert parts[1].strip() == "Robert Smith"
