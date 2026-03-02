@@ -58,6 +58,12 @@ def display_name(individual: Individual) -> str:
 
 
 def _normalise_name(s: str) -> str:
+    """Normalise a name-like string for comparison.
+
+    - Strip leading/trailing whitespace
+    - Replace slash delimiters with spaces
+    - Collapse internal whitespace and lower-case
+    """
     s = s.strip().lower()
     if "/" in s:
         s = s.replace("/", " ")
@@ -65,18 +71,56 @@ def _normalise_name(s: str) -> str:
 
 
 def find_by_name(data: GedcomData, name: str) -> List[Individual]:
-    """Return a list of individuals whose full name matches ``name``.
+    """Return individuals matching a name fragment.
 
-    Matching is case-insensitive and normalises whitespace.  The surname may
-    optionally be wrapped in slashes (``/Smith/``) as per GEDCOM conventions.
+    Matching rules (partial, case-insensitive substrings):
+    - Strip any slash delimiters from the query and normalise whitespace.
+    - The query is matched as a case-insensitive substring against either
+      the individual's ``first_name`` or ``last_name`` independently.
+    - Individuals with neither ``first_name`` nor ``last_name`` never match.
+
+    Returns a list of matching ``Individual`` instances sorted by ``id``.
     """
     target = _normalise_name(name)
     matches: List[Individual] = []
+    if not target:
+        return matches
     for indi in data.individuals.values():
-        nm = display_name(indi)
-        if _normalise_name(nm) == target:
-            matches.append(indi)
-    return matches
+        # skip nameless individuals
+        if not indi.first_name and not indi.last_name:
+            continue
+        # check first_name
+        if indi.first_name:
+            if target in _normalise_name(indi.first_name):
+                matches.append(indi)
+                continue
+        # check last_name
+        if indi.last_name:
+            if target in _normalise_name(indi.last_name):
+                matches.append(indi)
+                continue
+    return sorted(matches, key=lambda i: i.id)
+
+
+def get_ancestor_last_names(
+    data: GedcomData, indi_id: str, max_generations: Optional[int] = None, include_unknown: bool = False
+) -> List[str]:
+    """Return deduplicated, sorted last names for ancestors of indi_id.
+
+    This helper wraps :func:`get_ancestor_details` and applies an optional
+    filter to include nameless (unknown) ancestors. Unknown ancestors do not
+    contribute a last-name string; they are only relevant when ``include_unknown``
+    is True for callers that want to report presence of unnamed ancestors.
+    """
+    records = get_ancestor_details(data, indi_id, max_generations=max_generations)
+    names = set()
+    for rec in records:
+        indi = rec["individual"]
+        if not include_unknown and not indi.first_name and not indi.last_name:
+            continue
+        if indi.last_name:
+            names.add(indi.last_name)
+    return sorted(names)
 
 
 def get_roots(data: GedcomData) -> List[Individual]:

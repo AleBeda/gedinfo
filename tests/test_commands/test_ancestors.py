@@ -189,21 +189,21 @@ def test_long_sort_id():
 
 
 def test_long_unknown_last_name(tmp_path):
-    # create a ged where a branch-tip has no last name
+    # create a ged where a branch-tip has only last name (not fully nameless)
     content = (
         "0 HEAD\n"
         "0 @I1@ INDI\n"
         "1 NAME John /Doe/\n"
         "1 FAMC @F1@\n"
         "0 @I2@ INDI\n"
-        "1 NAME /\n"
+        "1 NAME /Smith/\n"
         "1 FAMS @F1@\n"
         "0 @F1@ FAM\n"
         "1 HUSB @I1@\n"
         "1 WIFE @I2@\n"
         "1 CHIL @I3@\n"
         "0 @I3@ INDI\n"
-        "1 NAME Alice /Smith/\n"
+        "1 NAME Alice /Brown/\n"
         "1 FAMC @F1@\n"
         "0 TRLR\n"
     )
@@ -212,8 +212,87 @@ def test_long_unknown_last_name(tmp_path):
     code, out, err = run_cmd(["ancestors", "-l", "@I3@", str(f)])
     assert code == 0
     lines = [ln for ln in out.strip().splitlines() if ln.strip()]
-    # husband is a root and has last name '', should print (unknown)
+    # should find Smith (partial last name)
+    assert any("Smith" in ln for ln in lines)
+
+
+def test_long_unknown_shown_with_u_flag(tmp_path):
+    # create a ged where a branch-tip is completely nameless
+    content = (
+        "0 HEAD\n"
+        "0 @I1@ INDI\n"
+        "1 NAME John /Doe/\n"
+        "1 FAMC @F1@\n"
+        "0 @I2@ INDI\n"
+        "1 SEX M\n"
+        "1 FAMS @F1@\n"
+        "0 @F1@ FAM\n"
+        "1 HUSB @I2@\n"
+        "1 WIFE @I1@\n"
+        "1 CHIL @I3@\n"
+        "0 @I3@ INDI\n"
+        "1 NAME Alice /Smith/\n"
+        "1 FAMC @F1@\n"
+        "0 TRLR\n"
+    )
+    f = tmp_path / "tmp_u.ged"
+    f.write_text(content)
+    code, out, err = run_cmd(["ancestors", "-l", "-u", "@I3@", str(f)])
+    assert code == 0
+    lines = [ln for ln in out.strip().splitlines() if ln.strip()]
+    # should include (unknown) with -u flag
     assert any("(unknown)" in ln for ln in lines)
+
+
+def test_long_unknown_suppressed_by_default(tmp_path):
+    # create a ged where a parent has no NAME (nameless ancestor)
+    content = (
+        "0 HEAD\n"
+        "0 @I1@ INDI\n"
+        "1 NAME Child /One/\n"
+        "1 FAMC @F1@\n"
+        "0 @I2@ INDI\n"
+        "1 NAME Parent /Two/\n"
+        "1 FAMS @F1@\n"
+        "0 @I6@ INDI\n"
+        "1 SEX M\n"
+        "0 @F1@ FAM\n"
+        "1 HUSB @I6@\n"
+        "1 WIFE @I2@\n"
+        "1 CHIL @I1@\n"
+        "0 TRLR\n"
+    )
+    f = tmp_path / "tmp2.ged"
+    f.write_text(content)
+    code, out, err = run_cmd(["ancestors", "-l", "@I1@", str(f)])
+    assert code == 0
+    # by default, nameless ancestor should be suppressed
+    assert "(unknown)" not in out
+
+
+def test_long_unknown_included_with_flag(tmp_path):
+    # same ged as above but include -u to show nameless ancestors
+    content = (
+        "0 HEAD\n"
+        "0 @I1@ INDI\n"
+        "1 NAME Child /One/\n"
+        "1 FAMC @F1@\n"
+        "0 @I2@ INDI\n"
+        "1 NAME Parent /Two/\n"
+        "1 FAMS @F1@\n"
+        "0 @I6@ INDI\n"
+        "1 SEX M\n"
+        "0 @F1@ FAM\n"
+        "1 HUSB @I6@\n"
+        "1 WIFE @I2@\n"
+        "1 CHIL @I1@\n"
+        "0 TRLR\n"
+    )
+    f = tmp_path / "tmp3.ged"
+    f.write_text(content)
+    code, out, err = run_cmd(["ancestors", "-l", "-u", "@I1@", str(f)])
+    assert code == 0
+    assert "(unknown)" in out
 
 
 def test_sort_without_long():

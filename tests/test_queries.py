@@ -74,26 +74,67 @@ def test_display_name_neither():
     assert display_name(ind) == "(unknown)"
 
 
-def test_find_by_name_exact():
-    data = load("simple.ged")
-    result = find_by_name(data, "John Smith")
-    assert len(result) == 1 and result[0].id == "@I001@"
+def test_find_by_name_last_name_partial():
+    data = parser.parse(FIXTURES / "refinements.ged")
+    res = find_by_name(data, "smith")
+    ids = [r.id for r in res]
+    assert ids == ["@I001@", "@I002@", "@I005@"]
 
 
-def test_find_by_name_case_insensitive():
-    data = load("simple.ged")
-    result = find_by_name(data, "john smith")
-    assert result and result[0].id == "@I001@"
+def test_find_by_name_last_name_exact():
+    data = parser.parse(FIXTURES / "refinements.ged")
+    res = find_by_name(data, "Smith")
+    ids = [r.id for r in res]
+    assert ids == ["@I001@", "@I002@", "@I005@"]
 
 
-def test_find_by_name_slash_syntax():
-    data = load("simple.ged")
-    assert find_by_name(data, "John /Smith/") == find_by_name(data, "John Smith")
+def test_find_by_name_first_name_partial():
+    data = parser.parse(FIXTURES / "refinements.ged")
+    res = find_by_name(data, "joh")
+    ids = [r.id for r in res]
+    # Johann (@I003@) and John (@I001@) match
+    assert set(ids) == {"@I001@", "@I003@"}
+
+
+def test_find_by_name_first_name_only_match():
+    data = parser.parse(FIXTURES / "refinements.ged")
+    res = find_by_name(data, "ali")
+    ids = [r.id for r in res]
+    assert ids == ["@I004@"]
 
 
 def test_find_by_name_no_match():
-    data = load("simple.ged")
-    assert find_by_name(data, "Nonexistent Person") == []
+    data = parser.parse(FIXTURES / "refinements.ged")
+    res = find_by_name(data, "xyz")
+    assert res == []
+
+
+def test_find_by_name_nameless_never_matches():
+    data = parser.parse(FIXTURES / "refinements.ged")
+    res = find_by_name(data, "smith")
+    ids = [r.id for r in res]
+    assert "@I006@" not in ids
+
+
+def test_find_by_name_slash_stripped():
+    data = parser.parse(FIXTURES / "refinements.ged")
+    a = find_by_name(data, "/Smith/")
+    b = find_by_name(data, "Smith")
+    assert [r.id for r in a] == [r.id for r in b]
+
+
+def test_find_by_name_case_insensitive():
+    data = parser.parse(FIXTURES / "refinements.ged")
+    a = find_by_name(data, "SMITH")
+    b = find_by_name(data, "smith")
+    assert [r.id for r in a] == [r.id for r in b]
+
+
+def test_find_by_name_whitespace_normalised():
+    data = parser.parse(FIXTURES / "refinements.ged")
+    a = find_by_name(data, "  smith  ")
+    b = find_by_name(data, "smith")
+    assert [r.id for r in a] == [r.id for r in b]
 
 
 def test_get_roots():

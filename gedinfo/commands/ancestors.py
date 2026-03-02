@@ -35,6 +35,19 @@ def register(subparsers: argparse._SubParsersAction) -> None:  # type: ignore
         default=None,
         help="Sort order for --long mode",
     )
+    sub.add_argument(
+        "-u",
+        "--unknown",
+        action="store_true",
+        default=False,
+        help=(
+            "Include ancestors with no name (no NAME tag in the GEDCOM file). "
+            "By default, nameless ancestors are suppressed. "
+            "In short mode this flag has no visible effect (nameless ancestors "
+            "have no last name to print). In --long mode, nameless ancestors "
+            "appear with '(unknown)' in the last-name field."
+        ),
+    )
     sub.add_argument("indi_id", help="Individual ID to inspect")
     sub.add_argument("gedcom_file", help="Path to GEDCOM file")
     sub.set_defaults(func=run)
@@ -62,6 +75,11 @@ def run(args: Any) -> None:
         for s in surnames:
             print(s)
         return
+
+    # Filter out nameless ancestors unless --unknown was requested
+    include_unknown = getattr(args, "unknown", False)
+    if not include_unknown:
+        records = [r for r in records if not (not r["individual"].first_name and not r["individual"].last_name)]
 
     # Filter to branch-tip ancestors only
     def is_branch_tip(rec: dict) -> bool:

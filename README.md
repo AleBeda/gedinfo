@@ -62,7 +62,7 @@ John /Smith/
 
 ### id
 
-Find the ID of an individual by their name.
+Search for individuals by partial name match.
 
 **Syntax:**
 ```
@@ -70,20 +70,25 @@ gedinfo id <name> <gedcom_file>
 ```
 
 **Arguments:**
-- `<name>`: The individual's last name to search for
+- `<name>`: Name fragment to search for. Matched as a case-insensitive substring
+  against first name and last name independently. Slash delimiters (//) around
+  surnames are accepted and ignored.
 - `<gedcom_file>`: Path to the GEDCOM file
 
 **Output:**
-Prints the ID of the matching individual(s), one per line, without @ delimiters.
-If multiple individuals share the same last name, all are printed in ID order.
+Prints one line per matching individual in the format:
+```
+@I001@\tDisplay Name
+```
+(the ID includes `@` delimiters, followed by a tab and the display name).
+Results are sorted by ID.
 
 **Example:**
 ```bash
-$ gedinfo id Smith tests/fixtures/simple.ged
-I001
-I002
+$ gedinfo id Smith tests/fixtures/refinements.ged
+@I001@\tJohn Smith
+@I002@\tMary Smithson
 ```
-
 ### names
 
 Print the distinct last names of individuals whose IDs are listed in a file.
@@ -137,19 +142,25 @@ gedinfo ancestors [options] <indi_id> <gedcom_file>
   This option is only valid with `-l`. Default sort order depends on mode:
   - Long mode (`-l`): sorts by `path` (paternal to maternal)
   - Short mode: sorts by `name` (alphabetically)
+- `-u, --unknown`: Include ancestors with no name (no NAME tag in the GEDCOM file).
+  By default, nameless ancestors are suppressed. In short mode this flag has no visible effect
+  (nameless ancestors have no last name to print). In `--long` mode, nameless ancestors 
+  appear with '(unknown)' in the last-name field.
 
 **Output (Short Mode - default):**
 Prints the distinct last names of all ancestors, one per line, sorted alphabetically.
+Nameless ancestors are always excluded (they have no last name to print).
 
 **Output (Long Mode - with `-l`):**
 Tab-separated values with four columns:
 - Generation number (2 for parents, 3 for grandparents, etc.)
 - Path (lowercase string of p/m/? characters, see below)
-- Last name (or "(unknown)" if no surname)
+- Last name (or "(unknown)" if no surname and `-u` is set)
 - Individual ID (without @ delimiters)
 
 When the last name is fewer than 8 characters, an extra tab is added to align 
-the ID column.
+the ID column. By default, nameless ancestors are omitted from long-mode output;
+use `-u/--unknown` to include them.
 
 **Path Notation:**
 The path string indicates the sex of each ancestor in the lineage:
