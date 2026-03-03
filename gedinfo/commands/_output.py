@@ -65,4 +65,4 @@ def format_individual(ind: Individual, mode: Literal["id", "name", "both"]) -> s
         return strip_id_delimiters(ind.id)
     if mode == "name":
         return display_name(ind)
-    return f"{strip_id_delimiters(ind.id)}  {display_name(ind)}"
+    return f"{strip_id_delimiters(ind.id)}\t{display_name(ind)}"

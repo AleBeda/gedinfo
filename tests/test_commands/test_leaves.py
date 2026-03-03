@@ -18,7 +18,7 @@ def test_leaves_default():
     code, out, err = run_cmd(["leaves", str(FIXTURES / "simple.ged")])
     assert code == 0
     lines = [line for line in out.splitlines() if line.strip()]
-    assert lines == ["I003  Alice Smith", "I004  Bob Smith"]
+    assert lines == ["I003\tAlice Smith", "I004\tBob Smith"]
 
 
 def test_leaves_id_only():

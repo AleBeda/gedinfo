@@ -38,4 +38,4 @@ def test_strip_and_format_individual():
     assert _output.strip_id_delimiters(ind.id) == "I123"
     assert _output.format_individual(ind, "id") == "I123"
     assert _output.format_individual(ind, "name") == "A B"
-    assert _output.format_individual(ind, "both") == "I123  A B"
+    assert _output.format_individual(ind, "both") == "I123\tA B"

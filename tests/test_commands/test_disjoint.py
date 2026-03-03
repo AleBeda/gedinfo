@@ -20,8 +20,8 @@ def test_disjoint_single_tree_default():
     assert err == ""
     lines = out.strip().splitlines()
     assert lines == [
-        "I001  John Smith",
-        "I002  Mary Jones",
+        "I001\tJohn Smith",
+        "I002\tMary Jones",
     ]
 
 
@@ -45,9 +45,9 @@ def test_disjoint_multi_tree():
     assert err == ""
     blocks = out.strip().split("\n\n")
     # first component roots
-    assert blocks[0].splitlines() == ["I001  Wilhelm Braun"]
+    assert blocks[0].splitlines() == ["I001\tWilhelm Braun"]
     # second component roots
-    assert blocks[1].splitlines() == ["I003  Sofia Rossi"]
+    assert blocks[1].splitlines() == ["I003\tSofia Rossi"]
 
 
 def test_disjoint_empty():
@@ -68,4 +68,4 @@ def test_disjoint_deep():
     assert code == 0
     assert err == ""
     # only root I001 in deep.ged
-    assert out.strip().splitlines() == ["I001  Adam Elder"]
+    assert out.strip().splitlines() == ["I001\tAdam Elder"]
