@@ -234,6 +234,7 @@ gedinfo roots [options] <gedcom_file>
 **Options:**
 - `-i`: Print IDs only (without @ delimiters), one per line
 - `-n`: Print names only, one per line
+- `-s, --spouse`: Suppress roots whose spouse has at least one recorded parent in the GEDCOM file. Useful for filtering out individuals who married into the tree and whose own parentage is simply unrecorded, rather than being true independent lineage starting points.
 - (default): Print ID and name pairs in the format `ID	Name`
 
 **Output:**
@@ -341,6 +342,7 @@ gedinfo disjoint [options] <gedcom_file>
 **Options:**
 - `-i`: Print IDs from each component (without @ delimiters), grouped by component
 - `-n`: Print names from each component, grouped by component
+- `-s, --spouse`: As per the roots command: suppress roots whose spouse has at least one recorded parent. If this suppression removes all roots from a connected component, that component is shown with a single placeholder line "(roots suppressed)" instead of individual entries.
 - (default): Print the size of each component, one per line
 
 **Output:**

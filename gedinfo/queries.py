@@ -124,8 +124,18 @@ def get_ancestor_last_names(
 
 
 def get_roots(data: GedcomData) -> List[Individual]:
-    """Return individuals who have no parents (i.e. appear in no family as a child)."""
-    roots = [i for i in data.individuals.values() if not i.family_ids_as_child]
+    """Return individuals who have no recorded parents.
+
+    An individual is considered a root if they are not listed as a child in any
+    family record. This is more robust than simply checking for the presence of
+    a FAMC link on the individual record, since some GEDCOM files may contain
+    spurious FAMC references that are not reflected in the corresponding family
+    record's CHIL list.
+    """
+    child_ids: set[str] = set()
+    for fam in data.families.values():
+        child_ids.update(fam.child_ids)
+    roots = [i for i in data.individuals.values() if i.id not in child_ids]
     return sorted(roots, key=lambda i: i.id)
 
 
@@ -321,6 +331,81 @@ def count_families_with_unnamed_parent(data: GedcomData) -> int:
         for fam in data.families.values()
         if unnamed(fam.husband_id) or unnamed(fam.wife_id)
     )
+
+
+def has_parents(data: GedcomData, individual: Individual) -> bool:
+    """Return True if the individual has at least one recorded parent.
+
+    An individual has parents if they have at least one FAMC link and at
+    least one of the corresponding family records has a non-None husband_id
+    or wife_id. FAMC links pointing to family IDs absent from data.families
+    are silently ignored.
+
+    When determining whether a family record indicates parentage, we ignore
+    parent references that point to the individual themself or to one of the
+    individual's spouses. This avoids treating malformed GEDCOM records that
+    reference the individual as their own parent (or spousal parent) as
+    evidence of parentage.
+    """
+    # Collect the individual's spouses (by ID) to avoid counting self/spousal
+    # references as genuine parents.
+    spouse_ids: set[str] = set()
+    for fam_id in individual.family_ids_as_spouse:
+        fam = data.families.get(fam_id)
+        if not fam:
+            continue
+        if fam.husband_id and fam.husband_id != individual.id:
+            spouse_ids.add(fam.husband_id)
+        if fam.wife_id and fam.wife_id != individual.id:
+            spouse_ids.add(fam.wife_id)
+
+    for fam_id in individual.family_ids_as_child:
+        fam = data.families.get(fam_id)
+        if not fam:
+            continue
+        # Ignore parent references that are self or spouse.
+        if fam.husband_id and fam.husband_id not in spouse_ids and fam.husband_id != individual.id:
+            return True
+        if fam.wife_id and fam.wife_id not in spouse_ids and fam.wife_id != individual.id:
+            return True
+    return False
+
+
+def filter_spouse_roots(
+    data: GedcomData, roots: list[Individual]
+) -> list[Individual]:
+    """Remove roots whose spouse has parents.
+
+    Given a list of root individuals (individuals with no parents), return a
+    new list with those individuals removed for whom at least one spouse
+    satisfies has_parents(). The order of the remaining individuals is
+    preserved. The input list is not mutated.
+    """
+    result = []
+    for root in roots:
+        # Check if any spouse has parents
+        suppress = False
+        for fam_id in root.family_ids_as_spouse:
+            fam = data.families.get(fam_id)
+            if not fam:
+                continue
+            # Get spouses (exclude self)
+            spouses = []
+            if fam.husband_id and fam.husband_id != root.id:
+                spouses.append(fam.husband_id)
+            if fam.wife_id and fam.wife_id != root.id:
+                spouses.append(fam.wife_id)
+            # Check if any spouse has parents
+            for spouse_id in spouses:
+                spouse = data.individuals.get(spouse_id)
+                if spouse and has_parents(data, spouse):
+                    suppress = True
+                    break
+            if suppress:
+                break
+        if not suppress:
+            result.append(root)
+    return result
 
 
 def count_families_no_children(data: GedcomData) -> int:

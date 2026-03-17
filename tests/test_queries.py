@@ -14,6 +14,8 @@ from gedinfo.queries import (
     count_families_with_unnamed_parent,
     count_families_no_children,
     get_ancestor_details,
+    has_parents,
+    filter_spouse_roots,
 )
 
 FIX = Path = __import__("pathlib").Path
@@ -284,3 +286,113 @@ def test_count_families_no_children():
     assert count_families_no_children(data) == 0
     data2 = load("multi_tree.ged")
     assert count_families_no_children(data2) == 0
+
+
+def test_has_parents_true():
+    data = load("spouse.ged")
+    assert has_parents(data, data.individuals["@I002@"])
+
+
+def test_has_parents_true_one_parent(tmp_path):
+    content = (
+        "0 HEAD\n"
+        "0 @I1@ INDI\n"
+        "1 FAMC @F1@\n"
+        "0 @I2@ INDI\n"
+        "0 @F1@ FAM\n"
+        "1 HUSB @I2@\n"
+        "0 TRLR\n"
+    )
+    f = tmp_path / "temp.ged"
+    f.write_text(content)
+    data = parser.parse(f)
+    assert has_parents(data, data.individuals["@I1@"])
+
+
+def test_has_parents_false_no_famc():
+    data = load("spouse.ged")
+    assert not has_parents(data, data.individuals["@I001@"])
+
+
+def test_has_parents_false_empty_family(tmp_path):
+    content = (
+        "0 HEAD\n"
+        "0 @I1@ INDI\n"
+        "1 FAMC @F1@\n"
+        "0 @F1@ FAM\n"
+        "0 TRLR\n"
+    )
+    f = tmp_path / "temp.ged"
+    f.write_text(content)
+    data = parser.parse(f)
+    assert not has_parents(data, data.individuals["@I1@"])
+
+
+def test_has_parents_false_missing_family(tmp_path):
+    content = (
+        "0 HEAD\n"
+        "0 @I1@ INDI\n"
+        "1 FAMC @F999@\n"
+        "0 TRLR\n"
+    )
+    f = tmp_path / "temp.ged"
+    f.write_text(content)
+    data = parser.parse(f)
+    assert not has_parents(data, data.individuals["@I1@"])
+
+
+def test_filter_spouse_roots_suppresses_correctly():
+    data = load("spouse.ged")
+    roots = get_roots(data)
+    filtered = filter_spouse_roots(data, roots)
+    ids = [i.id for i in filtered]
+    assert "@I001@" not in ids  # suppressed
+    assert "@I008@" not in ids  # suppressed
+    assert "@I003@" in ids
+    assert "@I004@" in ids
+    assert "@I007@" in ids
+    assert "@I011@" in ids
+    assert "@I012@" in ids
+    assert "@I014@" in ids
+    assert "@I015@" in ids
+    assert "@I016@" in ids
+    assert "@I017@" in ids
+
+
+def test_filter_spouse_roots_preserves_order():
+    data = load("spouse.ged")
+    roots = get_roots(data)
+    filtered = filter_spouse_roots(data, roots)
+    # Check that the order is preserved among surviving elements
+    original_order = [i.id for i in roots]
+    filtered_order = [i.id for i in filtered]
+    # Extract positions from original and check they're in order
+    positions = [original_order.index(id) for id in filtered_order]
+    assert positions == sorted(positions)
+
+
+def test_filter_spouse_roots_no_suppression():
+    data = load("simple.ged")
+    roots = get_roots(data)
+    filtered = filter_spouse_roots(data, roots)
+    assert filtered == roots
+
+
+def test_filter_spouse_roots_empty_input():
+    data = load("spouse.ged")
+    assert filter_spouse_roots(data, []) == []
+
+
+def test_filter_spouse_roots_no_spouses():
+    data = load("spouse.ged")
+    # @I007@ has no spouses
+    assert data.individuals["@I007@"] in filter_spouse_roots(data, get_roots(data))
+
+
+def test_filter_spouse_roots_multi_spouse_any_rule():
+    data = load("spouse.ged")
+    # @I008@ has two spouses: @I009@ (has parents) and @I010@ (no parents)
+    # Should be suppressed because at least one spouse has parents
+    roots = get_roots(data)
+    filtered = filter_spouse_roots(data, roots)
+    assert data.individuals["@I008@"] not in filtered
