@@ -234,7 +234,9 @@ gedinfo roots [options] <gedcom_file>
 **Options:**
 - `-i`: Print IDs only (without @ delimiters), one per line
 - `-n`: Print names only, one per line
-- `-s, --spouse`: Suppress roots whose spouse has at least one recorded parent in the GEDCOM file. Useful for filtering out individuals who married into the tree and whose own parentage is simply unrecorded, rather than being true independent lineage starting points.
+- `-s, --spouse`: Include roots whose spouse has parents with at least one known name. By default such individuals are suppressed because they likely married into a documented family rather than representing an independent lineage starting point.
+- `-u, --unknowns`: Include roots with no name at all (no NAME tag in the GEDCOM file). By default, nameless individuals are suppressed.
+- `-a, --all`: Include all roots without any suppression. Equivalent to combining `--spouse` and `--unknowns`. Cannot be combined with `--spouse` or `--unknowns`.
 - (default): Print ID and name pairs in the format `ID	Name`
 
 **Output:**
@@ -342,7 +344,9 @@ gedinfo disjoint [options] <gedcom_file>
 **Options:**
 - `-i`: Print IDs from each component (without @ delimiters), grouped by component
 - `-n`: Print names from each component, grouped by component
-- `-s, --spouse`: As per the roots command: suppress roots whose spouse has at least one recorded parent. If this suppression removes all roots from a connected component, that component is shown with a single placeholder line "(roots suppressed)" instead of individual entries.
+- `-s, --spouse`: As per the roots command: include roots whose spouse has parents with at least one known name. When this flag is passed and suppression removes all roots from a connected component, that component is shown with a single placeholder line "(roots suppressed)" instead of individual entries.
+- `-u, --unknowns`: Include nameless roots (no NAME tag). By default nameless individuals are suppressed.
+- `-a, --all`: Include all roots without suppression. Cannot be combined with `--spouse` or `--unknowns`.
 - (default): Print the size of each component, one per line
 
 **Output:**

@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import argparse
 from typing import Any
+from ..models import Individual
 
 from ..parser import parse
-from ..queries import get_connected_components, get_roots, filter_spouse_roots
+from ..queries import get_connected_components, get_roots, apply_root_filters
 from ..models import GedcomData
+import sys
 from ._output import add_output_options, validate_output_mode, format_individual
 
 
@@ -16,16 +18,32 @@ def register(subparsers: argparse._SubparsersAction) -> None:  # type: ignore
         "disjoint", help="List roots of each disjoint component"
     )
     add_output_options(sub)
-    sub.add_argument(
+    filter_group = sub.add_argument_group("filter options")
+    filter_group.add_argument(
         "-s", "--spouse",
         action="store_true",
         default=False,
         help=(
-            "As per the roots command: suppress roots whose spouse "
-            "has at least one recorded parent. If this suppression "
-            "removes all roots from a connected component, that "
-            "component is shown with a single placeholder line "
-            '"(roots suppressed)" instead of individual entries.'
+            "Include roots whose spouse has parents with at least one known "
+            "name. By default such individuals are suppressed."
+        ),
+    )
+    filter_group.add_argument(
+        "-u", "--unknowns",
+        action="store_true",
+        default=False,
+        help=(
+            "Include nameless roots (no NAME tag). By default nameless "
+            "individuals are suppressed."
+        ),
+    )
+    filter_group.add_argument(
+        "-a", "--all",
+        action="store_true",
+        default=False,
+        help=(
+            "Include all roots without suppression. Cannot be combined with "
+            "--spouse or --unknowns."
         ),
     )
     sub.add_argument("gedcom_file", help="Path to GEDCOM file")
@@ -33,28 +51,49 @@ def register(subparsers: argparse._SubparsersAction) -> None:  # type: ignore
 
 
 def render_component(
-    data: GedcomData, component: list[Individual], mode: str, apply_spouse_filter: bool
+    data: GedcomData,
+    component: list[Individual],
+    mode: str,
+    include_spouse_suppressed: bool,
+    include_unknowns: bool,
 ) -> list[str]:
     """Return the output lines for one disjoint component.
 
-    If apply_spouse_filter is True, roots whose spouses have parents are
-    suppressed. If suppression removes all roots, returns ['(roots suppressed)'].
+    Applies apply_root_filters to the component's roots. If the result is
+    empty:
+      - If include_spouse_suppressed is True (i.e. -s or -a was passed) and
+        the component had roots before filtering, return ['(roots suppressed)'].
+      - Otherwise (default suppression removed everything), return [] to
+        indicate the component should be skipped silently.
     """
-    # Find roots in this component
     component_roots = [i for i in component if not i.family_ids_as_child]
-    
-    if apply_spouse_filter:
-        filtered_roots = filter_spouse_roots(data, component_roots)
-    else:
-        filtered_roots = component_roots
+    if not component_roots:
+        return []
 
-    if filtered_roots:
-        return [format_individual(r, mode) for r in filtered_roots]
-    else:
+    final_roots = apply_root_filters(
+        data,
+        component_roots,
+        include_spouse_suppressed=include_spouse_suppressed,
+        include_unknowns=include_unknowns,
+    )
+
+    if final_roots:
+        return [format_individual(r, mode) for r in final_roots]
+
+    # no final roots
+    if include_spouse_suppressed:
+        # suppression was explicitly requested but still removed everything
         return ["(roots suppressed)"]
+    # default suppression removed everything — skip silently
+    return []
 
 
 def run(args: Any) -> None:
+    # validate mutually exclusive flags
+    if getattr(args, "all", False) and (getattr(args, "spouse", False) or getattr(args, "unknowns", False)):
+        print("--all cannot be combined with --spouse or --unknowns", file=sys.stderr)
+        sys.exit(1)
+
     data = parse(args.gedcom_file)
     mode = validate_output_mode(args)
 
@@ -62,7 +101,13 @@ def run(args: Any) -> None:
 
     first = True
     for comp in components:
-        lines = render_component(data, comp, mode, getattr(args, "spouse", False))
+        lines = render_component(
+            data,
+            comp,
+            mode,
+            include_spouse_suppressed=(getattr(args, "all", False) or getattr(args, "spouse", False)),
+            include_unknowns=(getattr(args, "all", False) or getattr(args, "unknowns", False)),
+        )
         if not lines:
             # Skip empty components
             continue

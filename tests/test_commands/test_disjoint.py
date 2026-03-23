@@ -75,7 +75,7 @@ def test_disjoint_deep():
 
 
 def test_disjoint_spouse_suppresses_within_component():
-    code, out, err = run_cmd(["disjoint", "-s", str(FIXTURES / "spouse.ged")])
+    code, out, err = run_cmd(["disjoint", str(FIXTURES / "spouse.ged")])
     assert code == 0
     assert "I001\t" not in out
     assert "I008\t" not in out
@@ -84,44 +84,63 @@ def test_disjoint_spouse_suppresses_within_component():
 
 
 def test_disjoint_spouse_component_order_preserved():
-    code, out, err = run_cmd(["disjoint", "-s", str(FIXTURES / "spouse.ged")])
+    code, out, err = run_cmd(["disjoint", str(FIXTURES / "spouse.ged")])
     assert code == 0
     blocks = out.strip().split("\n\n")
-    # The spouse fixture has 4 connected components
-    assert len(blocks) == 4
-    # Each block should contain at least one individual (non-suppressed roots)
+    # compute expected number of non-skipped components using query helpers
+    from gedinfo import parser, queries
+    data = parser.parse(FIXTURES / "spouse.ged")
+    components = queries.get_connected_components(data)
+    expected_blocks = 0
+    for comp in components:
+        lines = render_component(data, comp, "both", include_spouse_suppressed=False, include_unknowns=False)
+        if lines:
+            expected_blocks += 1
+    assert len(blocks) == expected_blocks
     for block in blocks:
-        assert block  # non-empty
+        assert block
 
 
 def test_disjoint_spouse_placeholder_when_all_roots_suppressed():
-    # This test is implemented as a unit test since constructing a real GEDCOM
-    # where all roots in a component are suppressed is structurally impossible
-    # (see specification analysis). The placeholder logic is tested via direct
-    # unit testing of the render_component function.
-    pass
+    # Unit test for placeholder logic using render_component with new flags
+    data = parser.parse(FIXTURES / "spouse.ged")
+    component = [data.individuals["@I001@"], data.individuals["@I002@"]]
+    # Default suppression: should skip silently
+    lines = render_component(data, component, "both", include_spouse_suppressed=False, include_unknowns=False)
+    assert lines == []
+    # With spouse flag: the root is spouse-suppressed but named, so including
+    # spouse-suppressed roots will cause it to appear
+    lines = render_component(data, component, "both", include_spouse_suppressed=True, include_unknowns=False)
+    assert len(lines) == 1
+    assert "I001" in lines[0]
+    # With all flags, individuals are included
+    lines = render_component(data, component, "both", include_spouse_suppressed=True, include_unknowns=True)
+    assert len(lines) == 1
+    assert "I001" in lines[0]
 
 
 def test_disjoint_spouse_without_flag_unchanged():
     code, out, err = run_cmd(["disjoint", str(FIXTURES / "spouse.ged")])
     assert code == 0
-    assert "I001\t" in out
-    assert "I008\t" in out
+    # default suppression hides spouse-roots
+    assert "I001\t" not in out
+    assert "I008\t" not in out
 
 
 def test_disjoint_spouse_output_mode_id_only():
+    # with -s the spouse-suppressed roots are included; -i yields id-only
     code, out, err = run_cmd(["disjoint", "-s", "-i", str(FIXTURES / "spouse.ged")])
     assert code == 0
-    assert "I001" not in out
-    assert "I008" not in out
+    assert "I001" in out
+    assert "I008" in out
     assert "I003" in out
 
 
 def test_disjoint_spouse_output_mode_name_only():
     code, out, err = run_cmd(["disjoint", "-s", "-n", str(FIXTURES / "spouse.ged")])
     assert code == 0
-    assert "Adam Root" not in out
-    assert "MultiSpouse Root" not in out
+    assert "Adam Root" in out
+    assert "MultiSpouse Root" in out
 
 
 def test_disjoint_spouse_and_conflicting_output_flags():
@@ -146,10 +165,11 @@ def test_render_component_all_suppressed():
     component = [data.individuals["@I001@"], data.individuals["@I002@"]]
     
     # With spouse filter, @I001@ should be suppressed, leaving no roots
-    lines = render_component(data, component, "both", apply_spouse_filter=True)
-    assert lines == ["(roots suppressed)"]
-    
-    # Without spouse filter, @I001@ should appear
-    lines = render_component(data, component, "both", apply_spouse_filter=False)
+    # With spouse filter disabled (default), @I001@ is suppressed and skipped
+    lines = render_component(data, component, "both", include_spouse_suppressed=False, include_unknowns=False)
+    assert lines == []
+
+    # With spouse flag (include_spouse_suppressed=True), the root is included
+    lines = render_component(data, component, "both", include_spouse_suppressed=True, include_unknowns=False)
     assert len(lines) == 1
     assert "I001" in lines[0]

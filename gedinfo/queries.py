@@ -371,40 +371,98 @@ def has_parents(data: GedcomData, individual: Individual) -> bool:
     return False
 
 
-def filter_spouse_roots(
-    data: GedcomData, roots: list[Individual]
-) -> list[Individual]:
-    """Remove roots whose spouse has parents.
+def get_spouse_suppressed(data: GedcomData, roots: list[Individual]) -> set[str]:
+    """Return the IDs of roots that are spouse-suppressed.
 
-    Given a list of root individuals (individuals with no parents), return a
-    new list with those individuals removed for whom at least one spouse
-    satisfies has_parents(). The order of the remaining individuals is
-    preserved. The input list is not mutated.
+    A root is spouse-suppressed when it has at least one spouse who has
+    parents (via has_parents), AND at least one parent of any such spouse
+    has a known name (first_name or last_name is not None).
+
+    Returns a set of individual ID strings. The input list is not mutated.
     """
-    result = []
+    suppressed: set[str] = set()
     for root in roots:
-        # Check if any spouse has parents
-        suppress = False
+        # must have at least one spouse
+        had_spouse = False
         for fam_id in root.family_ids_as_spouse:
             fam = data.families.get(fam_id)
             if not fam:
                 continue
-            # Get spouses (exclude self)
-            spouses = []
+            # collect spouse ids (exclude self)
+            spouses: list[str] = []
             if fam.husband_id and fam.husband_id != root.id:
                 spouses.append(fam.husband_id)
             if fam.wife_id and fam.wife_id != root.id:
                 spouses.append(fam.wife_id)
-            # Check if any spouse has parents
+            if not spouses:
+                continue
+            had_spouse = True
+            # for each spouse that has parents, check parents for a known name
             for spouse_id in spouses:
                 spouse = data.individuals.get(spouse_id)
-                if spouse and has_parents(data, spouse):
-                    suppress = True
+                if not spouse:
+                    continue
+                if not has_parents(data, spouse):
+                    continue
+                # spouse has parents; inspect all parents of this spouse
+                for famc_id in spouse.family_ids_as_child:
+                    famc = data.families.get(famc_id)
+                    if not famc:
+                        continue
+                    for parent_id in (famc.husband_id, famc.wife_id):
+                        if not parent_id:
+                            continue
+                        parent = data.individuals.get(parent_id)
+                        if not parent:
+                            continue
+                        if parent.first_name or parent.last_name:
+                            suppressed.add(root.id)
+                            # found a named parent-in-law — suppression triggered
+                            break
+                    if root.id in suppressed:
+                        break
+                if root.id in suppressed:
                     break
-            if suppress:
+            if root.id in suppressed:
                 break
-        if not suppress:
-            result.append(root)
+        # if no spouses, cannot be spouse-suppressed
+    return suppressed
+
+
+def get_unknown_roots(roots: list[Individual]) -> set[str]:
+    """Return the IDs of roots that are nameless.
+
+    A root is nameless if both first_name and last_name are None.
+    Returns a set of individual ID strings.
+    """
+    return {r.id for r in roots if not r.first_name and not r.last_name}
+
+
+def apply_root_filters(
+    data: GedcomData,
+    roots: list[Individual],
+    include_spouse_suppressed: bool = False,
+    include_unknowns: bool = False,
+) -> list[Individual]:
+    """Apply the standard suppression filters to a list of roots.
+
+    By default (both flags False), removes spouse-suppressed roots and
+    nameless roots. Each flag re-enables the corresponding group.
+
+    Returns a new list preserving the order of surviving individuals.
+    The input list is not mutated.
+    """
+    if not roots:
+        return []
+    spouse_suppressed = get_spouse_suppressed(data, roots)
+    unknowns = get_unknown_roots(roots)
+    result: list[Individual] = []
+    for r in roots:
+        if (r.id in spouse_suppressed) and not include_spouse_suppressed:
+            continue
+        if (r.id in unknowns) and not include_unknowns:
+            continue
+        result.append(r)
     return result
 
 

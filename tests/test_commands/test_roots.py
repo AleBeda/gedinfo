@@ -39,79 +39,107 @@ def test_roots_conflicting_flags():
     assert "Conflicting output flags" in err
 
 
-def test_roots_spouse_suppresses_adam():
-    code, out, err = run_cmd(["roots", "-s", str(FIXTURES / "spouse.ged")])
+def test_roots_default_suppresses_spouse_roots():
+    code, out, err = run_cmd(["roots", str(FIXTURES / "spouse.ged")])
     assert code == 0
     assert "I001\t" not in out
-    assert "I003\t" in out
-
-
-def test_roots_spouse_suppresses_multispouse():
-    code, out, err = run_cmd(["roots", "-s", str(FIXTURES / "spouse.ged")])
-    assert code == 0
     assert "I008\t" not in out
+    assert "I003\t" in out
+    assert "I018\t" in out
 
 
-def test_roots_spouse_no_suppression_when_spouse_has_no_parents():
-    code, out, err = run_cmd(["roots", "-s", str(FIXTURES / "spouse.ged")])
-    assert code == 0
-    assert "I003\t" in out  # Karl /Root/
-    assert "I004\t" in out  # Sophie /Unknown/
-
-
-def test_roots_spouse_no_suppression_for_isolated():
-    code, out, err = run_cmd(["roots", "-s", str(FIXTURES / "spouse.ged")])
-    assert code == 0
-    assert "I007\t" in out  # Otto /Orphan/
-
-
-def test_roots_spouse_output_format_default():
-    code, out, err = run_cmd(["roots", "-s", str(FIXTURES / "spouse.ged")])
-    assert code == 0
-    lines = [line for line in out.splitlines() if line.strip()]
-    # Check that each line matches the default format
-    for line in lines:
-        parts = line.split("\t")
-        assert len(parts) == 2
-        assert parts[0].startswith("I")
-        assert not parts[0].startswith("@")
-        assert not parts[0].endswith("@")
-
-
-def test_roots_spouse_output_format_id_only():
-    code, out, err = run_cmd(["roots", "-s", "-i", str(FIXTURES / "spouse.ged")])
-    assert code == 0
-    lines = [line for line in out.splitlines() if line.strip()]
-    assert "I001" not in out
-    assert "I008" not in out
-    for line in lines:
-        assert line.startswith("I")
-        assert not line.startswith("@")
-        assert not line.endswith("@")
-
-
-def test_roots_spouse_output_format_name_only():
-    code, out, err = run_cmd(["roots", "-s", "-n", str(FIXTURES / "spouse.ged")])
-    assert code == 0
-    lines = [line for line in out.splitlines() if line.strip()]
-    assert "Adam Root" not in out
-    assert "MultiSpouse Root" not in out
-
-
-def test_roots_spouse_combined_with_conflicting_output_flags():
-    code, out, err = run_cmd(["roots", "-s", "-i", "-n", str(FIXTURES / "spouse.ged")])
-    assert code == 1
-    assert "Conflicting output flags" in err
-
-
-def test_roots_without_spouse_flag_unchanged():
+def test_roots_default_suppresses_unknowns():
     code, out, err = run_cmd(["roots", str(FIXTURES / "spouse.ged")])
+    assert "I022\t" not in out
+    assert "I023\t" not in out
+
+
+def test_roots_spouse_flag_includes_spouse_roots():
+    code, out, err = run_cmd(["roots", "-s", str(FIXTURES / "spouse.ged")])
     assert code == 0
     assert "I001\t" in out
     assert "I008\t" in out
+    assert "I022\t" not in out
+    assert "I023\t" not in out
 
 
-def test_roots_spouse_empty_ged():
-    code, out, err = run_cmd(["roots", "-s", str(FIXTURES / "empty.ged")])
+def test_roots_unknowns_flag_includes_unknowns():
+    code, out, err = run_cmd(["roots", "-u", str(FIXTURES / "spouse.ged")])
+    assert code == 0
+    assert "I022\t" in out
+    assert "I023\t" not in out
+    assert "I001\t" not in out
+
+
+def test_roots_spouse_and_unknowns_flags_combined():
+    code, out, err = run_cmd(["roots", "-s", "-u", str(FIXTURES / "spouse.ged")])
+    assert code == 0
+    for id in ["I001\t", "I008\t", "I022\t", "I023\t"]:
+        assert id in out
+
+
+def test_roots_all_flag():
+    code, out, err = run_cmd(["roots", "-a", str(FIXTURES / "spouse.ged")])
+    assert code == 0
+    lines = [line for line in out.splitlines() if line.strip()]
+    # compute expected raw roots from parser to avoid hard-coded fixture counts
+    from gedinfo import parser, queries
+    data = parser.parse(FIXTURES / "spouse.ged")
+    expected = len(queries.get_roots(data))
+    assert len(lines) == expected
+    for id in ["I001\t", "I008\t", "I022\t", "I023\t"]:
+        assert id in out
+
+
+def test_roots_all_with_spouse_is_error():
+    code, out, err = run_cmd(["roots", "-a", "-s", str(FIXTURES / "spouse.ged")])
+    assert code == 1
+    assert "--all cannot be combined with --spouse or --unknowns" in err
+
+
+def test_roots_all_with_unknowns_is_error():
+    code, out, err = run_cmd(["roots", "-a", "-u", str(FIXTURES / "spouse.ged")])
+    assert code == 1
+    assert "--all cannot be combined with --spouse or --unknowns" in err
+
+
+def test_roots_output_format_default_mode():
+    code, out, err = run_cmd(["roots", str(FIXTURES / "spouse.ged")])
+    assert code == 0
+    lines = [line for line in out.splitlines() if line.strip()]
+    for line in lines:
+        parts = line.split("\t")
+        assert len(parts) == 2
+
+
+def test_roots_output_id_only_with_filter():
+    code, out, err = run_cmd(["roots", "-s", "-i", str(FIXTURES / "spouse.ged")])
+    assert code == 0
+    lines = [line for line in out.splitlines() if line.strip()]
+    assert "I001" in "\n".join(lines)
+
+
+def test_roots_output_name_only_with_filter():
+    code, out, err = run_cmd(["roots", "-u", "-n", str(FIXTURES / "spouse.ged")])
+    assert code == 0
+    lines = [line for line in out.splitlines() if line.strip()]
+    # should contain names only (no leading I... ids)
+    for line in lines:
+        assert not line.startswith("I") or "\t" not in line
+
+
+def test_roots_conflicting_output_flags_still_error():
+    code, out, err = run_cmd(["roots", "-i", "-n", str(FIXTURES / "spouse.ged")])
+    assert code == 1
+
+
+def test_roots_empty_ged_with_all_flags():
+    code, out, err = run_cmd(["roots", "-a", str(FIXTURES / "empty.ged")])
     assert code == 0
     assert out.strip() == ""
+
+
+def test_roots_nameless_parents_in_law_not_suppressed():
+    code, out, err = run_cmd(["roots", str(FIXTURES / "spouse.ged")])
+    assert code == 0
+    assert "I018\t" in out

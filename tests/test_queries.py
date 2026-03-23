@@ -15,7 +15,9 @@ from gedinfo.queries import (
     count_families_no_children,
     get_ancestor_details,
     has_parents,
-    filter_spouse_roots,
+    get_spouse_suppressed,
+    get_unknown_roots,
+    apply_root_filters,
 )
 
 FIX = Path = __import__("pathlib").Path
@@ -341,58 +343,107 @@ def test_has_parents_false_missing_family(tmp_path):
     assert not has_parents(data, data.individuals["@I1@"])
 
 
-def test_filter_spouse_roots_suppresses_correctly():
+def test_get_spouse_suppressed_basic():
     data = load("spouse.ged")
     roots = get_roots(data)
-    filtered = filter_spouse_roots(data, roots)
-    ids = [i.id for i in filtered]
-    assert "@I001@" not in ids  # suppressed
-    assert "@I008@" not in ids  # suppressed
-    assert "@I003@" in ids
-    assert "@I004@" in ids
-    assert "@I007@" in ids
-    assert "@I011@" in ids
-    assert "@I012@" in ids
-    assert "@I014@" in ids
-    assert "@I015@" in ids
-    assert "@I016@" in ids
-    assert "@I017@" in ids
+    suppressed = get_spouse_suppressed(data, roots)
+    assert "@I001@" in suppressed
+    assert "@I008@" in suppressed
+    assert "@I023@" in suppressed
+    assert "@I003@" not in suppressed
+    assert "@I007@" not in suppressed
+    assert "@I018@" not in suppressed
 
 
-def test_filter_spouse_roots_preserves_order():
+def test_get_spouse_suppressed_nameless_parents_in_law_not_suppressed():
     data = load("spouse.ged")
     roots = get_roots(data)
-    filtered = filter_spouse_roots(data, roots)
-    # Check that the order is preserved among surviving elements
+    suppressed = get_spouse_suppressed(data, roots)
+    assert "@I018@" not in suppressed
+
+
+def test_get_spouse_suppressed_mixed_parents_in_law():
+    data = load("spouse.ged")
+    roots = get_roots(data)
+    suppressed = get_spouse_suppressed(data, roots)
+    assert "@I023@" in suppressed
+
+
+def test_get_unknown_roots_basic():
+    data = load("spouse.ged")
+    roots = get_roots(data)
+    unknowns = get_unknown_roots(roots)
+    assert "@I022@" in unknowns
+    assert "@I023@" in unknowns
+    assert "@I001@" not in unknowns
+    assert "@I003@" not in unknowns
+    assert "@I018@" not in unknowns
+
+
+def test_apply_root_filters_default():
+    data = load("spouse.ged")
+    roots = get_roots(data)
+    result = apply_root_filters(data, roots)
+    ids = [i.id for i in result]
+    expected = [
+        "@I003@",
+        "@I004@",
+        "@I007@",
+        "@I011@",
+        "@I012@",
+        "@I014@",
+        "@I015@",
+        "@I016@",
+        "@I017@",
+        "@I018@",
+    ]
+    for e in expected:
+        assert e in ids
+    for excluded in ["@I001@", "@I008@", "@I022@", "@I023@"]:
+        assert excluded not in ids
+
+
+def test_apply_root_filters_include_spouse():
+    data = load("spouse.ged")
+    roots = get_roots(data)
+    result = apply_root_filters(data, roots, include_spouse_suppressed=True)
+    ids = [i.id for i in result]
+    assert "@I001@" in ids
+    assert "@I008@" in ids
+    assert "@I022@" not in ids
+    assert "@I023@" not in ids
+
+
+def test_apply_root_filters_include_unknowns():
+    data = load("spouse.ged")
+    roots = get_roots(data)
+    result = apply_root_filters(data, roots, include_unknowns=True)
+    ids = [i.id for i in result]
+    assert "@I022@" in ids
+    assert "@I023@" not in ids
+    assert "@I001@" not in ids
+    assert "@I008@" not in ids
+
+
+def test_apply_root_filters_include_both():
+    data = load("spouse.ged")
+    roots = get_roots(data)
+    result = apply_root_filters(data, roots, include_spouse_suppressed=True, include_unknowns=True)
+    ids = {i.id for i in result}
+    raw_ids = {i.id for i in roots}
+    assert ids == raw_ids
+
+
+def test_apply_root_filters_preserves_order():
+    data = load("spouse.ged")
+    roots = get_roots(data)
+    result = apply_root_filters(data, roots)
     original_order = [i.id for i in roots]
-    filtered_order = [i.id for i in filtered]
-    # Extract positions from original and check they're in order
+    filtered_order = [i.id for i in result]
     positions = [original_order.index(id) for id in filtered_order]
     assert positions == sorted(positions)
 
 
-def test_filter_spouse_roots_no_suppression():
-    data = load("simple.ged")
-    roots = get_roots(data)
-    filtered = filter_spouse_roots(data, roots)
-    assert filtered == roots
-
-
-def test_filter_spouse_roots_empty_input():
+def test_apply_root_filters_empty():
     data = load("spouse.ged")
-    assert filter_spouse_roots(data, []) == []
-
-
-def test_filter_spouse_roots_no_spouses():
-    data = load("spouse.ged")
-    # @I007@ has no spouses
-    assert data.individuals["@I007@"] in filter_spouse_roots(data, get_roots(data))
-
-
-def test_filter_spouse_roots_multi_spouse_any_rule():
-    data = load("spouse.ged")
-    # @I008@ has two spouses: @I009@ (has parents) and @I010@ (no parents)
-    # Should be suppressed because at least one spouse has parents
-    roots = get_roots(data)
-    filtered = filter_spouse_roots(data, roots)
-    assert data.individuals["@I008@"] not in filtered
+    assert apply_root_filters(data, []) == []
