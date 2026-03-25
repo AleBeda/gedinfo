@@ -9,6 +9,26 @@ from __future__ import annotations
 
 from collections import deque
 from typing import List, Optional, Set
+import re
+
+
+# Regex to parse IDs like @I123@ or I123 -> prefix 'I', number 123
+_ID_RE = re.compile(r"^@?([A-Za-z]+)(\d+)@?$")
+
+
+def id_sort_key(id_str: str):
+    """Return a sort key for GEDCOM IDs that sorts numerically by the
+    numeric suffix when possible. Examples: I89 < I123.
+
+    Returns a tuple (prefix, number) when the pattern matches, otherwise
+    falls back to the raw string for lexicographic ordering.
+    """
+    m = _ID_RE.match(id_str)
+    if m:
+        prefix = m.group(1)
+        num = int(m.group(2))
+        return (prefix, num)
+    return (id_str, -1)
 
 from .models import GedcomData, Individual
 
@@ -99,7 +119,7 @@ def find_by_name(data: GedcomData, name: str) -> List[Individual]:
             if target in _normalise_name(indi.last_name):
                 matches.append(indi)
                 continue
-    return sorted(matches, key=lambda i: i.id)
+    return sorted(matches, key=lambda i: id_sort_key(i.id))
 
 
 def get_ancestor_last_names(
@@ -136,7 +156,7 @@ def get_roots(data: GedcomData) -> List[Individual]:
     for fam in data.families.values():
         child_ids.update(fam.child_ids)
     roots = [i for i in data.individuals.values() if i.id not in child_ids]
-    return sorted(roots, key=lambda i: i.id)
+    return sorted(roots, key=lambda i: id_sort_key(i.id))
 
 
 def get_leaves(data: GedcomData) -> List[Individual]:
@@ -155,7 +175,7 @@ def get_leaves(data: GedcomData) -> List[Individual]:
                 break
         if not has_child:
             leaves.append(indi)
-    return sorted(leaves, key=lambda i: i.id)
+    return sorted(leaves, key=lambda i: id_sort_key(i.id))
 
 
 def get_living(data: GedcomData) -> List[Individual]:
@@ -163,7 +183,7 @@ def get_living(data: GedcomData) -> List[Individual]:
 
     Only individuals with living == True are included.
     """
-    return sorted([i for i in data.individuals.values() if i.living is True], key=lambda i: i.id)
+    return sorted([i for i in data.individuals.values() if i.living is True], key=lambda i: id_sort_key(i.id))
 
 
 def get_not_living(data: GedcomData) -> List[Individual]:
@@ -171,7 +191,7 @@ def get_not_living(data: GedcomData) -> List[Individual]:
 
     Includes individuals with living == False and living == None.
     """
-    return sorted([i for i in data.individuals.values() if i.living is not True], key=lambda i: i.id)
+    return sorted([i for i in data.individuals.values() if i.living is not True], key=lambda i: id_sort_key(i.id))
 
 
 def get_ancestors(
@@ -250,8 +270,8 @@ def get_connected_components(data: GedcomData) -> List[List[Individual]]:
         root = find(indi.id)
         comps.setdefault(root, []).append(indi)
     result: List[List[Individual]] = []
-    for root in sorted(comps):
-        result.append(sorted(comps[root], key=lambda i: i.id))
+    for root in sorted(comps, key=id_sort_key):
+        result.append(sorted(comps[root], key=lambda i: id_sort_key(i.id)))
     return result
 
 
