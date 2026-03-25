@@ -30,6 +30,17 @@ class Individual:
     sex: Literal["M", "F", "U"] = "U"
     family_ids_as_child: list[str] = field(default_factory=list)
     family_ids_as_spouse: list[str] = field(default_factory=list)
+    living: bool | None = None
+
+    """
+    living: bool | None
+
+    Indicates the parsed value of a custom `_LIVING` tag on the INDI record.
+
+    - `True`  : `_LIVING` tag present with a truthy value (y, yes, true, 1)
+    - `False` : `_LIVING` tag present with a non-empty, non-truthy value
+    - `None`  : `_LIVING` tag absent or present with an empty/whitespace value
+    """
 
 
 @dataclass

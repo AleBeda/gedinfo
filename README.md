@@ -2,6 +2,8 @@
 
 A command-line utility for querying GEDCOM genealogy files.
 
+Version: 0.4.0
+
 Installation
 ------------
 
@@ -238,6 +240,27 @@ gedinfo roots [options] <gedcom_file>
 - `-u, --unknowns`: Include roots with no name at all (no NAME tag in the GEDCOM file). By default, nameless individuals are suppressed.
 - `-a, --all`: Include all roots without any suppression. Equivalent to combining `--spouse` and `--unknowns`. Cannot be combined with `--spouse` or `--unknowns`.
 - (default): Print ID and name pairs in the format `ID	Name`
+
+### living
+
+List individuals with a `_LIVING` flag.
+
+**Syntax:**
+```
+gedinfo living [options] <gedcom_file>
+```
+
+**Arguments:**
+- `<gedcom_file>`: Path to the GEDCOM file
+
+**Options:**
+- `-v, --invert`: Invert the match and list individuals who are not
+  explicitly marked as living (includes those with `_LIVING` set to N/no/false,
+  those with an empty `_LIVING` value, and those with no `_LIVING` tag).
+
+**Output:**
+Prints one line per matching individual using the same output modes as other
+commands (use `-i`/`-n`/output options where available).
 
 **Output:**
 Root individuals sorted by ID.

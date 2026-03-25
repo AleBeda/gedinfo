@@ -73,3 +73,16 @@ def test_mutable_defaults_not_shared():
     y = Family(id="@F004@")
     x.child_ids.append("@I000@")
     assert y.child_ids == []
+
+
+def test_individual_living_default():
+    indi = Individual(id="@I001@")
+    assert indi.living is None
+
+
+def test_individual_living_true_false_and_equality():
+    a = Individual(id="@I010@", living=True)
+    b = Individual(id="@I010@", living=True)
+    c = Individual(id="@I010@", living=None)
+    assert a == b
+    assert a != c

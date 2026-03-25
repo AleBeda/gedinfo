@@ -14,6 +14,13 @@ from typing import Optional, Tuple
 from .models import Family, GedcomData, Individual
 
 
+# truthy set for _LIVING parsing
+_LIVING_TRUTHY: frozenset[str] = frozenset({
+    "y",
+    "yes",
+    "true",
+    "1",
+})
 class GedcomParseError(Exception):
     """Raised when a GEDCOM file cannot be parsed.
 
@@ -135,6 +142,14 @@ def _populate_individual(indi: Individual, tag: str, value: str) -> None:
     elif tag == "FAMS":
         if value:
             indi.family_ids_as_spouse.append(value.strip())
+    elif tag == "_LIVING":
+        raw = value.strip()
+        if raw == "":
+            indi.living = None
+        elif raw.lower() in _LIVING_TRUTHY:
+            indi.living = True
+        else:
+            indi.living = False
     # ignore other tags
 
 

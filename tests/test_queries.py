@@ -447,3 +447,11 @@ def test_apply_root_filters_preserves_order():
 def test_apply_root_filters_empty():
     data = load("spouse.ged")
     assert apply_root_filters(data, []) == []
+
+
+def test_get_living_and_not_living():
+    data = load("living.ged")
+    living = [i.id for i in __import__("gedinfo").queries.get_living(data)]
+    not_living = [i.id for i in __import__("gedinfo").queries.get_not_living(data)]
+    assert set(living) == {"@I001@", "@I002@", "@I003@", "@I009@", "@I010@", "@I011@"}
+    assert set(not_living) == {"@I004@", "@I005@", "@I006@", "@I007@", "@I008@"}

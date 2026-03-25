@@ -130,3 +130,39 @@ def test_parse_encoding_replace(tmp_path):
     f.write_bytes(bad)
     data = parser.parse(f)
     assert len(data.individuals) == 0
+
+
+def test_parse_living_fixture():
+    data = load("living.ged")
+    assert data.individuals["@I001@"].living is True
+    assert data.individuals["@I002@"].living is True
+    assert data.individuals["@I003@"].living is True
+    assert data.individuals["@I004@"].living is False
+    assert data.individuals["@I005@"].living is False
+    assert data.individuals["@I006@"].living is False
+    assert data.individuals["@I007@"].living is None
+    assert data.individuals["@I008@"].living is None
+    assert data.individuals["@I009@"].living is True
+    assert data.individuals["@I010@"].living is True
+    assert data.individuals["@I011@"].living is True
+
+
+def test_parse_living_default_on_existing_fixtures():
+    data = load("simple.ged")
+    for indi in data.individuals.values():
+        assert indi.living is None
+
+
+def test_parse_living_last_write_wins(tmp_path):
+    content = (
+        "0 HEAD\n"
+        "0 @I001@ INDI\n"
+        "1 NAME Test /Person/\n"
+        "1 _LIVING Y\n"
+        "1 _LIVING N\n"
+        "0 TRLR\n"
+    )
+    f = tmp_path / "twice.ged"
+    f.write_text(content)
+    data = parser.parse(f)
+    assert data.individuals["@I001@"].living is False

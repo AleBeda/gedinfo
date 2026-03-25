@@ -15,6 +15,7 @@ from ..queries import (
     get_leaves,
     get_connected_components,
     apply_root_filters,
+    get_living,
 )
 import sys
 
@@ -76,6 +77,7 @@ def run(args: Any) -> None:
     leaves = len(get_leaves(data))
     no_name = count_no_name(data)
     incomplete = count_incomplete_name(data)
+    living_count = len(get_living(data))
 
     total_families = len(data.families)
     unnamed_parents = count_families_with_unnamed_parent(data)
@@ -103,6 +105,7 @@ def run(args: Any) -> None:
     print(f"  Leaves (no children): {leaves}")
     print(f"  No name: {no_name}")
     print(f"  Incomplete name: {incomplete}")
+    print(f"  Living (_LIVING = Y): {living_count}")
     print()
     print(f"Families: {total_families}")
     print(f"  Families with unnamed/incomplete parent: {unnamed_parents}")

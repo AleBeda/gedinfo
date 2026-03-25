@@ -158,6 +158,22 @@ def get_leaves(data: GedcomData) -> List[Individual]:
     return sorted(leaves, key=lambda i: i.id)
 
 
+def get_living(data: GedcomData) -> List[Individual]:
+    """Return individuals whose _LIVING field is True, sorted by ID.
+
+    Only individuals with living == True are included.
+    """
+    return sorted([i for i in data.individuals.values() if i.living is True], key=lambda i: i.id)
+
+
+def get_not_living(data: GedcomData) -> List[Individual]:
+    """Return individuals whose _LIVING field is not True, sorted by ID.
+
+    Includes individuals with living == False and living == None.
+    """
+    return sorted([i for i in data.individuals.values() if i.living is not True], key=lambda i: i.id)
+
+
 def get_ancestors(
     data: GedcomData, indi_id: str, max_generations: Optional[int] = None
 ) -> List[str]:

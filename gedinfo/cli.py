@@ -33,6 +33,7 @@ def main() -> None:
         leaves as leaves_cmd,
         stat as stat_cmd,
         disjoint as disjoint_cmd,
+        living as living_cmd,
     )
 
     name_cmd.register(subparsers)
@@ -43,11 +44,12 @@ def main() -> None:
     leaves_cmd.register(subparsers)
     stat_cmd.register(subparsers)
     disjoint_cmd.register(subparsers)
+    living_cmd.register(subparsers)
 
     args = parser.parse_args()
 
     if args.version:
-        print("gedinfo 0.3.0")
+        print("gedinfo 0.4.0")
         sys.exit(0)
 
     if not args.command:
