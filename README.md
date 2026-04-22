@@ -408,6 +408,81 @@ Charlie /Brown/
 Diana /Brown/
 ```
 
+### givennames
+
+Print a frequency count of given names found among the ancestors of an individual.
+Traverses ancestors using the same generation-limited BFS as the `ancestors` command.
+Results are grouped into three sections — Masculine names, Feminine names, Unknown sex —
+and empty sections are omitted. Within each section, names are sorted descending by count,
+then ascending alphabetically.
+
+**Syntax:**
+```
+gedinfo givennames [options] <indi_id> <gedcom_file>
+```
+
+**Arguments:**
+- `<indi_id>`: The GEDCOM individual ID (with or without @ delimiters, e.g., I001 or @I001@)
+- `<gedcom_file>`: Path to the GEDCOM file
+
+**Options:**
+- `-g N, --generations N`: Limit traversal to N generations (N ≥ 1). Generation 1 is the
+  subject, generation 2 is parents, generation 3 is grandparents, etc. If not specified,
+  traverses all generations.
+- `-s, --second`: Also include names from the `NAM2` GEDCOM field (second/additional names).
+- `-e, --hebrew`: Also include names from the `NAMH` GEDCOM field (Hebrew names).
+- `-a, --all_names`: Equivalent to `--second --hebrew`.
+- `-f, --fuzzy`: Group name variants together using the bundled variants file
+  (`gedinfo/data/name_variants.txt`). When multiple variants of the same name appear, they
+  are counted and reported on one line with individual variant counts in parentheses.
+
+**Output:**
+Prints output lines in the format `<count>\t<name>`, grouped under section headers.
+All names are lowercase.
+
+Without `--fuzzy`:
+```
+Masculine names:
+3	moshe
+2	abraham
+
+Feminine names:
+4	sarah
+1	miriam
+```
+
+With `--fuzzy` (when variants are grouped):
+```
+Masculine names:
+3	abraham  (abraham: 2, abram: 1)
+```
+Names with no known variants print without the parenthetical.
+
+**Name variants file:**
+The bundled variants file at `gedinfo/data/name_variants.txt` contains Sephardic/Ashkenazic
+Jewish name equivalences and can be edited directly. Each non-comment line is one equivalence
+group of space-separated variants. Lines starting with or containing `#` are comments.
+
+**Examples:**
+
+```bash
+# Basic usage: given-name counts for all ancestors
+$ gedinfo givennames I001 tests/fixtures/simple.ged
+Masculine names:
+2	john
+1	james
+
+Feminine names:
+3	mary
+1	anne
+
+# Fuzzy grouping with secondary names included
+$ gedinfo givennames -f -s I001 tests/fixtures/simple.ged
+Masculine names:
+3	john  (john: 2, yohanan: 1)
+1	james
+```
+
 Testing
 -------
 

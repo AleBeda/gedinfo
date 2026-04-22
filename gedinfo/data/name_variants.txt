@@ -1,0 +1,35 @@
+# ── Masculine names ─────────────────────────────────────────────────────────
+
+abraham abram abramo avraham avram
+aharon aaron aron
+avigdor victor
+benyamin benjamin beniamino
+david davide
+eliyahu elijah elia elie
+gavriel gabriel gabriele
+itzhak itzchak yitzhak isaac isaak isacco
+mordechai mordecai
+moshe mose mosè moise moses
+reuven reuben ruben
+shlomo solomon salomone
+yaakov yakov yacob jacob yaacov ya'akov giacobbe yitzchak
+yisrael israel israele
+yosef yoseph giuseppe joseph
+
+
+# ── Feminine names ───────────────────────────────────────────────────────────
+
+devorah deborah debora
+esther ester hester
+leah lea lia
+malka malkà regina
+mazaltov mazaltob fortunata
+miriam mirjam myriam
+naomi noemi
+rachel rachele
+rivka rebecca rebeka
+ruth rut
+sarah sara
+shoshana susanna susanne
+tamar tamara
+yocheved yochebed

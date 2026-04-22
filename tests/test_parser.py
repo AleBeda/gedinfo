@@ -166,3 +166,24 @@ def test_parse_living_last_write_wins(tmp_path):
     f.write_text(content)
     data = parser.parse(f)
     assert data.individuals["@I001@"].living is False
+
+
+def test_parse_givn(tmp_path):
+    f = tmp_path / "t.ged"
+    f.write_text("0 HEAD\n0 @I1@ INDI\n1 NAME John /Doe/\n2 GIVN John\n0 TRLR\n")
+    data = parser.parse(str(f))
+    assert data.individuals["@I1@"].givn == ["John"]
+
+
+def test_parse_nam2(tmp_path):
+    f = tmp_path / "t.ged"
+    f.write_text("0 HEAD\n0 @I1@ INDI\n1 NAME Moshe /X/\n1 NAM2 Raphael\n0 TRLR\n")
+    data = parser.parse(str(f))
+    assert data.individuals["@I1@"].nam2 == ["Raphael"]
+
+
+def test_parse_namh(tmp_path):
+    f = tmp_path / "t.ged"
+    f.write_text("0 HEAD\n0 @I1@ INDI\n1 NAME X /Y/\n1 NAMH יוחנן\n0 TRLR\n")
+    data = parser.parse(str(f))
+    assert data.individuals["@I1@"].namh == ["יוחנן"]

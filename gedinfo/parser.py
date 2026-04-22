@@ -150,6 +150,15 @@ def _populate_individual(indi: Individual, tag: str, value: str) -> None:
             indi.living = True
         else:
             indi.living = False
+    elif tag == "GIVN":
+        if value.strip():
+            indi.givn.append(value.strip())
+    elif tag == "NAM2":
+        if value.strip():
+            indi.nam2.append(value.strip())
+    elif tag == "NAMH":
+        if value.strip():
+            indi.namh.append(value.strip())
     # ignore other tags
 
 

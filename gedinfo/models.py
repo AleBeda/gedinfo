@@ -22,6 +22,10 @@ class Individual:
         sex: One of ``"M"``, ``"F"`` or ``"U"`` (unknown).
         family_ids_as_child: List of family IDs where the individual is a child.
         family_ids_as_spouse: List of family IDs where the individual is a spouse.
+        living: Parsed value of ``_LIVING`` tag; ``True``, ``False``, or ``None``.
+        givn: Values of all ``GIVN`` sub-tags (additional given-name fields).
+        nam2: Values of all ``NAM2`` tags (second/additional name fields).
+        namh: Values of all ``NAMH`` tags (Hebrew name fields).
     """
 
     id: str
@@ -31,16 +35,9 @@ class Individual:
     family_ids_as_child: list[str] = field(default_factory=list)
     family_ids_as_spouse: list[str] = field(default_factory=list)
     living: bool | None = None
-
-    """
-    living: bool | None
-
-    Indicates the parsed value of a custom `_LIVING` tag on the INDI record.
-
-    - `True`  : `_LIVING` tag present with a truthy value (y, yes, true, 1)
-    - `False` : `_LIVING` tag present with a non-empty, non-truthy value
-    - `None`  : `_LIVING` tag absent or present with an empty/whitespace value
-    """
+    givn: list[str] = field(default_factory=list)   # values of all GIVN sub-tags
+    nam2: list[str] = field(default_factory=list)   # values of all NAM2 tags
+    namh: list[str] = field(default_factory=list)   # values of all NAMH tags
 
 
 @dataclass

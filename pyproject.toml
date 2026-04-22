@@ -1,12 +1,15 @@
 [project]
 name = "gedinfo"
-version = "0.4.2"
+version = "0.5.0"
 requires-python = ">=3.10"
 description = "GEDCOM query utility"
 dependencies = []
 
 [tool.setuptools]
 packages = {find = {where = ["."]}}
+
+[tool.setuptools.package-data]
+gedinfo = ["data/*.txt"]
 
 [project.optional-dependencies]
 dev = ["pytest", "pytest-cov", "ruff", "black"]

@@ -1,0 +1,38 @@
+0 HEAD
+0 @I001@ INDI
+1 NAME Probe /Test/
+1 SEX M
+1 FAMC @F001@
+0 @I002@ INDI
+1 NAME Abraham /Cohen/
+1 GIVN Avraham
+1 SEX M
+1 FAMC @F002@
+0 @I003@ INDI
+1 NAME Sarah /Levi/
+1 SEX F
+1 FAMC @F002@
+0 @I004@ INDI
+1 NAME Moshe /Green/
+1 NAM2 Raphael
+1 SEX M
+0 @I005@ INDI
+1 NAME Miriam /Green/
+1 NAMH מרים
+1 SEX F
+0 @I006@ INDI
+1 NAME Abram /Cohen/
+1 SEX M
+0 @I007@ INDI
+1 NAME Unknown /Test/
+1 SEX U
+0 @F001@ FAM
+1 HUSB @I002@
+1 WIFE @I003@
+1 CHIL @I001@
+0 @F002@ FAM
+1 HUSB @I004@
+1 WIFE @I005@
+1 CHIL @I002@
+1 CHIL @I006@
+0 TRLR
