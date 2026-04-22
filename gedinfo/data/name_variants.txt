@@ -1,35 +1,59 @@
 # ── Masculine names ─────────────────────────────────────────────────────────
 
 abraham abram abramo avraham avram
-aharon aaron aron
+aharon aaron aron aronne
+angelo angiolo malach
 avigdor victor
-benyamin benjamin beniamino
+benyamin benjamin beniamin beniamino
+daniel daniele
 david davide
-eliyahu elijah elia elie
+eliyahu eliahu elijah elia elie
+emanuel emmanuel emanuele
 gavriel gabriel gabriele
-itzhak itzchak yitzhak isaac isaak isacco
-mordechai mordecai
-moshe mose mosè moise moses
-reuven reuben ruben
-shlomo solomon salomone
+haim haym chaim hai hay vito vita
+irmiau iyrmiau jeremiah geremia
+itzhak itzchak yitzhak isaac isaak isach isache isaque isacco
+leon leone
+mordechai mordecai mordekhai
+moshe moshè mose mosè moise moisè moses moseh
+natan nattan nathan
+raphael rafael raffael raffaele raffaello
+reuven reuben ruben rubino
+shabbatai shabbetai shabtai sabato
+samuel samuele shmuel
+salvador salvator
+shlomo solomon salomon salamon salomone salman zalman
+tobia tuvia
 yaakov yakov yacob jacob yaacov ya'akov giacobbe yitzchak
+yeudah yeuda juda judah jeuda giuda
 yisrael israel israele
+yohanan yochanan
 yosef yoseph giuseppe joseph
 
 
 # ── Feminine names ───────────────────────────────────────────────────────────
 
+abigail abigaille avigail avigayil
+amalia amalya
+batsheva batseva
+bella bellina
+bianca blanca branca
+bruna brunetta
 devorah deborah debora
-esther ester hester
+esther ester hester stella
+hannah hanna chana hana anna
 leah lea lia
 malka malkà regina
 mazaltov mazaltob fortunata
-miriam mirjam myriam
+miriam mirjam myriam meriam meriem maria mariuccia marietta
 naomi noemi
-rachel rachele
-rivka rebecca rebeka
+penina pnina perla
+rachel rachele ragel raquel
+rivka rivkah ribca ricca rica rebecca rebeka
 ruth rut
 sarah sara
 shoshana susanna susanne
+simha simcha allegra
 tamar tamara
+tova toba bona
 yocheved yochebed
