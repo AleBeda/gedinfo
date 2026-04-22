@@ -28,7 +28,7 @@ def test_cli_version(monkeypatch, capsys):
         ["--version", "name", "@I001@", str(FIXTURES / "simple.ged")],
     )
     assert code == 0
-    assert "gedinfo 0.4.1" in out
+    assert "gedinfo 0.5.0" in out
     # ensure subcommand isn't executed when version flag is present
     assert "John Smith" not in out
 
