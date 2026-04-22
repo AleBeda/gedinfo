@@ -33,3 +33,6 @@ dev_docs/
 # Misc
 *.log
 
+
+# Claude Code internal files
+.claude/
