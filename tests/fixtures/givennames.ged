@@ -8,18 +8,22 @@
 1 GIVN Avraham
 1 SEX M
 1 FAMC @F002@
+1 FAMS @F001@
 0 @I003@ INDI
 1 NAME Sarah /Levi/
 1 SEX F
 1 FAMC @F002@
+1 FAMS @F001@
 0 @I004@ INDI
 1 NAME Moshe /Green/
 1 NAM2 Raphael
 1 SEX M
+1 FAMS @F002@
 0 @I005@ INDI
 1 NAME Miriam /Green/
 1 NAMH מרים
 1 SEX F
+1 FAMS @F002@
 0 @I006@ INDI
 1 NAME Abram /Cohen/
 1 SEX M

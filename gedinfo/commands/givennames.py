@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Any
 
 from ..parser import parse
-from ..queries import get_ancestor_details
+from ..queries import get_ancestor_details, get_descendant_details
 
 
 def _split_field(raw: str) -> list[str]:
@@ -60,14 +60,18 @@ def _collect_names(
     max_generations: int | None,
     use_second: bool,
     use_hebrew: bool,
+    direction: str = "desc",
 ) -> tuple[Counter, Counter, Counter]:
-    """Collect given-name counts for ancestors, split by sex.
+    """Collect given-name counts for relatives in the chosen direction, split by sex.
 
     Returns (masculine_counter, feminine_counter, unknown_counter).
-    Each counter maps lowercase name -> occurrence count across all ancestors.
-    An ancestor contributes each distinct name (from applicable fields) once.
+    Each counter maps lowercase name -> occurrence count across all relatives.
+    A relative contributes each distinct name (from applicable fields) once.
     """
-    records = get_ancestor_details(data, indi_id, max_generations=max_generations)
+    if direction == "asc":
+        records = get_ancestor_details(data, indi_id, max_generations=max_generations)
+    else:
+        records = get_descendant_details(data, indi_id, max_generations=max_generations)
 
     masc: Counter = Counter()
     fem: Counter = Counter()
@@ -181,6 +185,12 @@ def register(subparsers: argparse._SubParsersAction) -> None:  # type: ignore
         action="store_true", default=False,
         help="Group name variants together using the bundled variants file",
     )
+    sub.add_argument(
+        "-d", "--direction",
+        choices=["asc", "desc"],
+        default="desc",
+        help="Traversal direction: 'asc' for ancestors, 'desc' for descendants (default: desc)",
+    )
     sub.add_argument("indi_id", help="Individual ID to inspect")
     sub.add_argument("gedcom_file", help="Path to GEDCOM file")
     sub.set_defaults(func=run)
@@ -198,7 +208,7 @@ def run(args: Any) -> None:
 
     data = parse(args.gedcom_file)
 
-    masc, fem, unkn = _collect_names(data, args.indi_id, g, use_second, use_hebrew)
+    masc, fem, unkn = _collect_names(data, args.indi_id, g, use_second, use_hebrew, args.direction)
 
     variants: dict[str, str] = {}
     if args.fuzzy:

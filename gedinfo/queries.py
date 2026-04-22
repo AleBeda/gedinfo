@@ -335,6 +335,53 @@ def get_ancestor_details(
     return results
 
 
+def get_descendant_details(
+    data: GedcomData, indi_id: str, max_generations: Optional[int] = None
+) -> List[dict]:
+    """BFS downward from ``indi_id``, returning details for each descendant.
+
+    Each returned dict has keys:
+      - 'individual': Individual
+      - 'generation': int (2 for children, 3 for grandchildren, ...)
+      - 'path': str (currently always the empty string — reserved for future use)
+
+    The subject (generation 1) is NOT included. Raises ``ValueError`` if
+    ``indi_id`` is unknown. Traversal is cycle-safe (tracks visited IDs).
+    If ``max_generations`` is supplied, traversal stops when the generation
+    counter reaches that limit (same semantics as ``get_ancestor_details``).
+    """
+    if max_generations is not None and max_generations < 1:
+        raise ValueError("max_generations must be >= 1")
+    root = find_by_id(data, indi_id)
+    if root is None:
+        raise ValueError(f"Unknown individual ID: {indi_id}")
+
+    results: List[dict] = []
+    visited: Set[str] = set()
+    q: deque = deque()
+    q.append((root, 1, ""))
+    visited.add(root.id)
+
+    while q:
+        current, gen, path = q.popleft()
+        if gen > 1:
+            results.append({"individual": current, "generation": gen, "path": path})
+        if max_generations is not None and gen >= max_generations:
+            continue
+        for fam_id in current.family_ids_as_spouse:
+            fam = data.families.get(fam_id)
+            if not fam:
+                continue
+            for child_id in fam.child_ids:
+                child = data.individuals.get(child_id)
+                if not child or child.id in visited:
+                    continue
+                visited.add(child.id)
+                q.append((child, gen + 1, ""))
+
+    return results
+
+
 def count_no_name(data: GedcomData) -> int:
     """Number of individuals with neither first nor last name."""
     return sum(

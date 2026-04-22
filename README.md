@@ -410,11 +410,10 @@ Diana /Brown/
 
 ### givennames
 
-Print a frequency count of given names found among the ancestors of an individual.
-Traverses ancestors using the same generation-limited BFS as the `ancestors` command.
-Results are grouped into three sections — Masculine names, Feminine names, Unknown sex —
-and empty sections are omitted. Within each section, names are sorted descending by count,
-then ascending alphabetically.
+Print a frequency count of given names found among relatives in the chosen direction
+(ancestors or descendants). Results are grouped into three sections — Masculine names,
+Feminine names, Unknown sex — and empty sections are omitted. Within each section, names
+are sorted descending by count, then ascending alphabetically.
 
 **Syntax:**
 ```
@@ -427,14 +426,16 @@ gedinfo givennames [options] <indi_id> <gedcom_file>
 
 **Options:**
 - `-g N, --generations N`: Limit traversal to N generations (N ≥ 1). Generation 1 is the
-  subject, generation 2 is parents, generation 3 is grandparents, etc. If not specified,
-  traverses all generations.
+  subject, generation 2 is parents/children, generation 3 is grandparents/grandchildren, etc.
+  If not specified, traverses all generations.
 - `-s, --second`: Also include names from the `NAM2` GEDCOM field (second/additional names).
 - `-e, --hebrew`: Also include names from the `NAMH` GEDCOM field (Hebrew names).
 - `-a, --all_names`: Equivalent to `--second --hebrew`.
 - `-f, --fuzzy`: Group name variants together using the bundled variants file
   (`gedinfo/data/name_variants.txt`). When multiple variants of the same name appear, they
   are counted and reported on one line with individual variant counts in parentheses.
+- `-d DIRECTION, --direction DIRECTION`: Traversal direction: `asc` for ancestors, `desc` for
+  descendants (default: `desc`).
 
 **Output:**
 Prints output lines in the format `<count>\t<name>`, grouped under section headers.
@@ -466,8 +467,11 @@ group of space-separated variants. Lines starting with or containing `#` are com
 **Examples:**
 
 ```bash
-# Basic usage: given-name counts for all ancestors
+# Descendants (default): given-name counts for all descendants of I001
 $ gedinfo givennames I001 tests/fixtures/simple.ged
+
+# Ancestors: given-name counts for all ancestors of I001
+$ gedinfo givennames --direction asc I001 tests/fixtures/simple.ged
 Masculine names:
 2	john
 1	james
@@ -476,8 +480,8 @@ Feminine names:
 3	mary
 1	anne
 
-# Fuzzy grouping with secondary names included
-$ gedinfo givennames -f -s I001 tests/fixtures/simple.ged
+# Fuzzy grouping with secondary names, ancestors only
+$ gedinfo givennames --direction asc -f -s I001 tests/fixtures/simple.ged
 Masculine names:
 3	john  (john: 2, yohanan: 1)
 1	james
@@ -502,17 +506,3 @@ linting run:
 ruff check gedinfo/ tests/
 black --check gedinfo/ tests/
 ```
-
-Project status
---------------
-
-Implemented so far:
-
-- Project skeleton, packaging and tests
-- Domain model (`gedinfo/models.py`)
-- GEDCOM parser (`gedinfo/parser.py`) and parsing tests
-- Query utilities (`gedinfo/queries.py`) and tests
-- CLI skeleton (`gedinfo/cli.py`) and basic commands: `name`, `id`, `names`
-- `ancestors`, `roots`, `leaves`, and `stat` commands (implemented)
-
-Project is now feature-complete with all commands (`name`, `id`, `names`, `ancestors`, `roots`, `leaves`, `stat`, `disjoint`) implemented and tested.  Final polishing included edge-case tests, coverage audit (now >95%), linting, formatting, and packaging checks.
