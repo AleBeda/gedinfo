@@ -2,19 +2,21 @@
 
 A command-line utility for querying GEDCOM genealogy files.
 
-Version: 0.4.1
+Version: 0.4.2
 
 Installation
 ------------
 
-Install the package (editable/dev mode for development):
+Installation is optional. You can run `gedinfo` directly from the repository using `./bin/gedinfo`.
 
+To install the package (for convenience or development):
+
+**Editable/dev mode** (recommended for development):
 ```bash
 pip install -e ".[dev]"
 ```
 
-Or install the package into the active environment:
-
+**Standard installation**:
 ```bash
 pip install .
 ```
@@ -22,10 +24,11 @@ pip install .
 Running
 -------
 
-Once installed, the `gedinfo` command is available on your PATH. During
-development you can either invoke the module directly or use the provided
-wrapper script at `bin/gedinfo` (make sure `bin` is on your PATH or call it
-with `./bin/gedinfo`).
+You can run `gedinfo` in several ways:
+
+- **Without installation**: Use the wrapper script directly: `./bin/gedinfo` or add `bin` to your PATH
+- **After installation**: Once installed via pip, the `gedinfo` command is available on your PATH
+- **As a module**: Invoke it directly with `python -m gedinfo`
 
 ```
 gedinfo [--version] [--debug] <command> [options] <arguments>
