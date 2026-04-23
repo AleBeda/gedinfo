@@ -140,17 +140,17 @@ def _print_section(
     print(f"{label}:")
     if not fuzzy:
         for name, count in sorted(counter.items(), key=lambda x: (-x[1], x[0])):
-            print(f"{count}\t{name}")
+            print(f"{count}\t{name.capitalize()}")
     else:
         for total, canonical, var_counts in _apply_fuzzy(counter, variants):
             if len(var_counts) == 1:
-                print(f"{total}\t{canonical}")
+                print(f"{total}\t{canonical.capitalize()}")
             else:
                 detail = ", ".join(
-                    f"{v}: {c}"
+                    f"{v.capitalize()}: {c}"
                     for v, c in sorted(var_counts.items(), key=lambda x: -x[1])
                 )
-                print(f"{total}\t{canonical}  ({detail})")
+                print(f"{total}\t{canonical.capitalize()}  ({detail})")
     print()
 
 

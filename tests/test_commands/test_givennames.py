@@ -20,24 +20,24 @@ def test_basic_output():
     assert code == 0
     assert "Masculine names:" in out
     assert "Feminine names:" in out
-    # I002 contributes "abraham" (from first_name) and "avraham" (from GIVN) — distinct tokens
-    assert "abraham" in out
-    assert "avraham" in out
-    # I004 contributes "moshe"
-    assert "moshe" in out
-    # I003 contributes "sarah"
-    assert "sarah" in out
-    # I005 contributes "miriam"
-    assert "miriam" in out
+    # I002 contributes "Abraham" (from first_name) and "Avraham" (from GIVN) — distinct tokens
+    assert "Abraham" in out
+    assert "Avraham" in out
+    # I004 contributes "Moshe"
+    assert "Moshe" in out
+    # I003 contributes "Sarah"
+    assert "Sarah" in out
+    # I005 contributes "Miriam"
+    assert "Miriam" in out
     # Counts are 1 per individual — each name appears with count 1
     lines = out.splitlines()
-    masc_lines = [l for l in lines if "\t" in l and l.split("\t")[1] == "abraham"]
+    masc_lines = [l for l in lines if "\t" in l and l.split("\t")[1] == "Abraham"]
     assert masc_lines and masc_lines[0].split("\t")[0] == "1"
-    moshe_lines = [l for l in lines if "\t" in l and l.split("\t")[1] == "moshe"]
+    moshe_lines = [l for l in lines if "\t" in l and l.split("\t")[1] == "Moshe"]
     assert moshe_lines and moshe_lines[0].split("\t")[0] == "1"
-    sarah_lines = [l for l in lines if "\t" in l and l.split("\t")[1] == "sarah"]
+    sarah_lines = [l for l in lines if "\t" in l and l.split("\t")[1] == "Sarah"]
     assert sarah_lines and sarah_lines[0].split("\t")[0] == "1"
-    miriam_lines = [l for l in lines if "\t" in l and l.split("\t")[1] == "miriam"]
+    miriam_lines = [l for l in lines if "\t" in l and l.split("\t")[1] == "Miriam"]
     assert miriam_lines and miriam_lines[0].split("\t")[0] == "1"
 
 
@@ -54,14 +54,14 @@ def test_g2_parents_only():
     assert code == 0
     assert "Masculine names:" in out
     assert "Feminine names:" in out
-    # I002 (M): abraham, avraham
-    assert "abraham" in out
-    assert "avraham" in out
-    # I003 (F): sarah
-    assert "sarah" in out
+    # I002 (M): Abraham, Avraham
+    assert "Abraham" in out
+    assert "Avraham" in out
+    # I003 (F): Sarah
+    assert "Sarah" in out
     # I004/I005 not included
-    assert "moshe" not in out
-    assert "miriam" not in out
+    assert "Moshe" not in out
+    assert "Miriam" not in out
 
 
 def test_invalid_g_zero():
@@ -155,17 +155,17 @@ def test_fuzzy_groups_variants(tmp_path):
     f.write_text(content, encoding="utf-8")
     code, out, err = run_cmd(["givennames", "-f", "--direction", "asc", "@I001@", str(f)])
     assert code == 0
-    # "abraham" and "abram" are both variants of "abraham" in the variants file
-    # They should be grouped: total=2, canonical="abraham", with detail
-    assert "abraham" in out
+    # "Abraham" and "Abram" are both variants of "Abraham" in the variants file
+    # They should be grouped: total=2, canonical="Abraham", with detail
+    assert "Abraham" in out
     # The grouped line should show total count 2 and include both variants
     lines = out.splitlines()
-    abraham_lines = [l for l in lines if "abraham" in l and "\t" in l]
+    abraham_lines = [l for l in lines if "Abraham" in l and "\t" in l]
     assert abraham_lines
     # Should show count 2 (both ancestors contribute)
     assert abraham_lines[0].startswith("2\t")
     # Since there are two variants, a parenthetical detail should appear
-    assert "abram" in abraham_lines[0]
+    assert "Abram" in abraham_lines[0]
 
 
 def test_fuzzy_single_variant(tmp_path):
@@ -188,9 +188,9 @@ def test_fuzzy_single_variant(tmp_path):
     f.write_text(content, encoding="utf-8")
     code, out, err = run_cmd(["givennames", "-f", "--direction", "asc", "@I001@", str(f)])
     assert code == 0
-    assert "zxqwerty" in out
+    assert "Zxqwerty" in out
     # No parenthetical detail for a name with only one variant
-    lines = [l for l in out.splitlines() if "zxqwerty" in l]
+    lines = [l for l in out.splitlines() if "Zxqwerty" in l]
     assert lines
     assert "(" not in lines[0]
 
@@ -216,9 +216,37 @@ def test_givn_deduplication(tmp_path):
     f.write_text(content, encoding="utf-8")
     code, out, err = run_cmd(["givennames", "--direction", "asc", "@I001@", str(f)])
     assert code == 0
-    lines = [l for l in out.splitlines() if "\t" in l and l.split("\t")[1] == "abraham"]
+    lines = [l for l in out.splitlines() if "\t" in l and l.split("\t")[1] == "Abraham"]
     assert lines
     # count should be 1, not 2 (deduplication within-individual via set)
+    assert lines[0].split("\t")[0] == "1"
+
+
+def test_givn_nam2_deduplication(tmp_path):
+    # When GIVN and NAM2 contain the same name, count should be 1 (not 2)
+    content = (
+        "0 HEAD\n"
+        "0 @I001@ INDI\n"
+        "1 NAME Probe /Test/\n"
+        "1 SEX M\n"
+        "1 FAMC @F001@\n"
+        "0 @I002@ INDI\n"
+        "1 NAME Solomon /Cohen/\n"
+        "1 GIVN Solomon\n"
+        "1 NAM2 Solomon\n"
+        "1 SEX M\n"
+        "0 @F001@ FAM\n"
+        "1 HUSB @I002@\n"
+        "1 CHIL @I001@\n"
+        "0 TRLR\n"
+    )
+    f = tmp_path / "dedup_nam2.ged"
+    f.write_text(content, encoding="utf-8")
+    code, out, err = run_cmd(["givennames", "--second", "--direction", "asc", "@I001@", str(f)])
+    assert code == 0
+    lines = [l for l in out.splitlines() if "\t" in l and l.split("\t")[1] == "Solomon"]
+    assert lines
+    # count should be 1, not 2 or 3 (cross-field deduplication)
     assert lines[0].split("\t")[0] == "1"
 
 
@@ -243,7 +271,7 @@ def test_unknown_sex_section(tmp_path):
     code, out, err = run_cmd(["givennames", "--direction", "asc", "@I001@", str(f)])
     assert code == 0
     assert "Unknown sex:" in out
-    assert "jordan" in out
+    assert "Jordan" in out
 
 
 def test_sibling_excluded():
@@ -253,7 +281,7 @@ def test_sibling_excluded():
     assert code == 0
     lines = out.splitlines()
     name_tokens = [l.split("\t")[1] for l in lines if "\t" in l]
-    assert "abram" not in name_tokens
+    assert "Abram" not in name_tokens
 
 
 def test_name_split_spaces(tmp_path):
@@ -276,8 +304,8 @@ def test_name_split_spaces(tmp_path):
     f.write_text(content, encoding="utf-8")
     code, out, err = run_cmd(["givennames", "--direction", "asc", "@I001@", str(f)])
     assert code == 0
-    assert "john" in out
-    assert "david" in out
+    assert "John" in out
+    assert "David" in out
 
 
 def test_blank_name_ignored(tmp_path):
@@ -309,10 +337,10 @@ def test_direction_desc_basic():
     code, out, err = run_cmd(["givennames", "@I004@", GED])
     assert code == 0
     assert "Masculine names:" in out
-    assert "abraham" in out      # from I002
-    assert "avraham" in out      # from I002's GIVN
-    assert "abram" in out        # from I006
-    assert "probe" in out        # from I001
+    assert "Abraham" in out      # from I002
+    assert "Avraham" in out      # from I002's GIVN
+    assert "Abram" in out        # from I006
+    assert "Probe" in out        # from I001
 
 
 def test_direction_desc_explicit():
@@ -346,9 +374,9 @@ def test_direction_desc_g2():
         ["givennames", "--direction", "desc", "-g", "2", "@I004@", GED]
     )
     assert code == 0
-    assert "abraham" in out   # I002
-    assert "abram" in out     # I006
-    assert "probe" not in out  # I001 is generation 3, excluded
+    assert "Abraham" in out   # I002
+    assert "Abram" in out     # I006
+    assert "Probe" not in out  # I001 is generation 3, excluded
 
 
 def test_direction_desc_subject_no_descendants():
