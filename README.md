@@ -2,7 +2,7 @@
 
 A command-line utility for querying GEDCOM genealogy files.
 
-Version: 0.6.1
+Version: 0.7.0
 
 Installation
 ------------
@@ -428,7 +428,9 @@ gedinfo givennames [options] <indi_id> <gedcom_file>
 - `-g N, --generations N`: Limit traversal to N generations (N ≥ 1). Generation 1 is the
   subject, generation 2 is parents/children, generation 3 is grandparents/grandchildren, etc.
   If not specified, traverses all generations.
-- `-s, --second`: Also include names from the `NAM2` GEDCOM field (second/additional names).
+- `-2, --second`: Also include names from the `NAM2` GEDCOM field (second/additional names).
+- `-s MODE, --sort MODE`: Sort order within each section. `frequency` (default) sorts by count
+  descending, then alphabetically for ties. `name` sorts alphabetically regardless of count.
 - `-e, --hebrew`: Also include names from the `NAMH` GEDCOM field (Hebrew names).
 - `-a, --all_names`: Equivalent to `--second --hebrew`.
 - `-f, --fuzzy`: Group name variants together using the bundled variants file
@@ -439,23 +441,23 @@ gedinfo givennames [options] <indi_id> <gedcom_file>
 
 **Output:**
 Prints output lines in the format `<count>\t<name>`, grouped under section headers.
-All names are lowercase.
+Names are printed with an initial capital letter.
 
 Without `--fuzzy`:
 ```
 Masculine names:
-3	moshe
-2	abraham
+3	Moshe
+2	Abraham
 
 Feminine names:
-4	sarah
-1	miriam
+4	Sarah
+1	Miriam
 ```
 
 With `--fuzzy` (when variants are grouped):
 ```
 Masculine names:
-3	abraham  (abraham: 2, abram: 1)
+3	Abraham  (Abraham: 2, Abram: 1)
 ```
 Names with no known variants print without the parenthetical.
 
@@ -473,18 +475,28 @@ $ gedinfo givennames I001 tests/fixtures/simple.ged
 # Ancestors: given-name counts for all ancestors of I001
 $ gedinfo givennames --direction asc I001 tests/fixtures/simple.ged
 Masculine names:
-2	john
-1	james
+2	John
+1	James
 
 Feminine names:
-3	mary
-1	anne
+3	Mary
+1	Anne
+
+# Ancestors sorted alphabetically by name
+$ gedinfo givennames --direction asc --sort name I001 tests/fixtures/simple.ged
+Masculine names:
+1	James
+2	John
+
+Feminine names:
+1	Anne
+3	Mary
 
 # Fuzzy grouping with secondary names, ancestors only
-$ gedinfo givennames --direction asc -f -s I001 tests/fixtures/simple.ged
+$ gedinfo givennames --direction asc -f -2 I001 tests/fixtures/simple.ged
 Masculine names:
-3	john  (john: 2, yohanan: 1)
-1	james
+3	John  (John: 2, Yohanan: 1)
+1	James
 ```
 
 Testing

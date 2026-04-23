@@ -84,8 +84,8 @@ def test_second_flag():
 
 
 def test_second_flag_short():
-    # -s is the short form of --second
-    code, out, err = run_cmd(["givennames", "-s", "--direction", "asc", "@I001@", GED])
+    # -2 is the short form of --second
+    code, out, err = run_cmd(["givennames", "-2", "--direction", "asc", "@I001@", GED])
     assert code == 0
     assert "raphael" in out.lower()
 
@@ -390,5 +390,109 @@ def test_direction_invalid():
     # An invalid direction value should produce an error exit
     code, out, err = run_cmd(
         ["givennames", "--direction", "sideways", "@I001@", GED]
+    )
+    assert code != 0
+
+
+def test_sort_frequency_default():
+    # Default sort is by frequency; same output as explicit --sort frequency
+    code_default, out_default, _ = run_cmd(["givennames", "--direction", "asc", "@I001@", GED])
+    code_explicit, out_explicit, _ = run_cmd(
+        ["givennames", "--sort", "frequency", "--direction", "asc", "@I001@", GED]
+    )
+    assert code_default == 0
+    assert code_explicit == 0
+    assert out_default == out_explicit
+
+
+def test_sort_frequency_short():
+    # -s frequency is the short form of --sort frequency
+    code_long, out_long, _ = run_cmd(
+        ["givennames", "--sort", "frequency", "--direction", "asc", "@I001@", GED]
+    )
+    code_short, out_short, _ = run_cmd(
+        ["givennames", "-s", "frequency", "--direction", "asc", "@I001@", GED]
+    )
+    assert code_long == 0
+    assert code_short == 0
+    assert out_long == out_short
+
+
+def test_sort_name_order(tmp_path):
+    # With --sort name, names appear in alphabetical order regardless of frequency
+    content = (
+        "0 HEAD\n"
+        "0 @I001@ INDI\n"
+        "1 NAME Probe /Test/\n"
+        "1 SEX M\n"
+        "1 FAMC @F001@\n"
+        "1 FAMC @F002@\n"
+        "1 FAMC @F003@\n"
+        "0 @I002@ INDI\n"
+        "1 NAME Zebediah /X/\n"
+        "1 SEX M\n"
+        "0 @I003@ INDI\n"
+        "1 NAME Aaron /X/\n"
+        "1 SEX M\n"
+        "0 @I004@ INDI\n"
+        "1 NAME Moshe /X/\n"
+        "1 SEX M\n"
+        "0 @F001@ FAM\n"
+        "1 HUSB @I002@\n"
+        "1 CHIL @I001@\n"
+        "0 @F002@ FAM\n"
+        "1 HUSB @I003@\n"
+        "1 CHIL @I001@\n"
+        "0 @F003@ FAM\n"
+        "1 HUSB @I004@\n"
+        "1 CHIL @I001@\n"
+        "0 TRLR\n"
+    )
+    f = tmp_path / "sort_name.ged"
+    f.write_text(content, encoding="utf-8")
+    code, out, err = run_cmd(["givennames", "--sort", "name", "--direction", "asc", "@I001@", str(f)])
+    assert code == 0
+    lines = [l for l in out.splitlines() if "\t" in l]
+    names = [l.split("\t")[1] for l in lines]
+    assert names == sorted(names)
+    # Also verify all three names appear
+    assert "Aaron" in names
+    assert "Moshe" in names
+    assert "Zebediah" in names
+
+
+def test_sort_name_short(tmp_path):
+    # -s name is the short form of --sort name
+    content = (
+        "0 HEAD\n"
+        "0 @I001@ INDI\n"
+        "1 NAME Probe /Test/\n"
+        "1 SEX M\n"
+        "1 FAMC @F001@\n"
+        "0 @I002@ INDI\n"
+        "1 NAME Aaron /X/\n"
+        "1 SEX M\n"
+        "0 @F001@ FAM\n"
+        "1 HUSB @I002@\n"
+        "1 CHIL @I001@\n"
+        "0 TRLR\n"
+    )
+    f = tmp_path / "sort_name_short.ged"
+    f.write_text(content, encoding="utf-8")
+    code_long, out_long, _ = run_cmd(
+        ["givennames", "--sort", "name", "--direction", "asc", "@I001@", str(f)]
+    )
+    code_short, out_short, _ = run_cmd(
+        ["givennames", "-s", "name", "--direction", "asc", "@I001@", str(f)]
+    )
+    assert code_long == 0
+    assert code_short == 0
+    assert out_long == out_short
+
+
+def test_sort_invalid():
+    # An invalid sort value should produce an error exit
+    code, out, err = run_cmd(
+        ["givennames", "--sort", "random", "--direction", "asc", "@I001@", GED]
     )
     assert code != 0

@@ -134,15 +134,23 @@ def _print_section(
     counter: Counter,
     fuzzy: bool,
     variants: dict[str, str],
+    sort_mode: str = "frequency",
 ) -> None:
     if not counter:
         return
     print(f"{label}:")
     if not fuzzy:
-        for name, count in sorted(counter.items(), key=lambda x: (-x[1], x[0])):
+        if sort_mode == "name":
+            items = sorted(counter.items(), key=lambda x: x[0])
+        else:
+            items = sorted(counter.items(), key=lambda x: (-x[1], x[0]))
+        for name, count in items:
             print(f"{count}\t{name.capitalize()}")
     else:
-        for total, canonical, var_counts in _apply_fuzzy(counter, variants):
+        groups = _apply_fuzzy(counter, variants)
+        if sort_mode == "name":
+            groups.sort(key=lambda x: x[1])
+        for total, canonical, var_counts in groups:
             if len(var_counts) == 1:
                 print(f"{total}\t{canonical.capitalize()}")
             else:
@@ -166,9 +174,15 @@ def register(subparsers: argparse._SubParsersAction) -> None:  # type: ignore
         help="Limit traversal to N generations (>=1)",
     )
     sub.add_argument(
-        "-s", "--second",
+        "-2", "--second",
         action="store_true", default=False,
         help="Include names from NAM2 (second/additional names)",
+    )
+    sub.add_argument(
+        "-s", "--sort",
+        choices=["frequency", "name"],
+        default="frequency",
+        help="Sort output by 'frequency' (default) or 'name'",
     )
     sub.add_argument(
         "-e", "--hebrew",
@@ -214,6 +228,6 @@ def run(args: Any) -> None:
     if args.fuzzy:
         variants = _load_variants()
 
-    _print_section("Masculine names", masc, args.fuzzy, variants)
-    _print_section("Feminine names", fem, args.fuzzy, variants)
-    _print_section("Unknown sex", unkn, args.fuzzy, variants)
+    _print_section("Masculine names", masc, args.fuzzy, variants, args.sort)
+    _print_section("Feminine names", fem, args.fuzzy, variants, args.sort)
+    _print_section("Unknown sex", unkn, args.fuzzy, variants, args.sort)
