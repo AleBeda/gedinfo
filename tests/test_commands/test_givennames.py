@@ -168,6 +168,51 @@ def test_fuzzy_groups_variants(tmp_path):
     assert "Abram" in abraham_lines[0]
 
 
+def test_fuzzy_most_used_variant_as_representative(tmp_path):
+    # "abram" appears twice, "abraham" once → representative should be "Abram",
+    # not "Abraham" which is first in the variants file
+    content = (
+        "0 HEAD\n"
+        "0 @I001@ INDI\n"
+        "1 NAME Probe /Test/\n"
+        "1 SEX M\n"
+        "1 FAMC @F001@\n"
+        "1 FAMC @F002@\n"
+        "1 FAMC @F003@\n"
+        "0 @I002@ INDI\n"
+        "1 NAME Abram /X/\n"
+        "1 SEX M\n"
+        "0 @I003@ INDI\n"
+        "1 NAME Abram /Y/\n"
+        "1 SEX M\n"
+        "0 @I004@ INDI\n"
+        "1 NAME Abraham /Z/\n"
+        "1 SEX M\n"
+        "0 @F001@ FAM\n"
+        "1 HUSB @I002@\n"
+        "1 CHIL @I001@\n"
+        "0 @F002@ FAM\n"
+        "1 HUSB @I003@\n"
+        "1 CHIL @I001@\n"
+        "0 @F003@ FAM\n"
+        "1 HUSB @I004@\n"
+        "1 CHIL @I001@\n"
+        "0 TRLR\n"
+    )
+    f = tmp_path / "most_used_rep.ged"
+    f.write_text(content, encoding="utf-8")
+    code, out, err = run_cmd(["givennames", "-f", "--direction", "asc", "@I001@", str(f)])
+    assert code == 0
+    lines = [l for l in out.splitlines() if "\t" in l]
+    assert lines
+    assert lines[0].startswith("3\t")
+    # Representative is the most-used variant, not the variants-file canonical
+    name_part = lines[0].split("\t")[1].split("  ")[0]
+    assert name_part == "Abram"
+    # The less-common variant still appears in the detail
+    assert "Abraham" in lines[0]
+
+
 def test_fuzzy_single_variant(tmp_path):
     # A name not in the variants file should be printed without parenthetical
     content = (

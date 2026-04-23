@@ -112,8 +112,9 @@ def _apply_fuzzy(
 ) -> list[tuple[int, str, dict[str, int]]]:
     """Group counter by variant equivalence; return sorted list.
 
-    Each element: (total_count, canonical_name, {variant: count}).
-    Sorted descending by total, then ascending by canonical name.
+    Each element: (total_count, representative_name, {variant: count}).
+    The representative is the most-frequent variant; first-encountered breaks ties.
+    Sorted descending by total, then ascending by representative name.
     """
     grouped: dict[str, dict[str, int]] = {}
     for name, count in counter.items():
@@ -121,9 +122,11 @@ def _apply_fuzzy(
         grouped.setdefault(canonical, {})[name] = count
 
     result = []
-    for canonical, var_counts in grouped.items():
+    for var_counts in grouped.values():
         total = sum(var_counts.values())
-        result.append((total, canonical, var_counts))
+        # max() keeps the first-seen element on ties, matching tree-traversal order
+        representative = max(var_counts, key=lambda v: var_counts[v])
+        result.append((total, representative, var_counts))
 
     result.sort(key=lambda x: (-x[0], x[1]))
     return result
