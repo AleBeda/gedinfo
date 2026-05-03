@@ -28,7 +28,7 @@ def test_cli_version(monkeypatch, capsys):
         ["--version", "name", "@I001@", str(FIXTURES / "simple.ged")],
     )
     assert code == 0
-    assert "gedinfo 0.7.1" in out
+    assert "gedinfo 0.8.0" in out
     # ensure subcommand isn't executed when version flag is present
     assert "John Smith" not in out
 
@@ -92,4 +92,8 @@ def test_direct_command_runs(tmp_path):
             args = SimpleNamespace(gedcom_file=gedfile)
         else:
             args = SimpleNamespace(gedcom_file=gedfile, id=False, name=False)
+        mod.run(args)
+      # indi/males/females/nosex with default flags
+    for mod in (commands.indi, commands.males, commands.females, commands.nosex):
+        args = SimpleNamespace(gedcom_file=gedfile, id=False, name=False)
         mod.run(args)

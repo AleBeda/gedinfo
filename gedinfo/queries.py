@@ -11,7 +11,6 @@ from collections import deque
 from typing import List, Optional, Set
 import re
 
-
 # Regex to parse IDs like @I123@ or I123 -> prefix 'I', number 123
 _ID_RE = re.compile(r"^@?([A-Za-z]+)(\d+)@?$")
 
@@ -29,6 +28,7 @@ def id_sort_key(id_str: str):
         num = int(m.group(2))
         return (prefix, num)
     return (id_str, -1)
+
 
 from .models import GedcomData, Individual
 
@@ -123,7 +123,10 @@ def find_by_name(data: GedcomData, name: str) -> List[Individual]:
 
 
 def get_ancestor_last_names(
-    data: GedcomData, indi_id: str, max_generations: Optional[int] = None, include_unknown: bool = False
+    data: GedcomData,
+    indi_id: str,
+    max_generations: Optional[int] = None,
+    include_unknown: bool = False,
 ) -> List[str]:
     """Return deduplicated, sorted last names for ancestors of indi_id.
 
@@ -178,12 +181,44 @@ def get_leaves(data: GedcomData) -> List[Individual]:
     return sorted(leaves, key=lambda i: id_sort_key(i.id))
 
 
+def get_all_individuals(data: GedcomData) -> List[Individual]:
+    """Return all individuals in the GEDCOM data, sorted by ID."""
+    return sorted(data.individuals.values(), key=lambda i: id_sort_key(i.id))
+
+
+def get_males(data: GedcomData) -> List[Individual]:
+    """Return all male individuals (sex == 'M'), sorted by ID."""
+    return sorted(
+        [i for i in data.individuals.values() if i.sex == "M"],
+        key=lambda i: id_sort_key(i.id),
+    )
+
+
+def get_females(data: GedcomData) -> List[Individual]:
+    """Return all female individuals (sex == 'F'), sorted by ID."""
+    return sorted(
+        [i for i in data.individuals.values() if i.sex == "F"],
+        key=lambda i: id_sort_key(i.id),
+    )
+
+
+def get_nosex(data: GedcomData) -> List[Individual]:
+    """Return all individuals with unknown/unspecified sex (sex == 'U'), sorted by ID."""
+    return sorted(
+        [i for i in data.individuals.values() if i.sex == "U"],
+        key=lambda i: id_sort_key(i.id),
+    )
+
+
 def get_living(data: GedcomData) -> List[Individual]:
     """Return individuals whose _LIVING field is True, sorted by ID.
 
     Only individuals with living == True are included.
     """
-    return sorted([i for i in data.individuals.values() if i.living is True], key=lambda i: id_sort_key(i.id))
+    return sorted(
+        [i for i in data.individuals.values() if i.living is True],
+        key=lambda i: id_sort_key(i.id),
+    )
 
 
 def get_not_living(data: GedcomData) -> List[Individual]:
@@ -191,7 +226,10 @@ def get_not_living(data: GedcomData) -> List[Individual]:
 
     Includes individuals with living == False and living == None.
     """
-    return sorted([i for i in data.individuals.values() if i.living is not True], key=lambda i: id_sort_key(i.id))
+    return sorted(
+        [i for i in data.individuals.values() if i.living is not True],
+        key=lambda i: id_sort_key(i.id),
+    )
 
 
 def get_ancestors(
@@ -447,9 +485,17 @@ def has_parents(data: GedcomData, individual: Individual) -> bool:
         if not fam:
             continue
         # Ignore parent references that are self or spouse.
-        if fam.husband_id and fam.husband_id not in spouse_ids and fam.husband_id != individual.id:
+        if (
+            fam.husband_id
+            and fam.husband_id not in spouse_ids
+            and fam.husband_id != individual.id
+        ):
             return True
-        if fam.wife_id and fam.wife_id not in spouse_ids and fam.wife_id != individual.id:
+        if (
+            fam.wife_id
+            and fam.wife_id not in spouse_ids
+            and fam.wife_id != individual.id
+        ):
             return True
     return False
 

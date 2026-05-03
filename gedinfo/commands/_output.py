@@ -1,7 +1,8 @@
 """Shared output formatting helpers for `gedinfo` commands.
 
 Provides mutually-exclusive `-i`/`-n` output flags and formatting helpers
-used by `roots`, `leaves`, and `disjoint` commands.
+used by `roots`, `leaves`, `disjoint`, `living`, `indi`, `males`, `females`,
+and `nosex` commands.
 """
 
 from __future__ import annotations

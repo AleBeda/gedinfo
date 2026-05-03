@@ -2,7 +2,7 @@
 
 A command-line utility for querying GEDCOM genealogy files.
 
-Version: 0.7.1
+Version: 0.8.0
 
 Installation
 ------------
@@ -324,6 +324,171 @@ I005
 $ gedinfo leaves -n tests/fixtures/simple.ged
 Alice /Smith/
 Bob /Johnson/
+```
+
+### indi
+
+List all individuals in the GEDCOM file.
+
+**Syntax:**
+```
+gedinfo indi [options] <gedcom_file>
+```
+
+**Arguments:**
+- `<gedcom_file>`: Path to the GEDCOM file
+
+**Options:**
+- `-i`: Print IDs only (without @ delimiters), one per line
+- `-n`: Print names only, one per line
+- (default): Print ID and name pairs in the format `ID	Name`
+
+**Output:**
+All individuals sorted by ID.
+
+**Examples:**
+
+```bash
+# IDs and names (default)
+$ gedinfo indi tests/fixtures/simple.ged
+I001	John Smith
+I002	Mary Jones
+I003	Alice Smith
+I004	Bob Smith
+
+# IDs only
+$ gedinfo indi -i tests/fixtures/simple.ged
+I001
+I002
+I003
+I004
+
+# Names only
+$ gedinfo indi -n tests/fixtures/simple.ged
+John Smith
+Mary Jones
+Alice Smith
+Bob Smith
+```
+
+### males
+
+List all male individuals (sex = M) in the GEDCOM file.
+
+**Syntax:**
+```
+gedinfo males [options] <gedcom_file>
+```
+
+**Arguments:**
+- `<gedcom_file>`: Path to the GEDCOM file
+
+**Options:**
+- `-i`: Print IDs only (without @ delimiters), one per line
+- `-n`: Print names only, one per line
+- (default): Print ID and name pairs in the format `ID	Name`
+
+**Output:**
+Male individuals sorted by ID.
+
+**Examples:**
+
+```bash
+# IDs and names (default)
+$ gedinfo males tests/fixtures/simple.ged
+I001	John Smith
+I004	Bob Smith
+
+# IDs only
+$ gedinfo males -i tests/fixtures/simple.ged
+I001
+I004
+
+# Names only
+$ gedinfo males -n tests/fixtures/simple.ged
+John Smith
+Bob Smith
+```
+
+### females
+
+List all female individuals (sex = F) in the GEDCOM file.
+
+**Syntax:**
+```
+gedinfo females [options] <gedcom_file>
+```
+
+**Arguments:**
+- `<gedcom_file>`: Path to the GEDCOM file
+
+**Options:**
+- `-i`: Print IDs only (without @ delimiters), one per line
+- `-n`: Print names only, one per line
+- (default): Print ID and name pairs in the format `ID	Name`
+
+**Output:**
+Female individuals sorted by ID.
+
+**Examples:**
+
+```bash
+# IDs and names (default)
+$ gedinfo females tests/fixtures/simple.ged
+I002	Mary Jones
+I003	Alice Smith
+
+# IDs only
+$ gedinfo females -i tests/fixtures/simple.ged
+I002
+I003
+
+# Names only
+$ gedinfo females -n tests/fixtures/simple.ged
+Mary Jones
+Alice Smith
+```
+
+### nosex
+
+List individuals with unknown or unspecified sex (no SEX tag) in the GEDCOM file.
+
+**Syntax:**
+```
+gedinfo nosex [options] <gedcom_file>
+```
+
+**Arguments:**
+- `<gedcom_file>`: Path to the GEDCOM file
+
+**Options:**
+- `-i`: Print IDs only (without @ delimiters), one per line
+- `-n`: Print names only, one per line
+- (default): Print ID and name pairs in the format `ID	Name`
+
+**Output:**
+Individuals with unknown sex sorted by ID.
+
+**Examples:**
+
+```bash
+# IDs and names (default)
+$ gedinfo nosex tests/fixtures/no_names.ged
+I001	(unknown)
+I002	Smith
+I003	Jane
+
+# IDs only
+$ gedinfo nosex -i tests/fixtures/no_names.ged
+I001
+I002
+I003
+
+# Names only
+$ gedinfo nosex -n tests/fixtures/no_names.ged
+(unknown)
+Smith
+Jane
 ```
 
 ### stat
