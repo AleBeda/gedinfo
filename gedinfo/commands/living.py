@@ -8,7 +8,7 @@ from gedinfo import queries
 from gedinfo.commands import _output
 
 
-def register(subparsers: argparse._SubParsersAction) -> None:  # type: ignore
+def register(subparsers: argparse._SubParsersAction) -> None:    # type: ignore
     parser = subparsers.add_parser(
         "living",
         help="List individuals with a _LIVING flag.",
@@ -22,6 +22,7 @@ def register(subparsers: argparse._SubParsersAction) -> None:  # type: ignore
     )
     parser.add_argument("gedcom_file", help="Path to the GEDCOM file.")
     _output.add_output_options(parser)
+    _output.add_sort_option(parser)
     parser.add_argument(
         "-v",
         "--invert",
@@ -40,9 +41,10 @@ def register(subparsers: argparse._SubParsersAction) -> None:  # type: ignore
 def handle(args: argparse.Namespace) -> None:
     data = parser_module.parse(args.gedcom_file)
     mode = _output.validate_output_mode(args)
+    sort_key = _output.get_sort_key(args)
     if getattr(args, "invert", False):
-        individuals = queries.get_not_living(data)
+        individuals = queries.get_not_living(data, sort_key)
     else:
-        individuals = queries.get_living(data)
+        individuals = queries.get_living(data, sort_key)
     for individual in individuals:
         print(_output.format_individual(individual, mode))

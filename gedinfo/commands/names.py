@@ -6,17 +6,18 @@ import argparse
 from typing import Any
 
 from ..parser import parse
-from ..queries import display_name, find_by_id
-from ._output import strip_id_delimiters
+from ..queries import display_name, find_by_id, id_sort_key
+from ._output import add_sort_option, get_sort_key, strip_id_delimiters
 
 
-def register(subparsers: argparse._SubParsersAction) -> None:  # type: ignore
+def register(subparsers: argparse._SubParsersAction) -> None:      # type: ignore
     """Register the ``names`` subcommand with the top-level parser."""
     sub = subparsers.add_parser(
         "names", help="Batch print names for a file containing individual IDs"
     )
     sub.add_argument("ids_file", help="Path to file with one individual ID per line")
     sub.add_argument("gedcom_file", help="Path to GEDCOM file")
+    add_sort_option(sub)
     sub.set_defaults(func=run)
 
 
@@ -33,12 +34,23 @@ def run(args: Any) -> None:
         raise FileNotFoundError(f"IDs file not found: {args.ids_file}")
 
     data = parse(args.gedcom_file)
+    results = []  # list of (Individual or None, output_line_string)
     for raw in lines:
         s = raw.strip()
         if not s or s.startswith("#"):
             continue
         indi = find_by_id(data, s)
         if indi is None:
-            print(f"{strip_id_delimiters(s)}: (not found)")
+            results.append((None, f"{strip_id_delimiters(s)}: (not found)"))
         else:
-            print(display_name(indi))
+            results.append((indi, display_name(indi)))
+
+    # Apply sorting
+    sort_key = get_sort_key(args)
+    if sort_key == "id":
+        results.sort(key=lambda r: id_sort_key(r[0].id) if r[0] else (r[1],))
+    elif sort_key == "name":
+        results.sort(key=lambda r: display_name(r[0]).lower() if r[0] else r[1].lower())
+
+    for _, line in results:
+        print(line)

@@ -7,12 +7,13 @@ from typing import Any
 
 from ..parser import parse
 from ..queries import get_leaves
-from ._output import add_output_options, validate_output_mode, format_individual
+from ._output import add_output_options, add_sort_option, validate_output_mode, format_individual, get_sort_key
 
 
-def register(subparsers: argparse._SubParsersAction) -> None:  # type: ignore
+def register(subparsers: argparse._SubParsersAction) -> None:   # type: ignore
     sub = subparsers.add_parser("leaves", help="List individuals with no children")
     add_output_options(sub)
+    add_sort_option(sub)
     sub.add_argument("gedcom_file", help="Path to GEDCOM file")
     sub.set_defaults(func=run)
 
@@ -20,6 +21,6 @@ def register(subparsers: argparse._SubParsersAction) -> None:  # type: ignore
 def run(args: Any) -> None:
     data = parse(args.gedcom_file)
     mode = validate_output_mode(args)
-    leaves = get_leaves(data)
+    leaves = get_leaves(data, get_sort_key(args))
     for r in leaves:
         print(format_individual(r, mode))

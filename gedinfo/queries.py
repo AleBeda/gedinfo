@@ -30,7 +30,7 @@ def id_sort_key(id_str: str):
     return (id_str, -1)
 
 
-from .models import GedcomData, Individual
+from .models import Family, GedcomData, Individual
 
 
 def normalise_id(indi_id: str) -> str:
@@ -146,7 +146,7 @@ def get_ancestor_last_names(
     return sorted(names)
 
 
-def get_roots(data: GedcomData) -> List[Individual]:
+def get_roots(data: GedcomData, sort_key: str | None = None) -> List[Individual]:
     """Return individuals who have no recorded parents.
 
     An individual is considered a root if they are not listed as a child in any
@@ -154,19 +154,28 @@ def get_roots(data: GedcomData) -> List[Individual]:
     a FAMC link on the individual record, since some GEDCOM files may contain
     spurious FAMC references that are not reflected in the corresponding family
     record's CHIL list.
+    If sort_key is 'id', sort by numeric ID. If 'name', sort by display name.
+    Otherwise (including None), return in GEDCOM file order.
     """
     child_ids: set[str] = set()
     for fam in data.families.values():
         child_ids.update(fam.child_ids)
     roots = [i for i in data.individuals.values() if i.id not in child_ids]
-    return sorted(roots, key=lambda i: id_sort_key(i.id))
+    if sort_key == "id":
+        return sorted(roots, key=lambda i: id_sort_key(i.id))
+    if sort_key == 'name':
+        return sorted(roots, key=lambda i: display_name(i).lower())
+    return roots
 
 
-def get_leaves(data: GedcomData) -> List[Individual]:
+def get_leaves(data: GedcomData, sort_key: str | None = None) -> List[Individual]:
     """Return individuals who have no recorded children.
 
     A person is a leaf if they are not listed as a parent in any family, or
     all families they appear in as spouse lack children.
+
+    If sort_key is 'id', sort by numeric ID. If 'name', sort by display name.
+    Otherwise (including None), return in GEDCOM file order.
     """
     leaves: List[Individual] = []
     for indi in data.individuals.values():
@@ -178,59 +187,128 @@ def get_leaves(data: GedcomData) -> List[Individual]:
                 break
         if not has_child:
             leaves.append(indi)
-    return sorted(leaves, key=lambda i: id_sort_key(i.id))
+    if sort_key == "id":
+        return sorted(leaves, key=lambda i: id_sort_key(i.id))
+    if sort_key == "name":
+        return sorted(leaves, key=lambda i: display_name(i).lower())
+    return leaves
 
 
-def get_all_individuals(data: GedcomData) -> List[Individual]:
-    """Return all individuals in the GEDCOM data, sorted by ID."""
-    return sorted(data.individuals.values(), key=lambda i: id_sort_key(i.id))
+def get_all_individuals(data: GedcomData, sort_key: str | None = None) -> List[Individual]:
+    """Return all individuals in the GEDCOM data.
+
+    If sort_key is 'id', sort by numeric ID. If 'name', sort by display name.
+    Otherwise (including None), return in GEDCOM file order.
+    """
+    individuals = list(data.individuals.values())
+    if sort_key == "id":
+        return sorted(individuals, key=lambda i: id_sort_key(i.id))
+    if sort_key == "name":
+        return sorted(individuals, key=lambda i: display_name(i).lower())
+    return individuals
 
 
-def get_males(data: GedcomData) -> List[Individual]:
-    """Return all male individuals (sex == 'M'), sorted by ID."""
-    return sorted(
-        [i for i in data.individuals.values() if i.sex == "M"],
-        key=lambda i: id_sort_key(i.id),
-    )
+def get_males(data: GedcomData, sort_key: str | None = None) -> List[Individual]:
+    """Return all male individuals (sex == 'M').
+
+    If sort_key is 'id', sort by numeric ID. If 'name', sort by display name.
+    Otherwise (including None), return in GEDCOM file order.
+    """
+    result = [i for i in data.individuals.values() if i.sex == "M"]
+    if sort_key == "id":
+        return sorted(result, key=lambda i: id_sort_key(i.id))
+    if sort_key == "name":
+        return sorted(result, key=lambda i: display_name(i).lower())
+    return result
 
 
-def get_females(data: GedcomData) -> List[Individual]:
-    """Return all female individuals (sex == 'F'), sorted by ID."""
-    return sorted(
-        [i for i in data.individuals.values() if i.sex == "F"],
-        key=lambda i: id_sort_key(i.id),
-    )
+def get_females(data: GedcomData, sort_key: str | None = None) -> List[Individual]:
+    """Return all female individuals (sex == 'F').
+
+    If sort_key is 'id', sort by numeric ID. If 'name', sort by display name.
+    Otherwise (including None), return in GEDCOM file order.
+    """
+    result = [i for i in data.individuals.values() if i.sex == "F"]
+    if sort_key == "id":
+        return sorted(result, key=lambda i: id_sort_key(i.id))
+    if sort_key == "name":
+        return sorted(result, key=lambda i: display_name(i).lower())
+    return result
 
 
-def get_nosex(data: GedcomData) -> List[Individual]:
-    """Return all individuals with unknown/unspecified sex (sex == 'U'), sorted by ID."""
-    return sorted(
-        [i for i in data.individuals.values() if i.sex == "U"],
-        key=lambda i: id_sort_key(i.id),
-    )
+def get_nosex(data: GedcomData, sort_key: str | None = None) -> List[Individual]:
+    """Return all individuals with unknown/unspecified sex (sex == 'U').
+
+    If sort_key is 'id', sort by numeric ID. If 'name', sort by display name.
+    Otherwise (including None), return in GEDCOM file order.
+    """
+    result = [i for i in data.individuals.values() if i.sex == "U"]
+    if sort_key == "id":
+        return sorted(result, key=lambda i: id_sort_key(i.id))
+    if sort_key == "name":
+        return sorted(result, key=lambda i: display_name(i).lower())
+    return result
 
 
-def get_living(data: GedcomData) -> List[Individual]:
-    """Return individuals whose _LIVING field is True, sorted by ID.
+def get_living(data: GedcomData, sort_key: str | None = None) -> List[Individual]:
+    """Return individuals whose _LIVING field is True.
 
     Only individuals with living == True are included.
+
+    If sort_key is 'id', sort by numeric ID. If 'name', sort by display name.
+    Otherwise (including None), return in GEDCOM file order.
     """
-    return sorted(
-        [i for i in data.individuals.values() if i.living is True],
-        key=lambda i: id_sort_key(i.id),
-    )
+    result = [i for i in data.individuals.values() if i.living is True]
+    if sort_key == "id":
+        return sorted(result, key=lambda i: id_sort_key(i.id))
+    if sort_key == "name":
+        return sorted(result, key=lambda i: display_name(i).lower())
+    return result
 
 
-def get_not_living(data: GedcomData) -> List[Individual]:
-    """Return individuals whose _LIVING field is not True, sorted by ID.
+def get_not_living(data: GedcomData, sort_key: str | None = None) -> List[Individual]:
+    """Return individuals whose _LIVING field is not True.
 
     Includes individuals with living == False and living == None.
-    """
-    return sorted(
-        [i for i in data.individuals.values() if i.living is not True],
-        key=lambda i: id_sort_key(i.id),
-    )
 
+    If sort_key is 'id', sort by numeric ID. If 'name', sort by display name.
+    Otherwise (including None), return in GEDCOM file order.
+    """
+    result = [i for i in data.individuals.values() if i.living is not True]
+    if sort_key == "id":
+        return sorted(result, key=lambda i: id_sort_key(i.id))
+    if sort_key == "name":
+        return sorted(result, key=lambda i: display_name(i).lower())
+    return result
+
+
+def family_name_key(family: Family, data: GedcomData) -> str:
+    """Return a sort key string for a Family for --sort name.
+
+    Priority: husband display name > wife display name > first child display name
+    > stripped family ID. Returns lowercase string for case-insensitive sorting.
+    """
+    for fid in (family.husband_id, family.wife_id) + family.child_ids:
+        ind = data.individuals.get(fid)
+        if ind:
+            dn = display_name(ind)
+            if dn != "(unknown)":
+                return dn.lower()
+    return family.id.strip("@").lower()
+
+
+def get_all_families(data: GedcomData, sort_key: str | None = None) -> List[Family]:
+    """Return all families in data.
+
+    If sort_key is 'id', sort by numeric ID. If 'name', sort by family name.
+    Otherwise (including None), return in GEDCOM file order.
+    """
+    families = list(data.families.values())
+    if sort_key == "id":
+        return sorted(families, key=lambda f: id_sort_key(f.id))
+    if sort_key == "name":
+        return sorted(families, key=lambda f: family_name_key(f, data))
+    return families
 
 def get_ancestors(
     data: GedcomData, indi_id: str, max_generations: Optional[int] = None

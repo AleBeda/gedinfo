@@ -1,8 +1,8 @@
 """Shared output formatting helpers for `gedinfo` commands.
 
-Provides mutually-exclusive `-i`/`-n` output flags and formatting helpers
-used by `roots`, `leaves`, `disjoint`, `living`, `indi`, `males`, `females`,
-and `nosex` commands.
+Provides mutually-exclusive `-i`/`-n` output flags, `--sort` option,
+and formatting helpers used by `roots`, `leaves`, `disjoint`, `living`,
+`indi`, `males`, `females`, `nosex`, and `fam` commands.
 """
 
 from __future__ import annotations
@@ -11,7 +11,7 @@ import argparse
 import sys
 from typing import Literal
 
-from ..queries import display_name
+from ..queries import display_name, id_sort_key
 from ..models import Individual
 
 
@@ -67,3 +67,35 @@ def format_individual(ind: Individual, mode: Literal["id", "name", "both"]) -> s
     if mode == "name":
         return display_name(ind)
     return f"{strip_id_delimiters(ind.id)}\t{display_name(ind)}"
+
+
+def add_sort_option(parser: argparse.ArgumentParser) -> None:
+    """Add `--sort {id,name}` option to *parser*.
+
+    Uses long-only `--sort` to avoid conflicts with `-s` (used by `roots`
+    for `--spouse` and by `ancestors`/`givennames` for their own sort modes).
+    """
+    parser.add_argument(
+        "--sort",
+        choices=["id", "name"],
+        default=None,
+        help="Sort output: 'id' for numeric ID order, 'name' for alphabetical by name. Default is GEDCOM file order.",
+    )
+
+
+def get_sort_key(args: argparse.Namespace) -> str | None:
+    """Return the --sort value from *args*, or None if not specified."""
+    return getattr(args, "sort", None)
+
+
+def sort_individuals(individuals: list[Individual], sort_key: str | None = None) -> list[Individual]:
+    """Sort a list of individuals by *sort_key*.
+
+    If sort_key is 'id', sort by numeric ID. If 'name', sort by display name.
+    Otherwise (including None), return the list unchanged.
+    """
+    if sort_key == "id":
+        return sorted(individuals, key=lambda i: id_sort_key(i.id))
+    if sort_key == "name":
+        return sorted(individuals, key=lambda i: display_name(i).lower())
+    return individuals

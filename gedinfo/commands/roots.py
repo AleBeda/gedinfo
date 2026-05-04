@@ -8,7 +8,7 @@ from typing import Any
 from ..parser import parse
 from ..queries import get_roots, apply_root_filters
 import sys
-from ._output import add_output_options, validate_output_mode, format_individual
+from ._output import add_output_options, add_sort_option, validate_output_mode, format_individual, get_sort_key
 
 
 def register(subparsers: argparse._SubParsersAction) -> None:  # type: ignore
@@ -19,6 +19,7 @@ def register(subparsers: argparse._SubParsersAction) -> None:  # type: ignore
         ),
     )
     add_output_options(sub)
+    add_sort_option(sub)
     filter_group = sub.add_argument_group("filter options")
     filter_group.add_argument(
         "-s", "--spouse",
@@ -63,7 +64,7 @@ def run(args: Any) -> None:
         sys.exit(1)
 
     mode = validate_output_mode(args)
-    roots = get_roots(data)
+    roots = get_roots(data, get_sort_key(args))
     roots = apply_root_filters(
         data,
         roots,
