@@ -3,16 +3,16 @@ from types import SimpleNamespace
 
 import pytest
 
-from gedinfo.commands import ancestors
+from gedinfo.commands import lastnames
 from gedinfo.commands import _output
 from gedinfo.models import Individual
 
 
-def test_ancestors_register_parsing():
+def test_lastnames_register_parsing():
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers()
-    ancestors.register(subparsers)
-    ns = parser.parse_args(["ancestors", "@I001@", "foo.ged"])
+    lastnames.register(subparsers)
+    ns = parser.parse_args(["lastnames", "@I001@", "foo.ged"])
     assert hasattr(ns, "indi_id")
     assert hasattr(ns, "gedcom_file")
     assert hasattr(ns, "generations")

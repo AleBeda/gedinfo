@@ -1,4 +1,4 @@
-"""`gedinfo ancestors` subcommand implementation."""
+"""`gedinfo lastnames` subcommand implementation."""
 
 from __future__ import annotations
 
@@ -11,9 +11,9 @@ from ..queries import get_ancestors, get_ancestor_details
 
 
 def register(subparsers: argparse._SubParsersAction) -> None:  # type: ignore
-    """Register the ``ancestors`` subcommand with the top-level parser."""
+    """Register the ``lastnames`` subcommand with the top-level parser."""
     sub = subparsers.add_parser(
-        "ancestors",
+        "lastnames",
         help="Print distinct last names of all ancestors",
         description="Print distinct last names of all ancestors",
     )
@@ -56,7 +56,7 @@ def register(subparsers: argparse._SubParsersAction) -> None:  # type: ignore
 
 
 def run(args: Any) -> None:
-    """Handler invoked when ``gedinfo ancestors`` is run."""
+    """Handler invoked when ``gedinfo lastnames`` is run."""
     g = args.generations
     if g is not None and g < 1:
         print("Invalid generations value: must be >= 1", file=sys.stderr)

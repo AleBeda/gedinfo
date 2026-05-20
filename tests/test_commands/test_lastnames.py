@@ -14,43 +14,43 @@ def run_cmd(args):
     return proc.returncode, proc.stdout, proc.stderr
 
 
-def test_ancestors_unlimited():
-    code, out, err = run_cmd(["ancestors", "@I004@", str(FIXTURES / "deep.ged")])
+def test_lastnames_unlimited():
+    code, out, err = run_cmd(["lastnames", "@I004@", str(FIXTURES / "deep.ged")])
     assert code == 0
     assert out.strip().splitlines() == ["Elder"]
 
 
-def test_ancestors_g1():
+def test_lastnames_g1():
     code, out, err = run_cmd(
-        ["ancestors", "-g", "1", "@I004@", str(FIXTURES / "deep.ged")]
+        ["lastnames", "-g", "1", "@I004@", str(FIXTURES / "deep.ged")]
     )
     assert code == 0
     assert out.strip() == ""
 
 
-def test_ancestors_g2():
+def test_lastnames_g2():
     code, out, err = run_cmd(
-        ["ancestors", "-g", "2", "@I004@", str(FIXTURES / "deep.ged")]
+        ["lastnames", "-g", "2", "@I004@", str(FIXTURES / "deep.ged")]
     )
     assert code == 0
     assert out.strip().splitlines() == ["Elder"]
 
 
-def test_ancestors_invalid_g_zero():
+def test_lastnames_invalid_g_zero():
     code, out, err = run_cmd(
-        ["ancestors", "-g", "0", "@I004@", str(FIXTURES / "deep.ged")]
+        ["lastnames", "-g", "0", "@I004@", str(FIXTURES / "deep.ged")]
     )
     assert code == 1
     assert "Invalid generations value" in err
 
 
-def test_ancestors_unknown_id():
-    code, out, err = run_cmd(["ancestors", "@I999@", str(FIXTURES / "deep.ged")])
+def test_lastnames_unknown_id():
+    code, out, err = run_cmd(["lastnames", "@I999@", str(FIXTURES / "deep.ged")])
     assert code == 1
     assert "Unknown individual ID" in err
 
 
-def test_ancestors_cycle(tmp_path):
+def test_lastnames_cycle(tmp_path):
     # create a circular parent-child reference: A is parent of B and B is parent of A
     content = (
         "0 HEAD\n"
@@ -72,7 +72,7 @@ def test_ancestors_cycle(tmp_path):
     )
     f = tmp_path / "cycle.ged"
     f.write_text(content)
-    code, out, err = run_cmd(["ancestors", "@I1@", str(f)])
+    code, out, err = run_cmd(["lastnames", "@I1@", str(f)])
     assert code == 0
     # should finish quickly and not crash; surnames may include both
 
@@ -86,7 +86,7 @@ def test_debug_flag_shows_traceback():
 
 def test_long_no_g():
     code, out, err = run_cmd([
-        "ancestors",
+        "lastnames",
         "-l",
         "@I001@",
         str(FIXTURES / "long_ancestors.ged"),
@@ -109,7 +109,7 @@ def test_long_no_g():
 
 def test_long_g3():
     code, out, err = run_cmd([
-        "ancestors",
+        "lastnames",
         "-l",
         "-g",
         "3",
@@ -125,7 +125,7 @@ def test_long_g3():
 
 def test_long_g2():
     code, out, err = run_cmd([
-        "ancestors",
+        "lastnames",
         "-l",
         "-g",
         "2",
@@ -141,7 +141,7 @@ def test_long_g2():
 
 def test_long_sort_generation():
     code, out, err = run_cmd([
-        "ancestors",
+        "lastnames",
         "-l",
         "-s",
         "generation",
@@ -160,7 +160,7 @@ def test_long_sort_generation():
 
 def test_long_sort_name():
     code, out, err = run_cmd([
-        "ancestors",
+        "lastnames",
         "-l",
         "-s",
         "name",
@@ -175,7 +175,7 @@ def test_long_sort_name():
 
 def test_long_sort_id():
     code, out, err = run_cmd([
-        "ancestors",
+        "lastnames",
         "-l",
         "-s",
         "id",
@@ -209,7 +209,7 @@ def test_long_unknown_last_name(tmp_path):
     )
     f = tmp_path / "tmp.ged"
     f.write_text(content)
-    code, out, err = run_cmd(["ancestors", "-l", "@I3@", str(f)])
+    code, out, err = run_cmd(["lastnames", "-l", "@I3@", str(f)])
     assert code == 0
     lines = [ln for ln in out.strip().splitlines() if ln.strip()]
     # should find Smith (partial last name)
@@ -237,7 +237,7 @@ def test_long_unknown_shown_with_u_flag(tmp_path):
     )
     f = tmp_path / "tmp_u.ged"
     f.write_text(content)
-    code, out, err = run_cmd(["ancestors", "-l", "-u", "@I3@", str(f)])
+    code, out, err = run_cmd(["lastnames", "-l", "-u", "@I3@", str(f)])
     assert code == 0
     lines = [ln for ln in out.strip().splitlines() if ln.strip()]
     # should include (unknown) with -u flag
@@ -264,7 +264,7 @@ def test_long_unknown_suppressed_by_default(tmp_path):
     )
     f = tmp_path / "tmp2.ged"
     f.write_text(content)
-    code, out, err = run_cmd(["ancestors", "-l", "@I1@", str(f)])
+    code, out, err = run_cmd(["lastnames", "-l", "@I1@", str(f)])
     assert code == 0
     # by default, nameless ancestor should be suppressed
     assert "(unknown)" not in out
@@ -290,14 +290,14 @@ def test_long_unknown_included_with_flag(tmp_path):
     )
     f = tmp_path / "tmp3.ged"
     f.write_text(content)
-    code, out, err = run_cmd(["ancestors", "-l", "-u", "@I1@", str(f)])
+    code, out, err = run_cmd(["lastnames", "-l", "-u", "@I1@", str(f)])
     assert code == 0
     assert "(unknown)" in out
 
 
 def test_sort_without_long():
     code, out, err = run_cmd([
-        "ancestors",
+        "lastnames",
         "-s",
         "name",
         "@I001@",
@@ -309,7 +309,7 @@ def test_sort_without_long():
 
 def test_long_empty_output():
     code, out, err = run_cmd([
-        "ancestors",
+        "lastnames",
         "-l",
         "@I001@",
         str(FIXTURES / "simple.ged"),
@@ -320,7 +320,7 @@ def test_long_empty_output():
 
 def test_long_with_existing_g_validation():
     code, out, err = run_cmd([
-        "ancestors",
+        "lastnames",
         "-l",
         "-g",
         "0",

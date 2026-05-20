@@ -122,7 +122,7 @@ Johnson
 Smith
 ```
 
-### ancestors
+### lastnames
 
 Print the ancestors of an individual. Supports two output modes: short (names only) 
 and long (detailed paths). In long mode, ancestors from each lineage branch are 
@@ -130,7 +130,7 @@ sorted from purely paternal lines (ppp) to purely maternal lines (mmm).
 
 **Syntax:**
 ```
-gedinfo ancestors [options] <indi_id> <gedcom_file>
+gedinfo lastnames [options] <indi_id> <gedcom_file>
 ```
 
 **Arguments:**
@@ -185,7 +185,7 @@ and all roots encountered before that limit are printed.
 
 ```bash
 # Short mode: all ancestor surnames, alphabetical order
-$ gedinfo ancestors I001 tests/fixtures/long_ancestors.ged
+$ gedinfo lastnames I001 tests/fixtures/long_ancestors.ged
 Bauer
 Muller
 Novak
@@ -193,7 +193,7 @@ Svensson
 Weber
 
 # Long mode: paternal to maternal sorting (default)
-$ gedinfo ancestors -l I001 tests/fixtures/long_ancestors.ged
+$ gedinfo lastnames -l I001 tests/fixtures/long_ancestors.ged
 4       ppp     Novak           I008
 4       pp?     Svensson        I009
 3       pm      Bauer           I005
@@ -201,14 +201,14 @@ $ gedinfo ancestors -l I001 tests/fixtures/long_ancestors.ged
 3       mm      Weber           I007
 
 # Long mode: limit to 3 generations
-$ gedinfo ancestors -l -g 3 I001 tests/fixtures/long_ancestors.ged
+$ gedinfo lastnames -l -g 3 I001 tests/fixtures/long_ancestors.ged
 3       pp      Novak           I004
 3       pm      Bauer           I005
 3       mp      Muller          I006
 3       mm      Weber           I007
 
 # Long mode: sort by generation
-$ gedinfo ancestors -l -s generation I001 tests/fixtures/long_ancestors.ged
+$ gedinfo lastnames -l -s generation I001 tests/fixtures/long_ancestors.ged
 3       pm      Bauer           I005
 3       mp      Muller          I006
 3       mm      Weber           I007
@@ -216,7 +216,7 @@ $ gedinfo ancestors -l -s generation I001 tests/fixtures/long_ancestors.ged
 4       pp?     Svensson        I009
 
 # Long mode: sort by last name
-$ gedinfo ancestors -l -s name I001 tests/fixtures/long_ancestors.ged
+$ gedinfo lastnames -l -s name I001 tests/fixtures/long_ancestors.ged
 3       pm      Bauer           I005
 3       mp      Muller          I006
 4       ppp     Novak           I008

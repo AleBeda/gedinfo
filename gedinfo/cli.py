@@ -50,7 +50,7 @@ def main() -> None:
         id_ as id_cmd,
         name as name_cmd,
         names as names_cmd,
-        ancestors as ancestors_cmd,
+        lastnames as lastnames_cmd,
         roots as roots_cmd,
         leaves as leaves_cmd,
         stat as stat_cmd,
@@ -67,7 +67,7 @@ def main() -> None:
     name_cmd.register(subparsers)
     id_cmd.register(subparsers)
     names_cmd.register(subparsers)
-    ancestors_cmd.register(subparsers)
+    lastnames_cmd.register(subparsers)
     roots_cmd.register(subparsers)
     leaves_cmd.register(subparsers)
     stat_cmd.register(subparsers)

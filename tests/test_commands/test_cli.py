@@ -82,9 +82,9 @@ def test_direct_command_runs(tmp_path):
     ids_f.write_text("@I001@\n@I003@\n")
     args = SimpleNamespace(ids_file=str(ids_f), gedcom_file=gedfile)
     commands.names.run(args)
-    # ancestors
+    # lastnames
     args = SimpleNamespace(indi_id="@I004@", gedcom_file=gedfile, generations=None)
-    commands.ancestors.run(args)
+    commands.lastnames.run(args)
     # roots/leaves/stat/disjoint with default flags
     for mod in (commands.roots, commands.leaves, commands.stat, commands.disjoint):
         # prepare args object
