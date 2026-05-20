@@ -76,3 +76,67 @@ def test_id_tab_separator():
     assert len(parts) == 2
     assert parts[0] == "I005"
     assert parts[1].strip() == "Robert Smith"
+
+
+def test_id_first_then_last():
+    # "Robert Smith" → tokens ["robert", "smith"] → only Robert Smith matches
+    code, out, err = run_cmd(["id", "Robert Smith", str(FIXTURES / "refinements.ged")])
+    assert code == 0
+    assert out == "I005\tRobert Smith\n"
+
+
+def test_id_last_then_first():
+    # reversed order gives identical results
+    code, out, err = run_cmd(["id", "Smith Robert", str(FIXTURES / "refinements.ged")])
+    assert code == 0
+    assert out == "I005\tRobert Smith\n"
+
+
+def test_id_comma_separated():
+    # comma treated as separator; "Smith, Robert" == "Robert Smith"
+    code, out, err = run_cmd(["id", "Smith, Robert", str(FIXTURES / "refinements.ged")])
+    assert code == 0
+    assert out == "I005\tRobert Smith\n"
+
+
+def test_id_multiword_narrows_results():
+    # "smith" alone returns 3 results; adding "robert" narrows to 1
+    _, out_single, _ = run_cmd(["id", "smith", str(FIXTURES / "refinements.ged")])
+    _, out_multi, _ = run_cmd(["id", "smith robert", str(FIXTURES / "refinements.ged")])
+    assert len(out_single.strip().splitlines()) == 3
+    assert len(out_multi.strip().splitlines()) == 1
+
+
+def test_id_composite_name(tmp_path):
+    # composite first name and last name: all parts must match
+    content = (
+        "0 HEAD\n"
+        "0 @I1@ INDI\n"
+        "1 NAME Jean Paul /von Meyer/\n"
+        "0 @I2@ INDI\n"
+        "1 NAME Jean /Smith/\n"
+        "0 TRLR\n"
+    )
+    f = tmp_path / "composite.ged"
+    f.write_text(content)
+    # all four tokens must match → only I1 qualifies
+    code, out, _ = run_cmd(["id", "Jean Paul von Meyer", str(f)])
+    assert code == 0
+    assert "I1" in out and "I2" not in out
+
+
+def test_id_composite_reversed(tmp_path):
+    # reversed token order gives the same result
+    content = (
+        "0 HEAD\n"
+        "0 @I1@ INDI\n"
+        "1 NAME Jean Paul /von Meyer/\n"
+        "0 @I2@ INDI\n"
+        "1 NAME Jean /Smith/\n"
+        "0 TRLR\n"
+    )
+    f = tmp_path / "composite.ged"
+    f.write_text(content)
+    code, out, _ = run_cmd(["id", "von Meyer, Jean Paul", str(f)])
+    assert code == 0
+    assert "I1" in out and "I2" not in out

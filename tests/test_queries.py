@@ -141,6 +141,38 @@ def test_find_by_name_whitespace_normalised():
     assert [r.id for r in a] == [r.id for r in b]
 
 
+def test_find_by_name_multitoken_first_last():
+    data = parser.parse(FIXTURES / "refinements.ged")
+    res = find_by_name(data, "Robert Smith")
+    assert [r.id for r in res] == ["@I005@"]
+
+
+def test_find_by_name_multitoken_last_first():
+    data = parser.parse(FIXTURES / "refinements.ged")
+    res = find_by_name(data, "Smith Robert")
+    assert [r.id for r in res] == ["@I005@"]
+
+
+def test_find_by_name_multitoken_comma():
+    data = parser.parse(FIXTURES / "refinements.ged")
+    res = find_by_name(data, "Smith, Robert")
+    assert [r.id for r in res] == ["@I005@"]
+
+
+def test_find_by_name_multitoken_narrows():
+    data = parser.parse(FIXTURES / "refinements.ged")
+    broad = find_by_name(data, "smith")
+    narrow = find_by_name(data, "smith robert")
+    assert len(broad) == 3
+    assert len(narrow) == 1
+    assert narrow[0].id == "@I005@"
+
+
+def test_find_by_name_multitoken_empty_returns_empty():
+    data = parser.parse(FIXTURES / "refinements.ged")
+    assert find_by_name(data, "  ,  ") == []
+
+
 def test_get_roots():
     data = load("simple.ged")
     ids = [i.id for i in get_roots(data)]

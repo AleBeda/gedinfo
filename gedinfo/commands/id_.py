@@ -15,24 +15,25 @@ def register(subparsers: argparse._SubParsersAction) -> None:  # type: ignore
     sub = subparsers.add_parser(
         "id",
         help=(
-            "Search for individuals by partial name match. The query is matched "
-            "case-insensitively as a substring against the first name and last name "
-            "independently. Prints one line per match: the ID (without @), a tab, and "
-            "the full name."
+            "Search for individuals by name. The query is split into tokens on "
+            "whitespace and commas; each token must match (case-insensitively, as a "
+            "substring) against either the first name or last name. Token order is "
+            "irrelevant: 'John Doe' and 'Doe, John' return the same results."
         ),
         description=(
-            "Search for individuals by partial name match. The query is matched "
-            "case-insensitively as a substring against the first name and last name "
-            "independently. Prints one line per match: the ID (without @), a tab, and "
-            "the full name."
+            "Search for individuals by name. The query is split into tokens on "
+            "whitespace and commas; each token must match (case-insensitively, as a "
+            "substring) against either the first name or last name. Token order is "
+            "irrelevant: 'John Doe' and 'Doe, John' return the same results. "
+            "Prints one line per match: the ID (without @), a tab, and the full name."
         ),
     )
     sub.add_argument(
         "name",
         help=(
-            "Name fragment to search for. Matched as a case-insensitive substring "
-            "against first name and last name independently. Slash delimiters (//) "
-            "around surnames are accepted and ignored."
+            "Name query to search for. Split into tokens on whitespace and commas; "
+            "each token must appear in either the first name or last name. "
+            "Slash delimiters (//) around surnames are accepted and ignored."
         ),
     )
     sub.add_argument("gedcom_file", help="Path to GEDCOM file")

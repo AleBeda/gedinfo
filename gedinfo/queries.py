@@ -91,34 +91,30 @@ def _normalise_name(s: str) -> str:
 
 
 def find_by_name(data: GedcomData, name: str) -> List[Individual]:
-    """Return individuals matching a name fragment.
+    """Return individuals matching a multi-token name query.
 
-    Matching rules (partial, case-insensitive substrings):
-    - Strip any slash delimiters from the query and normalise whitespace.
-    - The query is matched as a case-insensitive substring against either
-      the individual's ``first_name`` or ``last_name`` independently.
-    - Individuals with neither ``first_name`` nor ``last_name`` never match.
+    The query is split into tokens on whitespace and commas. Each token is
+    matched case-insensitively as a substring against either ``first_name``
+    or ``last_name``. An individual matches only when every token matches at
+    least one of those fields. Token order is irrelevant — "John Doe" and
+    "Doe John" return identical results. Slash delimiters are accepted and
+    ignored.
 
+    Individuals with neither ``first_name`` nor ``last_name`` never match.
     Returns a list of matching ``Individual`` instances sorted by ``id``.
     """
-    target = _normalise_name(name)
+    normalised = name.strip().lower().replace("/", " ").replace(",", " ")
+    tokens = normalised.split()
+    if not tokens:
+        return []
     matches: List[Individual] = []
-    if not target:
-        return matches
     for indi in data.individuals.values():
-        # skip nameless individuals
         if not indi.first_name and not indi.last_name:
             continue
-        # check first_name
-        if indi.first_name:
-            if target in _normalise_name(indi.first_name):
-                matches.append(indi)
-                continue
-        # check last_name
-        if indi.last_name:
-            if target in _normalise_name(indi.last_name):
-                matches.append(indi)
-                continue
+        fn = _normalise_name(indi.first_name) if indi.first_name else ""
+        ln = _normalise_name(indi.last_name) if indi.last_name else ""
+        if all(t in fn or t in ln for t in tokens):
+            matches.append(indi)
     return sorted(matches, key=lambda i: id_sort_key(i.id))
 
 
