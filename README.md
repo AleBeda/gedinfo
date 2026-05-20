@@ -2,7 +2,7 @@
 
 A command-line utility for querying GEDCOM genealogy files.
 
-Version: 0.8.0
+Version: 0.10.0
 
 Installation
 ------------
@@ -120,6 +120,126 @@ I004
 $ gedinfo names ids.txt tests/fixtures/simple.ged
 Johnson
 Smith
+```
+
+### ancestors
+
+List all ancestors of an individual, including the individual themselves (generation 1).
+
+**Syntax:**
+```
+gedinfo ancestors [options] <indi_id> <gedcom_file>
+```
+
+**Arguments:**
+- `<indi_id>`: The GEDCOM individual ID (with or without @ delimiters)
+- `<gedcom_file>`: Path to the GEDCOM file
+
+**Options:**
+- `-g N, --generations N`: Limit traversal to N generations (N ≥ 1). Generation 1 is the subject, generation 2 is parents, etc.
+- `-l, --long`: Enable long output mode (generation, path, last name, ID). Cannot be combined with `-i` or `-n`.
+- `-s MODE, --sort MODE`: Sort order for `--long` mode. Choices: `generation`, `path`, `name`, `id`. Default: `generation`. Requires `--long`.
+- `-u, --unknown`: Include ancestors with no name in `--long` mode. By default, nameless ancestors are excluded from long-mode output.
+- `-i`: Print IDs only (without @ delimiters), one per line (short mode only).
+- `-n`: Print names only, one per line (short mode only).
+
+**Output (short mode — default):**
+One line per ancestor in BFS traversal order (subject first, then parents, grandparents, etc.).
+Each line: `ID\tFull Name`. Use `-i` or `-n` for ID-only or name-only output.
+
+**Output (long mode — with `-l`):**
+Tab-separated values: generation, path, last name (or `(unknown)` if nameless and `-u` is set), ID.
+The path uses `p` (father), `m` (mother), `?` (unknown sex) to describe the relationship chain from the subject.
+An extra tab is inserted after the last name when it is shorter than 8 characters to align the ID column.
+
+**Examples:**
+
+```bash
+# Short mode: all ancestors from I001
+$ gedinfo ancestors I001 tests/fixtures/long_ancestors.ged
+I001	Jan Novak
+I002	Pieter Novak
+I003	Anna Muller
+I004	Hans Novak
+I005	Greta Bauer
+I006	Ernst Muller
+I007	Lena Weber
+I008	Otto Novak
+I009	Unknown Svensson
+
+# Long mode: all ancestors
+$ gedinfo ancestors -l I001 tests/fixtures/long_ancestors.ged
+1		Novak		I001
+2	p	Novak		I002
+2	m	Muller		I003
+3	pp	Novak		I004
+3	pm	Bauer		I005
+3	mp	Muller		I006
+3	mm	Weber		I007
+4	ppp	Novak		I008
+4	pp?	Svensson	I009
+
+# Long mode: limit to 2 generations, sort by path
+$ gedinfo ancestors -l -g 2 -s path I001 tests/fixtures/long_ancestors.ged
+1		Novak		I001
+2	p	Novak		I002
+2	m	Muller		I003
+```
+
+### descendants
+
+List all descendants of an individual, including the individual themselves (generation 1).
+
+**Syntax:**
+```
+gedinfo descendants [options] <indi_id> <gedcom_file>
+```
+
+**Arguments:**
+- `<indi_id>`: The GEDCOM individual ID (with or without @ delimiters)
+- `<gedcom_file>`: Path to the GEDCOM file
+
+**Options:**
+- `-g N, --generations N`: Limit traversal to N generations (N ≥ 1). Generation 1 is the subject, generation 2 is children, etc.
+- `-l, --long`: Enable long output mode (generation, path, last name, ID). Cannot be combined with `-i` or `-n`.
+- `-s MODE, --sort MODE`: Sort order for `--long` mode. Choices: `generation`, `path`, `name`, `id`. Default: `generation`. Requires `--long`.
+- `-u, --unknown`: Include descendants with no name in `--long` mode. By default, nameless descendants are excluded from long-mode output.
+- `-i`: Print IDs only (without @ delimiters), one per line (short mode only).
+- `-n`: Print names only, one per line (short mode only).
+
+**Output (short mode — default):**
+One line per descendant in BFS traversal order (subject first, then children, grandchildren, etc.).
+Each line: `ID\tFull Name`. Use `-i` or `-n` for ID-only or name-only output.
+
+**Output (long mode — with `-l`):**
+Tab-separated values: generation, path, last name (or `(unknown)` if nameless and `-u` is set), ID.
+The path uses `s` (son/male), `d` (daughter/female), `?` (unknown sex) to describe the relationship chain from the subject.
+An extra tab is inserted after the last name when it is shorter than 8 characters to align the ID column.
+
+**Examples:**
+
+```bash
+# Short mode: all descendants from I001
+$ gedinfo descendants I001 tests/fixtures/descendants.ged
+I001	John Smith
+I003	Peter Smith
+I004	Anna Smith
+I006	Tom Smith
+I007	Sue Smith
+
+# Long mode: all descendants, sorted by path
+$ gedinfo descendants -l -s path I001 tests/fixtures/descendants.ged
+1		Smith		I001
+2	s	Smith		I003
+3	ss	Smith		I006
+3	sd	Smith		I007
+2	d	Smith		I004
+
+# Long mode: limit to 2 generations
+$ gedinfo descendants -l -g 2 I001 tests/fixtures/descendants.ged
+1		Smith		I001
+2	s	Smith		I003
+2	d	Smith		I004
 ```
 
 ### lastnames

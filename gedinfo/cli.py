@@ -51,6 +51,8 @@ def main() -> None:
         name as name_cmd,
         names as names_cmd,
         lastnames as lastnames_cmd,
+        ancestors as ancestors_cmd,
+        descendants as descendants_cmd,
         roots as roots_cmd,
         leaves as leaves_cmd,
         stat as stat_cmd,
@@ -68,6 +70,8 @@ def main() -> None:
     id_cmd.register(subparsers)
     names_cmd.register(subparsers)
     lastnames_cmd.register(subparsers)
+    ancestors_cmd.register(subparsers)
+    descendants_cmd.register(subparsers)
     roots_cmd.register(subparsers)
     leaves_cmd.register(subparsers)
     stat_cmd.register(subparsers)
@@ -83,7 +87,7 @@ def main() -> None:
     args = parser.parse_args()
 
     if args.version:
-        print("gedinfo 0.9.0")
+        print("gedinfo 0.10.0")
         sys.exit(0)
 
     if not args.command:

@@ -459,7 +459,7 @@ def get_descendant_details(
     Each returned dict has keys:
       - 'individual': Individual
       - 'generation': int (2 for children, 3 for grandchildren, ...)
-      - 'path': str (currently always the empty string — reserved for future use)
+      - 'path': str (e.g. 'sd' — s=son/male, d=daughter/female, ?=unknown sex)
 
     The subject (generation 1) is NOT included. Raises ``ValueError`` if
     ``indi_id`` is unknown. Traversal is cycle-safe (tracks visited IDs).
@@ -492,8 +492,10 @@ def get_descendant_details(
                 child = data.individuals.get(child_id)
                 if not child or child.id in visited:
                     continue
+                sex = (child.sex or "U").upper()
+                ch = "s" if sex == "M" else ("d" if sex == "F" else "?")
                 visited.add(child.id)
-                q.append((child, gen + 1, ""))
+                q.append((child, gen + 1, path + ch))
 
     return results
 
