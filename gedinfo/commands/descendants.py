@@ -7,7 +7,7 @@ import sys
 from typing import Any
 
 from ..parser import parse
-from ..queries import get_descendant_details, find_by_id
+from ..queries import get_descendant_details, find_by_id, display_name
 from ._output import add_output_options, validate_output_mode, format_individual, strip_id_delimiters
 
 
@@ -97,6 +97,7 @@ def run(args: Any) -> None:
     elif sort_key == "name":
         records.sort(key=lambda r: (
             (r["individual"].last_name or "").lower() if r["individual"].last_name else "~",
+            (r["individual"].first_name or "").lower(),
             _path_to_sort_key(r["path"]),
             r["individual"].id,
         ))
@@ -105,7 +106,6 @@ def run(args: Any) -> None:
 
     for r in records:
         indi = r["individual"]
-        last = indi.last_name or "(unknown)"
+        name = display_name(indi)
         id_str = strip_id_delimiters(indi.id)
-        extra_tab = "\t" if len(last) < 8 else ""
-        print(f"{r['generation']}\t{r['path']}\t{last}{extra_tab}\t{id_str}")
+        print(f"{r['generation']}\t{r['path']}\t{name}\t{id_str}")

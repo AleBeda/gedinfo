@@ -148,9 +148,9 @@ One line per ancestor in BFS traversal order (subject first, then parents, grand
 Each line: `ID\tFull Name`. Use `-i` or `-n` for ID-only or name-only output.
 
 **Output (long mode — with `-l`):**
-Tab-separated values: generation, path, last name (or `(unknown)` if nameless and `-u` is set), ID.
+Tab-separated values: generation, path, full name (first name then last name, or `(unknown)` if nameless and `-u` is set), ID.
 The path uses `p` (father), `m` (mother), `?` (unknown sex) to describe the relationship chain from the subject.
-An extra tab is inserted after the last name when it is shorter than 8 characters to align the ID column.
+When `-s name` is used, sorting is by last name (primary) then first name (secondary).
 
 **Examples:**
 
@@ -169,21 +169,21 @@ I009	Unknown Svensson
 
 # Long mode: all ancestors
 $ gedinfo ancestors -l I001 tests/fixtures/long_ancestors.ged
-1		Novak		I001
-2	p	Novak		I002
-2	m	Muller		I003
-3	pp	Novak		I004
-3	pm	Bauer		I005
-3	mp	Muller		I006
-3	mm	Weber		I007
-4	ppp	Novak		I008
-4	pp?	Svensson	I009
+1		Jan Novak	I001
+2	p	Pieter Novak	I002
+2	m	Anna Muller	I003
+3	pp	Hans Novak	I004
+3	pm	Greta Bauer	I005
+3	mp	Ernst Muller	I006
+3	mm	Lena Weber	I007
+4	ppp	Otto Novak	I008
+4	pp?	Unknown Svensson	I009
 
 # Long mode: limit to 2 generations, sort by path
 $ gedinfo ancestors -l -g 2 -s path I001 tests/fixtures/long_ancestors.ged
-1		Novak		I001
-2	p	Novak		I002
-2	m	Muller		I003
+1		Jan Novak	I001
+2	p	Pieter Novak	I002
+2	m	Anna Muller	I003
 ```
 
 ### descendants
@@ -212,9 +212,9 @@ One line per descendant in BFS traversal order (subject first, then children, gr
 Each line: `ID\tFull Name`. Use `-i` or `-n` for ID-only or name-only output.
 
 **Output (long mode — with `-l`):**
-Tab-separated values: generation, path, last name (or `(unknown)` if nameless and `-u` is set), ID.
+Tab-separated values: generation, path, full name (first name then last name, or `(unknown)` if nameless and `-u` is set), ID.
 The path uses `s` (son/male), `d` (daughter/female), `?` (unknown sex) to describe the relationship chain from the subject.
-An extra tab is inserted after the last name when it is shorter than 8 characters to align the ID column.
+When `-s name` is used, sorting is by last name (primary) then first name (secondary).
 
 **Examples:**
 
@@ -229,17 +229,17 @@ I007	Sue Smith
 
 # Long mode: all descendants, sorted by path
 $ gedinfo descendants -l -s path I001 tests/fixtures/descendants.ged
-1		Smith		I001
-2	s	Smith		I003
-3	ss	Smith		I006
-3	sd	Smith		I007
-2	d	Smith		I004
+1		John Smith	I001
+2	s	Peter Smith	I003
+3	ss	Tom Smith	I006
+3	sd	Sue Smith	I007
+2	d	Anna Smith	I004
 
 # Long mode: limit to 2 generations
 $ gedinfo descendants -l -g 2 I001 tests/fixtures/descendants.ged
-1		Smith		I001
-2	s	Smith		I003
-2	d	Smith		I004
+1		John Smith	I001
+2	s	Peter Smith	I003
+2	d	Anna Smith	I004
 ```
 
 ### lastnames

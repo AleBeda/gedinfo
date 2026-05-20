@@ -124,9 +124,12 @@ def test_long_sort_name():
     code, out, _ = run_cmd(["descendants", "-l", "-s", "name", "@I001@", str(FIXTURES / "descendants.ged")])
     assert code == 0
     lines = out.strip().splitlines()
-    last_names = [ln.split("\t")[2].strip() for ln in lines]
-    named = [n for n in last_names if n != "(unknown)"]
-    assert named == sorted(named, key=str.lower)
+    # name column contains "First Last"; sort is by last name (primary) then first name
+    # all descendants share last name "Smith" — within Smith, sort by first name
+    names = [ln.split("\t")[2] for ln in lines]
+    smith_names = [n for n in names if "Smith" in n]
+    first_names = [n.split()[0] for n in smith_names]
+    assert first_names == sorted(first_names, key=str.lower)
 
 
 def test_long_sort_id():

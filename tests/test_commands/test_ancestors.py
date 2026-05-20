@@ -119,9 +119,17 @@ def test_long_sort_name():
     code, out, _ = run_cmd(["ancestors", "-l", "-s", "name", "@I001@", str(FIXTURES / "long_ancestors.ged")])
     assert code == 0
     lines = out.strip().splitlines()
-    last_names = [ln.split("\t")[2].strip() for ln in lines]
-    named = [n for n in last_names if n != "(unknown)"]
-    assert named == sorted(named, key=str.lower)
+    # name column contains "First Last"; sort is by last name (primary) then first name
+    # verify last-name order: Bauer < Muller < Novak < Svensson < Weber
+    names = [ln.split("\t")[2] for ln in lines]
+    bauer_idx = next(i for i, n in enumerate(names) if "Bauer" in n)
+    muller_indices = [i for i, n in enumerate(names) if "Muller" in n]
+    novak_indices = [i for i, n in enumerate(names) if "Novak" in n]
+    svensson_idx = next(i for i, n in enumerate(names) if "Svensson" in n)
+    weber_idx = next(i for i, n in enumerate(names) if "Weber" in n)
+    assert bauer_idx < min(muller_indices)
+    assert max(muller_indices) < min(novak_indices)
+    assert max(novak_indices) < svensson_idx < weber_idx
 
 
 def test_long_sort_id():
