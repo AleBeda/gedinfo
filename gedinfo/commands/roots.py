@@ -14,9 +14,8 @@ from ._output import add_output_options, add_sort_option, validate_output_mode, 
 def register(subparsers: argparse._SubParsersAction) -> None:  # type: ignore
     sub = subparsers.add_parser(
         "roots",
-        help=(
-            "List individuals with no recorded parents (roots of the family tree)."
-        ),
+        help="List individuals with no recorded parents (roots of the family tree).",
+        description="List individuals with no recorded parents (roots of the family tree).",
     )
     add_output_options(sub)
     add_sort_option(sub)

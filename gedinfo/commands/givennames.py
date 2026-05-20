@@ -170,6 +170,7 @@ def register(subparsers: argparse._SubParsersAction) -> None:  # type: ignore
     sub = subparsers.add_parser(
         "givennames",
         help="Print given-name frequency for ancestors",
+        description="Print given-name frequency for ancestors",
     )
     sub.add_argument(
         "-g", "--generations",

@@ -13,7 +13,9 @@ from ..queries import get_ancestors, get_ancestor_details
 def register(subparsers: argparse._SubParsersAction) -> None:  # type: ignore
     """Register the ``ancestors`` subcommand with the top-level parser."""
     sub = subparsers.add_parser(
-        "ancestors", help="Print distinct last names of all ancestors"
+        "ancestors",
+        help="Print distinct last names of all ancestors",
+        description="Print distinct last names of all ancestors",
     )
     sub.add_argument(
         "-g",

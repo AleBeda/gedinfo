@@ -15,7 +15,9 @@ from ._output import add_output_options, validate_output_mode, format_individual
 
 def register(subparsers: argparse._SubparsersAction) -> None:  # type: ignore
     sub = subparsers.add_parser(
-        "disjoint", help="List roots of each disjoint component"
+        "disjoint",
+        help="List roots of each disjoint component",
+        description="List roots of each disjoint component",
     )
     add_output_options(sub)
     filter_group = sub.add_argument_group("filter options")

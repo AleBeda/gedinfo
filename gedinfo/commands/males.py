@@ -11,7 +11,11 @@ from ._output import add_output_options, add_sort_option, format_individual, val
 
 
 def register(subparsers: argparse._SubParsersAction) -> None:   # type: ignore
-    sub = subparsers.add_parser("males", help="List all male individuals")
+    sub = subparsers.add_parser(
+        "males",
+        help="List all male individuals",
+        description="List all male individuals",
+    )
     add_output_options(sub)
     add_sort_option(sub)
     sub.add_argument("gedcom_file", help="Path to GEDCOM file")

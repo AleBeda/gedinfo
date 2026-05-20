@@ -21,7 +21,11 @@ import sys
 
 
 def register(subparsers: argparse._SubParsersAction) -> None:  # type: ignore
-    sub = subparsers.add_parser("stat", help="Show statistics about a GEDCOM file")
+    sub = subparsers.add_parser(
+        "stat",
+        help="Show statistics about a GEDCOM file",
+        description="Show statistics about a GEDCOM file",
+    )
     filter_group = sub.add_argument_group("filter options")
     filter_group.add_argument(
         "-s", "--spouse",

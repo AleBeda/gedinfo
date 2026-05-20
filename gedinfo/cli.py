@@ -15,12 +15,34 @@ from .parser import GedcomParseError
 # import command modules lazily to avoid circular imports
 
 
+class _DescriptionFirstParser(argparse.ArgumentParser):
+    """Subparser variant that prints description before the usage line."""
+
+    def format_help(self) -> str:
+        formatter = self._get_formatter()
+        if self.description:
+            formatter.add_text(self.description)
+        formatter.add_usage(
+            self.usage, self._actions, self._mutually_exclusive_groups
+        )
+        for action_group in self._action_groups:
+            formatter.start_section(action_group.title)
+            formatter.add_text(action_group.description)
+            formatter.add_arguments(action_group._group_actions)
+            formatter.end_section()
+        formatter.add_text(self.epilog)
+        return formatter.format_help()
+
+
 def main() -> None:
     """Entry point invoked by the ``gedinfo`` console script."""
-    parser = argparse.ArgumentParser(prog="gedinfo")
+    parser = argparse.ArgumentParser(
+        prog="gedinfo",
+        epilog="Run 'gedinfo <command> -h' for help on a specific command.",
+    )
     parser.add_argument("--version", action="store_true", help="Print version and exit")
     parser.add_argument("--debug", action="store_true", help="Show tracebacks on error")
-    subparsers = parser.add_subparsers(dest="command")
+    subparsers = parser.add_subparsers(dest="command", parser_class=_DescriptionFirstParser)
     subparsers.required = False
 
     # register built-in subcommands

@@ -20,6 +20,12 @@ def register(subparsers: argparse._SubParsersAction) -> None:  # type: ignore
             "independently. Prints one line per match: the ID (without @), a tab, and "
             "the full name."
         ),
+        description=(
+            "Search for individuals by partial name match. The query is matched "
+            "case-insensitively as a substring against the first name and last name "
+            "independently. Prints one line per match: the ID (without @), a tab, and "
+            "the full name."
+        ),
     )
     sub.add_argument(
         "name",
