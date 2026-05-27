@@ -66,23 +66,25 @@ def parse(path: str | Path) -> GedcomData:
         if level == 0 and tag in ("INDI", "FAM") and xref:
             if tag == "INDI":
                 indi = Individual(id=xref)
+                ctx: dict = {"event": None}
                 idx += 1
                 while idx < total:
                     lvl, t, v, _ = _parse_line(raw_lines[idx])
                     if lvl == 0:
                         break
-                    _populate_individual(indi, t, v)
+                    _populate_individual(indi, t, v, lvl, ctx)
                     idx += 1
                 data.individuals[indi.id] = indi
                 continue
             elif tag == "FAM":
                 fam = Family(id=xref)
+                ctx = {"event": None}
                 idx += 1
                 while idx < total:
                     lvl, t, v, _ = _parse_line(raw_lines[idx])
                     if lvl == 0:
                         break
-                    _populate_family(fam, t, v)
+                    _populate_family(fam, t, v, lvl, ctx)
                     idx += 1
                 data.families[fam.id] = fam
                 continue
@@ -122,8 +124,20 @@ def _parse_line(line: str) -> Tuple[int, str, str, Optional[str]]:
     return level, tag, value, xref
 
 
-def _populate_individual(indi: Individual, tag: str, value: str) -> None:
+def _populate_individual(indi: Individual, tag: str, value: str,
+                         level: int = 1, ctx: dict | None = None) -> None:
+    if ctx is None:
+        ctx = {}
     tag = tag.upper()
+    if level == 1:
+        ctx["event"] = tag if tag in ("BIRT", "DEAT") else None
+    if tag == "DATE":
+        event = ctx.get("event")
+        if event == "BIRT" and indi.birth_date is None:
+            indi.birth_date = value.strip()
+        elif event == "DEAT" and indi.death_date is None:
+            indi.death_date = value.strip()
+        return
     if tag == "NAME":
         fn, ln = _split_name(value)
         indi.first_name = fn
@@ -162,8 +176,16 @@ def _populate_individual(indi: Individual, tag: str, value: str) -> None:
     # ignore other tags
 
 
-def _populate_family(fam: Family, tag: str, value: str) -> None:
+def _populate_family(fam: Family, tag: str, value: str,
+                     level: int = 1, ctx: dict | None = None) -> None:
+    if ctx is None:
+        ctx = {}
     tag = tag.upper()
+    if level == 1:
+        ctx["event"] = tag if tag == "MARR" else None
+    if tag == "DATE" and ctx.get("event") == "MARR" and fam.marriage_date is None:
+        fam.marriage_date = value.strip()
+        return
     if tag == "HUSB":
         fam.husband_id = value.strip() or None
     elif tag == "WIFE":

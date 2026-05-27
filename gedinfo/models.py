@@ -26,6 +26,8 @@ class Individual:
         givn: Values of all ``GIVN`` sub-tags (additional given-name fields).
         nam2: Values of all ``NAM2`` tags (second/additional name fields).
         namh: Values of all ``NAMH`` tags (Hebrew name fields).
+        birth_date: Value of the ``DATE`` sub-tag under ``BIRT``, or ``None``.
+        death_date: Value of the ``DATE`` sub-tag under ``DEAT``, or ``None``.
     """
 
     id: str
@@ -38,6 +40,8 @@ class Individual:
     givn: list[str] = field(default_factory=list)   # values of all GIVN sub-tags
     nam2: list[str] = field(default_factory=list)   # values of all NAM2 tags
     namh: list[str] = field(default_factory=list)   # values of all NAMH tags
+    birth_date: Optional[str] = None
+    death_date: Optional[str] = None
 
 
 @dataclass
@@ -49,12 +53,14 @@ class Family:
         husband_id: ID of the husband individual or ``None``.
         wife_id: ID of the wife individual or ``None``.
         child_ids: List of children individual IDs.
+        marriage_date: Value of the ``DATE`` sub-tag under ``MARR``, or ``None``.
     """
 
     id: str
     husband_id: Optional[str] = None
     wife_id: Optional[str] = None
     child_ids: list[str] = field(default_factory=list)
+    marriage_date: Optional[str] = None
 
 
 @dataclass

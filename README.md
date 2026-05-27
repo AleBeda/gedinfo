@@ -2,7 +2,7 @@
 
 A command-line utility for querying GEDCOM genealogy files.
 
-Version: 0.10.0
+Version: 0.11.0
 
 Installation
 ------------
@@ -782,6 +782,62 @@ $ gedinfo givennames --direction asc -f -2 I001 tests/fixtures/simple.ged
 Masculine names:
 3	John  (John: 2, Yohanan: 1)
 1	James
+```
+
+### relatives
+
+Show the immediate family of an individual: parents, the individual themselves,
+spouses, and children per spouse.
+
+**Syntax:**
+```
+gedinfo relatives [options] <indi_id> <gedcom_file>
+```
+
+**Arguments:**
+- `<indi_id>`: The GEDCOM individual ID (with or without @ delimiters)
+- `<gedcom_file>`: Path to the GEDCOM file
+
+**Options:**
+- `-i, --id`: Print individual ID
+- `-n, --name`: Print individual name
+- `-b, --birth`: Print birth date
+- `-d, --death`: Print death date
+- `-m, --marriage`: Print marriage date (parents' marriage for parent rows; individual's marriage to that spouse for spouse rows; blank for self and children)
+- `-l, --long`: Equivalent to `-i -n -b -d -m`
+
+If none of `-i`, `-n`, `-b`, `-d`, `-m`, `-l` is specified, the default output is equivalent to `-i -n`.
+
+**Output:**
+One row per relative, tab-separated. The first column is a relationship label:
+`father:`, `mother:`, `parent:` (unknown sex), `self:`, `husband:`, `wife:`,
+`son:`, `daughter:`, `child:` (unknown sex). When the individual has children in a family with
+no recorded other parent, a standalone `(unknown spouse):` header line is printed before those
+children. Families with no other parent and no children are skipped.
+
+**Example:**
+```bash
+$ gedinfo relatives @I001@ tests/fixtures/relatives.ged
+father:	I002	John Smith
+mother:	I003	Jane Doe
+self:	I001	Bob Smith
+wife:	I004	Alice Brown
+son:	I005	Charlie Smith
+daughter:	I006	Diana Smith
+wife:	I007	Eve Green
+(unknown spouse):
+child:	I008	Eddie Smith
+
+$ gedinfo relatives -l @I001@ tests/fixtures/relatives.ged
+father:	I002	John Smith	1 JAN 1900	1 JAN 1970	15 JUN 1925
+mother:	I003	Jane Doe	5 MAR 1905		15 JUN 1925
+self:	I001	Bob Smith	3 APR 1930		
+wife:	I004	Alice Brown	7 JUL 1932		10 OCT 1955
+son:	I005	Charlie Smith			
+daughter:	I006	Diana Smith			
+wife:	I007	Eve Green			
+(unknown spouse):
+child:	I008	Eddie Smith			
 ```
 
 Testing
