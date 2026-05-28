@@ -3,13 +3,26 @@
 from __future__ import annotations
 
 import argparse
+import sys
 from pathlib import Path
 from typing import Optional, Tuple
 
-from faker import Faker
+_fake = None  # initialized lazily on first use of the anonymize command
 
-Faker.seed(0)
-_fake = Faker()
+
+def _ensure_fake() -> None:
+    global _fake
+    if _fake is not None:
+        return
+    try:
+        from faker import Faker  # type: ignore[import-not-found]
+    except ImportError:
+        import subprocess
+        print("Installing required dependency: faker...", file=sys.stderr)
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "faker"])
+        from faker import Faker  # type: ignore[import-not-found]
+    Faker.seed(0)
+    _fake = Faker()
 
 _KEEP_TAGS: frozenset[str] = frozenset({
     "SEX", "DATE", "HUSB", "WIFE", "CHIL", "FAMC", "FAMS", "_LIVING",
@@ -318,6 +331,7 @@ def register(subparsers: argparse._SubParsersAction) -> None:  # type: ignore
 
 def run(args) -> None:
     """Handler invoked when ``gedinfo anonymize`` is run."""
+    _ensure_fake()
     keep_set   = {f.upper() for f in (args.keep   or [])}
     remove_set = {f.upper() for f in (args.remove or [])}
     fake_set   = {f.upper() for f in (args.fake   or [])}
