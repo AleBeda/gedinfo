@@ -170,12 +170,12 @@ def test_empty_name_preserved(tmp_path):
     f.write_text(content)
     code, out, _ = run_cmd(["anonymize", str(f)])
     assert code == 0
-    # I001 has empty name — must be preserved as-is, not replaced with a fake name
-    name_lines = [ln for ln in out.splitlines() if "1 NAME " in ln]
-    assert len(name_lines) == 2
-    assert any(ln.strip() == "1 NAME //" for ln in name_lines)
-    # I002 should still get a real fake name
-    assert not any("John" in ln or "Smith" in ln for ln in name_lines)
+    name_lines = [ln for ln in out.splitlines() if "1 NAME" in ln]
+    # I001 has NAME // — the NAME tag must be stripped entirely from the output
+    assert len(name_lines) == 1
+    assert "//" not in name_lines[0]
+    # I002 should get a real fake name (not "John" or "Smith")
+    assert "John" not in name_lines[0] and "Smith" not in name_lines[0]
 
 
 def test_seed_option():

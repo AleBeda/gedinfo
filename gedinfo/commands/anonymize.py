@@ -114,9 +114,9 @@ def _build_name_entry(
     last_name_map: dict[str, str],
 ) -> None:
     first, last = _split_gedcom_name(name_value)
-    # Preserve effectively empty names (e.g. "//" or blank) without faking them.
+    # Empty name (e.g. "//"): store sentinel so the NAME line is stripped from output.
     if first is None and last is None:
-        name_map[name_value] = name_value
+        name_map[name_value] = ""
         return
     first_tokens = first.split() if first else []
     last_tokens = last.split() if last else []
@@ -168,15 +168,15 @@ def _collect_mappings(raw_lines: list[str]) -> dict:
         if tag_up == "PLAC" and v not in place_map:
             place_map[v] = _gen_fake_place(v)
         elif tag_up == "ADDR" and v not in addr_map:
-            addr_map[v] = _fake.street_address()
+            addr_map[v] = _shortest_within(_fake.street_address, len(v))
         elif tag_up == "CITY" and v not in city_map:
-            city_map[v] = _fake.city()
+            city_map[v] = _shortest_within(_fake.city, len(v))
         elif tag_up == "STAE" and v not in stae_map:
-            stae_map[v] = _fake.state_abbr()
+            stae_map[v] = _shortest_within(_fake.state_abbr, len(v))
         elif tag_up == "CTRY" and v not in ctry_map:
-            ctry_map[v] = _fake.country()
+            ctry_map[v] = _shortest_within(_fake.country, len(v))
         elif tag_up == "POST" and v not in post_map:
-            post_map[v] = _fake.postcode()
+            post_map[v] = _shortest_within(_fake.postcode, len(v))
         # Collect individual identity fields
         if in_indi:
             if tag_up == "SEX":
@@ -228,19 +228,19 @@ def _anonymize_value(tag_up: str, value: str, mappings: dict) -> str:
         return mappings["place_map"].get(v) or _gen_fake_place(v)
     if tag_up == "ADDR":
         v = value.strip()
-        return mappings["addr_map"].get(v, _fake.street_address()) if v else v
+        return mappings["addr_map"].get(v) or (_shortest_within(_fake.street_address, len(v)) if v else v)
     if tag_up == "CITY":
         v = value.strip()
-        return mappings["city_map"].get(v, _fake.city()) if v else v
+        return mappings["city_map"].get(v) or (_shortest_within(_fake.city, len(v)) if v else v)
     if tag_up == "STAE":
         v = value.strip()
-        return mappings["stae_map"].get(v, _fake.state_abbr()) if v else v
+        return mappings["stae_map"].get(v) or (_shortest_within(_fake.state_abbr, len(v)) if v else v)
     if tag_up == "CTRY":
         v = value.strip()
-        return mappings["ctry_map"].get(v, _fake.country()) if v else v
+        return mappings["ctry_map"].get(v) or (_shortest_within(_fake.country, len(v)) if v else v)
     if tag_up == "POST":
         v = value.strip()
-        return mappings["post_map"].get(v, _fake.postcode()) if v else v
+        return mappings["post_map"].get(v) or (_shortest_within(_fake.postcode, len(v)) if v else v)
     if tag_up in ("NOTE", "CONT", "CONC"):
         n = max(1, len(value.split()))
         return _fake.sentence(nb_words=n).rstrip(".")
@@ -319,7 +319,10 @@ def _transform(
             if not value.strip():
                 out.append(line)
             else:
-                out.append(f"{level} {tag_up} {_anonymize_value(tag_up, value, mappings)}")
+                fake_v = _anonymize_value(tag_up, value, mappings)
+                if not fake_v:
+                    continue  # empty sentinel (e.g. name "//") — strip the tag
+                out.append(f"{level} {tag_up} {fake_v}")
         elif action == "fake":
             if not value.strip():
                 out.append(line)
