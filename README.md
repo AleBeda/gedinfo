@@ -2,7 +2,7 @@
 
 A command-line utility for querying GEDCOM genealogy files.
 
-Version: 0.11.0
+Version: 0.12.0
 
 Installation
 ------------
@@ -838,6 +838,64 @@ daughter:	I006	Diana Smith
 wife:	I007	Eve Green			
 (unknown spouse):
 child:	I008	Eddie Smith			
+```
+
+### anonymize
+
+Output an anonymized derivative of a GEDCOM file. Names, locations, and notes
+are replaced with fake-but-realistic data while the family structure (IDs,
+relationships, dates, sex) is preserved. The output is deterministic: the same
+input always produces the same anonymized output.
+
+**Syntax:**
+```
+gedinfo anonymize [options] <gedcom_file>
+```
+
+**Arguments:**
+- `<gedcom_file>`: Path to the GEDCOM file
+
+**Options:**
+- `-o FILE` / `--output FILE`: write output to FILE instead of stdout
+- `--keep FIELD`: keep FIELD unchanged (repeatable)
+- `--remove FIELD`: strip FIELD from output (repeatable)
+- `--fake FIELD`: anonymize FIELD with realistic fake data (repeatable)
+
+If the same GEDCOM field is specified in more than one of `--keep`, `--remove`,
+or `--fake`, the command exits with an error naming the conflicting field.
+
+**What is kept unchanged:**
+- All date fields (`DATE`)
+- Sex of individuals (`SEX`)
+- All structural IDs and family links (`HUSB`, `WIFE`, `CHIL`, `FAMC`, `FAMS`)
+- `_LIVING` fields
+- Event container tags (`BIRT`, `DEAT`, `MARR`, etc.)
+
+**What is anonymized:**
+- Names (`NAME`, `GIVN`, `SURN`) — fake names matching the original token count;
+  individuals sharing the same original last name receive the same fake last name
+- Locations (`PLAC`, `ADDR`, `CITY`, `STAE`, `CTRY`, `POST`) — fake place names;
+  the same original location string always maps to the same fake location
+- Notes (`NOTE` and continuation lines)
+
+**What is stripped:**
+- GEDCOM header content (replaced with a minimal valid header)
+- All other fields not listed above
+
+**Example:**
+```bash
+$ gedinfo anonymize family.ged
+0 HEAD
+1 GEDC
+2 VERS 5.5.1
+1 CHAR UTF-8
+0 @I001@ INDI
+1 NAME Richard /Sullivan/
+1 SEX M
+...
+
+$ gedinfo anonymize --keep OCCU --remove DATE family.ged
+$ gedinfo anonymize -o anonymized.ged family.ged
 ```
 
 Testing
