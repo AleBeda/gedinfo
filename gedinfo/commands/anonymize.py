@@ -7,22 +7,10 @@ import sys
 from pathlib import Path
 from typing import Optional, Tuple
 
-_fake = None  # initialized lazily on first use of the anonymize command
+_fake = None      # Faker instance, initialized lazily in run()
+_fake_cls = None  # Faker class, cached after first import
 
-
-def _ensure_fake() -> None:
-    global _fake
-    if _fake is not None:
-        return
-    try:
-        from faker import Faker  # type: ignore[import-not-found]
-    except ImportError:
-        import subprocess
-        print("Installing required dependency: faker...", file=sys.stderr)
-        subprocess.check_call([sys.executable, "-m", "pip", "install", "faker"])
-        from faker import Faker  # type: ignore[import-not-found]
-    Faker.seed(0)
-    _fake = Faker()
+_MAX_LEN_ITERS: int = 20  # max retries for length-bounded fake generation
 
 _KEEP_TAGS: frozenset[str] = frozenset({
     "SEX", "DATE", "HUSB", "WIFE", "CHIL", "FAMC", "FAMS", "_LIVING",
@@ -35,6 +23,34 @@ _ANON_TAGS: frozenset[str] = frozenset({
     "NOTE", "CONT", "CONC",
 })
 _MINIMAL_HEAD: list[str] = ["0 HEAD", "1 GEDC", "2 VERS 5.5.1", "1 CHAR UTF-8"]
+
+
+def _ensure_fake(seed: int = 0) -> None:
+    global _fake, _fake_cls
+    if _fake_cls is None:
+        try:
+            from faker import Faker  # type: ignore[import-not-found]
+        except ImportError:
+            import subprocess
+            print("Installing required dependency: faker...", file=sys.stderr)
+            subprocess.check_call([sys.executable, "-m", "pip", "install", "faker"])
+            from faker import Faker  # type: ignore[import-not-found]
+        _fake_cls = Faker
+    _fake_cls.seed(seed)
+    _fake = _fake_cls()
+
+
+def _shortest_within(gen_fn, max_len: int) -> str:
+    """Call gen_fn up to _MAX_LEN_ITERS times; return first result ≤ max_len chars,
+    or the shortest seen if none fits within the limit."""
+    best = gen_fn()
+    for _ in range(_MAX_LEN_ITERS - 1):
+        if len(best) <= max_len:
+            break
+        candidate = gen_fn()
+        if len(candidate) < len(best):
+            best = candidate
+    return best
 
 
 def _split_line(line: str) -> Tuple[int, str, str, Optional[str]]:
@@ -72,20 +88,23 @@ def _split_gedcom_name(raw: str) -> Tuple[Optional[str], Optional[str]]:
     return " ".join(tokens[:-1]), tokens[-1]
 
 
-def _gen_fake_first(n: int, sex: str) -> str:
+def _gen_fake_first(sex: str, orig_tokens: list[str]) -> str:
     method = (_fake.first_name_male if sex == "M"
               else _fake.first_name_female if sex == "F"
               else _fake.first_name)
-    return " ".join(method() for _ in range(n))
+    return " ".join(_shortest_within(method, len(t)) if t else "" for t in orig_tokens)
 
 
-def _gen_fake_last(n: int) -> str:
-    return " ".join(_fake.last_name() for _ in range(n))
+def _gen_fake_last(orig_tokens: list[str]) -> str:
+    return " ".join(_shortest_within(_fake.last_name, len(t)) if t else "" for t in orig_tokens)
 
 
 def _gen_fake_place(original: str) -> str:
-    parts = [c.strip() for c in original.split(",")]
-    return ", ".join(_fake.city() for _ in parts)
+    components = [c.strip() for c in original.split(",")]
+    return ", ".join(
+        _shortest_within(_fake.city, len(c)) if c else c
+        for c in components
+    )
 
 
 def _build_name_entry(
@@ -95,16 +114,23 @@ def _build_name_entry(
     last_name_map: dict[str, str],
 ) -> None:
     first, last = _split_gedcom_name(name_value)
-    n_first = len(first.split()) if first else 1
-    n_last = len(last.split()) if last else 1
+    # Preserve effectively empty names (e.g. "//" or blank) without faking them.
+    if first is None and last is None:
+        name_map[name_value] = name_value
+        return
+    first_tokens = first.split() if first else []
+    last_tokens = last.split() if last else []
     if last is not None:
         if last not in last_name_map:
-            last_name_map[last] = _gen_fake_last(n_last)
+            last_name_map[last] = _gen_fake_last(last_tokens) if last_tokens else ""
         fake_last = last_name_map[last]
     else:
-        fake_last = _gen_fake_last(1)
-    fake_first = _gen_fake_first(n_first, sex)
-    name_map[name_value] = f"{fake_first} /{fake_last}/"
+        fake_last = _gen_fake_last([last_tokens[0]] if last_tokens else ["x"])
+    fake_first = _gen_fake_first(sex, first_tokens) if first_tokens else ""
+    if fake_first:
+        name_map[name_value] = f"{fake_first} /{fake_last}/"
+    else:
+        name_map[name_value] = f"/{fake_last}/"
 
 
 def _collect_mappings(raw_lines: list[str]) -> dict:
@@ -191,28 +217,30 @@ def _anonymize_value(tag_up: str, value: str, mappings: dict) -> str:
         return mappings["name_map"].get(v, v)
     if tag_up == "GIVN":
         v = value.strip()
-        return _gen_fake_first(max(1, len(v.split())), "U")
+        return _gen_fake_first("U", v.split()) if v else v
     if tag_up == "SURN":
         v = value.strip()
-        return _gen_fake_last(max(1, len(v.split())))
+        return _gen_fake_last(v.split()) if v else v
     if tag_up == "PLAC":
         v = value.strip()
+        if not v:
+            return v
         return mappings["place_map"].get(v) or _gen_fake_place(v)
     if tag_up == "ADDR":
         v = value.strip()
-        return mappings["addr_map"].get(v, _fake.street_address())
+        return mappings["addr_map"].get(v, _fake.street_address()) if v else v
     if tag_up == "CITY":
         v = value.strip()
-        return mappings["city_map"].get(v, _fake.city())
+        return mappings["city_map"].get(v, _fake.city()) if v else v
     if tag_up == "STAE":
         v = value.strip()
-        return mappings["stae_map"].get(v, _fake.state_abbr())
+        return mappings["stae_map"].get(v, _fake.state_abbr()) if v else v
     if tag_up == "CTRY":
         v = value.strip()
-        return mappings["ctry_map"].get(v, _fake.country())
+        return mappings["ctry_map"].get(v, _fake.country()) if v else v
     if tag_up == "POST":
         v = value.strip()
-        return mappings["post_map"].get(v, _fake.postcode())
+        return mappings["post_map"].get(v, _fake.postcode()) if v else v
     if tag_up in ("NOTE", "CONT", "CONC"):
         n = max(1, len(value.split()))
         return _fake.sentence(nb_words=n).rstrip(".")
@@ -325,13 +353,19 @@ def register(subparsers: argparse._SubParsersAction) -> None:  # type: ignore
         "--fake", action="append", default=[], metavar="FIELD",
         help="Anonymize FIELD with realistic fake data (repeatable)",
     )
+    sub.add_argument(
+        "--seed", type=int, default=0, metavar="NUMBER",
+        help="Random seed for deterministic output (default: 0)",
+    )
     sub.add_argument("gedcom_file", help="Path to GEDCOM file")
     sub.set_defaults(func=run)
 
 
 def run(args) -> None:
     """Handler invoked when ``gedinfo anonymize`` is run."""
-    _ensure_fake()
+    seed = getattr(args, "seed", 0)
+    _ensure_fake(seed)
+
     keep_set   = {f.upper() for f in (args.keep   or [])}
     remove_set = {f.upper() for f in (args.remove or [])}
     fake_set   = {f.upper() for f in (args.fake   or [])}

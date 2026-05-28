@@ -157,3 +157,34 @@ def test_unknown_file():
     code, _, err = run_cmd(["anonymize", "nonexistent.ged"])
     assert code == 1
     assert "nonexistent.ged" in err.lower() or "not found" in err.lower()
+
+
+def test_empty_name_preserved(tmp_path):
+    content = (
+        "0 HEAD\n"
+        "0 @I001@ INDI\n1 NAME //\n1 SEX M\n"
+        "0 @I002@ INDI\n1 NAME John /Smith/\n1 SEX M\n"
+        "0 TRLR\n"
+    )
+    f = tmp_path / "empty.ged"
+    f.write_text(content)
+    code, out, _ = run_cmd(["anonymize", str(f)])
+    assert code == 0
+    # I001 has empty name — must be preserved as-is, not replaced with a fake name
+    name_lines = [ln for ln in out.splitlines() if "1 NAME " in ln]
+    assert len(name_lines) == 2
+    assert any(ln.strip() == "1 NAME //" for ln in name_lines)
+    # I002 should still get a real fake name
+    assert not any("John" in ln or "Smith" in ln for ln in name_lines)
+
+
+def test_seed_option():
+    _, out0, _ = run_cmd(["anonymize", GED])              # default seed 0
+    _, out42, _ = run_cmd(["anonymize", "--seed", "42", GED])
+    assert out0 != out42
+
+
+def test_seed_deterministic():
+    _, out1, _ = run_cmd(["anonymize", "--seed", "42", GED])
+    _, out2, _ = run_cmd(["anonymize", "--seed", "42", GED])
+    assert out1 == out2
