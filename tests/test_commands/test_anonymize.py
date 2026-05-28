@@ -188,3 +188,64 @@ def test_seed_deterministic():
     _, out1, _ = run_cmd(["anonymize", "--seed", "42", GED])
     _, out2, _ = run_cmd(["anonymize", "--seed", "42", GED])
     assert out1 == out2
+
+
+def test_no_last_name_preserved(tmp_path):
+    content = (
+        "0 HEAD\n"
+        "0 @I001@ INDI\n1 NAME John\n1 SEX M\n"
+        "0 TRLR\n"
+    )
+    f = tmp_path / "nolast.ged"
+    f.write_text(content)
+    code, out, _ = run_cmd(["anonymize", str(f)])
+    assert code == 0
+    name_lines = [ln for ln in out.splitlines() if "1 NAME" in ln]
+    assert len(name_lines) == 1
+    # No slashes — the fake individual also has no last name
+    assert "/" not in name_lines[0]
+    assert "John" not in name_lines[0]
+
+
+def test_no_first_name_preserved(tmp_path):
+    content = (
+        "0 HEAD\n"
+        "0 @I001@ INDI\n1 NAME /Smith/\n1 SEX M\n"
+        "0 TRLR\n"
+    )
+    f = tmp_path / "nofirst.ged"
+    f.write_text(content)
+    code, out, _ = run_cmd(["anonymize", str(f)])
+    assert code == 0
+    name_lines = [ln for ln in out.splitlines() if "1 NAME" in ln]
+    assert len(name_lines) == 1
+    name_val = name_lines[0].split("1 NAME ", 1)[1].strip()
+    # Starts with / and has no given name before the first slash
+    assert name_val.startswith("/")
+    assert name_val.split("/")[0].strip() == ""
+    assert "Smith" not in name_val
+
+
+def test_compound_name_tokens_unique(tmp_path):
+    content = (
+        "0 HEAD\n"
+        "0 @I001@ INDI\n1 NAME Mary Jane /Smith Jones/\n1 SEX F\n"
+        "0 TRLR\n"
+    )
+    f = tmp_path / "compound.ged"
+    f.write_text(content)
+    code, out, _ = run_cmd(["anonymize", str(f)])
+    assert code == 0
+    name_lines = [ln for ln in out.splitlines() if "1 NAME" in ln]
+    assert len(name_lines) == 1
+    name_val = name_lines[0].split("1 NAME ", 1)[1].strip()
+    # Parse first and last components
+    parts = name_val.split("/")
+    first_tokens = parts[0].strip().split() if parts[0].strip() else []
+    last_tokens = parts[1].strip().split() if len(parts) > 1 and parts[1].strip() else []
+    # Token counts must match the original
+    assert len(first_tokens) == 2
+    assert len(last_tokens) == 2
+    # All tokens within each component must be distinct
+    assert len(set(first_tokens)) == 2, f"Duplicate first-name tokens: {first_tokens}"
+    assert len(set(last_tokens)) == 2, f"Duplicate last-name tokens: {last_tokens}"

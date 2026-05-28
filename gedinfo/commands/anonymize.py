@@ -92,11 +92,41 @@ def _gen_fake_first(sex: str, orig_tokens: list[str]) -> str:
     method = (_fake.first_name_male if sex == "M"
               else _fake.first_name_female if sex == "F"
               else _fake.first_name)
-    return " ".join(_shortest_within(method, len(t)) if t else "" for t in orig_tokens)
+    used: set[str] = set()
+    parts: list[str] = []
+    for t in orig_tokens:
+        if not t:
+            parts.append("")
+            continue
+        name = _shortest_within(method, len(t))
+        if name in used:
+            for _ in range(_MAX_LEN_ITERS):
+                candidate = method()
+                if candidate not in used:
+                    name = candidate
+                    break
+        used.add(name)
+        parts.append(name)
+    return " ".join(parts)
 
 
 def _gen_fake_last(orig_tokens: list[str]) -> str:
-    return " ".join(_shortest_within(_fake.last_name, len(t)) if t else "" for t in orig_tokens)
+    used: set[str] = set()
+    parts: list[str] = []
+    for t in orig_tokens:
+        if not t:
+            parts.append("")
+            continue
+        name = _shortest_within(_fake.last_name, len(t))
+        if name in used:
+            for _ in range(_MAX_LEN_ITERS):
+                candidate = _fake.last_name()
+                if candidate not in used:
+                    name = candidate
+                    break
+        used.add(name)
+        parts.append(name)
+    return " ".join(parts)
 
 
 def _gen_fake_place(original: str) -> str:
@@ -124,13 +154,15 @@ def _build_name_entry(
         if last not in last_name_map:
             last_name_map[last] = _gen_fake_last(last_tokens) if last_tokens else ""
         fake_last = last_name_map[last]
+        fake_first = _gen_fake_first(sex, first_tokens) if first_tokens else ""
+        if fake_first:
+            name_map[name_value] = f"{fake_first} /{fake_last}/"
+        else:
+            name_map[name_value] = f"/{fake_last}/"
     else:
-        fake_last = _gen_fake_last([last_tokens[0]] if last_tokens else ["x"])
-    fake_first = _gen_fake_first(sex, first_tokens) if first_tokens else ""
-    if fake_first:
-        name_map[name_value] = f"{fake_first} /{fake_last}/"
-    else:
-        name_map[name_value] = f"/{fake_last}/"
+        # No last name in original — generate only a fake first name, no slashes
+        fake_first = _gen_fake_first(sex, first_tokens) if first_tokens else ""
+        name_map[name_value] = fake_first
 
 
 def _collect_mappings(raw_lines: list[str]) -> dict:

@@ -91,7 +91,7 @@ def main() -> None:
     args = parser.parse_args()
 
     if args.version:
-        print("gedinfo 0.12.2")
+        print("gedinfo 0.12.3")
         sys.exit(0)
 
     if not args.command:
