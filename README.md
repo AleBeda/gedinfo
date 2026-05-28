@@ -43,6 +43,27 @@ gedinfo [--version] [--debug] <command> [options] <arguments>
 Commands
 --------
 
+| Command | Description |
+|---------|-------------|
+| [name](#name) | Print the full name of an individual by ID |
+| [id](#id) | Search for individuals by partial name match |
+| [names](#names) | Print distinct last names for a list of individual IDs |
+| [ancestors](#ancestors) | List all ancestors of an individual |
+| [descendants](#descendants) | List all descendants of an individual |
+| [lastnames](#lastnames) | Print distinct ancestor surnames with lineage paths |
+| [roots](#roots) | List root individuals (those with no recorded parents) |
+| [living](#living) | List individuals with a `_LIVING` flag |
+| [leaves](#leaves) | List leaf individuals (those with no recorded children) |
+| [indi](#indi) | List all individuals in the file |
+| [males](#males) | List all male individuals |
+| [females](#females) | List all female individuals |
+| [nosex](#nosex) | List individuals with unknown or unspecified sex |
+| [stat](#stat) | Print file statistics (individual count, family count, roots, leaves) |
+| [disjoint](#disjoint) | List the sizes of connected family components |
+| [givennames](#givennames) | Frequency count of given names among ancestors or descendants |
+| [relatives](#relatives) | Show the immediate family of an individual (parents, spouses, children) |
+| [anonymize](#anonymize) | Output a privacy-safe derivative with fake names and locations |
+
 ### name
 
 Print the full name of an individual by their ID.
