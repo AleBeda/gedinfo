@@ -860,6 +860,7 @@ gedinfo anonymize [options] <gedcom_file>
 - `--keep FIELD`: keep FIELD unchanged (repeatable)
 - `--remove FIELD`: strip FIELD from output (repeatable)
 - `--fake FIELD`: anonymize FIELD with realistic fake data (repeatable)
+- `--seed NUMBER`: seed for the random name/location generator (default: 0)
 
 If the same GEDCOM field is specified in more than one of `--keep`, `--remove`,
 or `--fake`, the command exits with an error naming the conflicting field.
@@ -872,10 +873,18 @@ or `--fake`, the command exits with an error naming the conflicting field.
 - Event container tags (`BIRT`, `DEAT`, `MARR`, etc.)
 
 **What is anonymized:**
-- Names (`NAME`, `GIVN`, `SURN`) — fake names matching the original token count;
-  individuals sharing the same original last name receive the same fake last name
-- Locations (`PLAC`, `ADDR`, `CITY`, `STAE`, `CTRY`, `POST`) — fake place names;
-  the same original location string always maps to the same fake location
+- Names (`NAME`, `GIVN`, `SURN`) — fake names matching the original structure:
+  - Token count is preserved (two-word first name → two-word fake first name)
+  - Name structure is preserved: first-name-only individuals have no slashes in
+    output; last-name-only individuals retain the `/Surname/` format
+  - Individuals with an empty name (`NAME //`) have the NAME tag stripped entirely
+  - Individuals sharing the same original last name receive the same fake last name
+  - Compound names (multiple tokens) always have distinct tokens — no repetition
+  - Fake tokens are length-bounded: up to 20 attempts are made to find a token no
+    longer than the original; the shortest candidate is used if none qualifies
+- Locations (`PLAC`, `ADDR`, `CITY`, `STAE`, `CTRY`, `POST`) — fake place names
+  with the same length-bounding as names; the same original value always maps to
+  the same fake value
 - Notes (`NOTE` and continuation lines)
 
 **What is stripped:**
