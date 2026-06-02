@@ -28,7 +28,7 @@ def register(subparsers: argparse._SubParsersAction) -> None:  # type: ignore
     )
     filter_group = sub.add_argument_group("filter options")
     filter_group.add_argument(
-        "-s", "--spouse",
+        "--spouse",
         action="store_true",
         default=False,
         help=(
@@ -37,7 +37,7 @@ def register(subparsers: argparse._SubParsersAction) -> None:  # type: ignore
         ),
     )
     filter_group.add_argument(
-        "-u", "--unknowns",
+        "-u", "--unknown",
         action="store_true",
         default=False,
         help=(
@@ -60,8 +60,8 @@ def register(subparsers: argparse._SubParsersAction) -> None:  # type: ignore
 
 def run(args: Any) -> None:
     # validate mutually exclusive flags if present
-    if getattr(args, "all", False) and (getattr(args, "spouse", False) or getattr(args, "unknowns", False)):
-        print("--all cannot be combined with --spouse or --unknowns", file=sys.stderr)
+    if getattr(args, "all", False) and (getattr(args, "spouse", False) or getattr(args, "unknown", False)):
+        print("--all cannot be combined with --spouse or --unknown", file=sys.stderr)
         sys.exit(1)
 
     data = parse(args.gedcom_file)
@@ -75,7 +75,7 @@ def run(args: Any) -> None:
         data,
         raw_roots,
         include_spouse_suppressed=(getattr(args, "all", False) or getattr(args, "spouse", False)),
-        include_unknowns=(getattr(args, "all", False) or getattr(args, "unknowns", False)),
+        include_unknowns=(getattr(args, "all", False) or getattr(args, "unknown", False)),
     )
     roots = len(roots_list)
     leaves = len(get_leaves(data))
@@ -95,15 +95,15 @@ def run(args: Any) -> None:
     print(f"  Unknown sex: {unknown}")
     # add optional note when flags change the root count
     note = ""
-    if getattr(args, "all", False) or getattr(args, "spouse", False) or getattr(args, "unknowns", False):
+    if getattr(args, "all", False) or getattr(args, "spouse", False) or getattr(args, "unknown", False):
         if getattr(args, "all", False):
             note = "  (all)"
         else:
             parts = []
             if getattr(args, "spouse", False):
                 parts.append("+spouse")
-            if getattr(args, "unknowns", False):
-                parts.append("+unknowns")
+            if getattr(args, "unknown", False):
+                parts.append("+unknown")
             note = "  (" + ",".join(parts) + ")"
     print(f"  Roots (no parents): {roots}{note}")
     print(f"  Leaves (no children): {leaves}")

@@ -7,7 +7,7 @@ import sys
 from typing import Any
 
 from ..parser import parse
-from ..queries import get_ancestors, get_ancestor_details
+from ..queries import get_ancestors, get_ancestor_details, get_descendant_details
 
 
 def register(subparsers: argparse._SubParsersAction) -> None:  # type: ignore
@@ -50,6 +50,15 @@ def register(subparsers: argparse._SubParsersAction) -> None:  # type: ignore
             "appear with '(unknown)' in the last-name field."
         ),
     )
+    sub.add_argument(
+        "-d", "--direction",
+        choices=["ancestors", "descendants", "up", "down"],
+        default="ancestors",
+        help=(
+            "Traversal direction: 'ancestors'/'up' for ancestors (default), "
+            "'descendants'/'down' for descendants"
+        ),
+    )
     sub.add_argument("indi_id", help="Individual ID to inspect")
     sub.add_argument("gedcom_file", help="Path to GEDCOM file")
     sub.set_defaults(func=run)
@@ -64,12 +73,23 @@ def run(args: Any) -> None:
     if getattr(args, "sort", None) and not getattr(args, "long", False):
         print("--sort requires --long", file=sys.stderr)
         sys.exit(1)
+
+    direction = getattr(args, "direction", "ancestors")
+    is_desc = direction in ("descendants", "down")
+
     data = parse(args.gedcom_file)
     try:
         if getattr(args, "long", False):
-            records = get_ancestor_details(data, args.indi_id, max_generations=g)
+            if is_desc:
+                records = get_descendant_details(data, args.indi_id, max_generations=g)
+            else:
+                records = get_ancestor_details(data, args.indi_id, max_generations=g)
         else:
-            surnames = get_ancestors(data, args.indi_id, max_generations=g)
+            if is_desc:
+                desc_records = get_descendant_details(data, args.indi_id, max_generations=g)
+                surnames = sorted({r["individual"].last_name for r in desc_records if r["individual"].last_name})
+            else:
+                surnames = get_ancestors(data, args.indi_id, max_generations=g)
     except ValueError as exc:
         raise ValueError(str(exc))
 
@@ -78,16 +98,15 @@ def run(args: Any) -> None:
             print(s)
         return
 
-    # Filter out nameless ancestors unless --unknown was requested
+    # Filter out nameless records unless --unknown was requested
     include_unknown = getattr(args, "unknown", False)
     if not include_unknown:
-        records = [r for r in records if not (not r["individual"].first_name and not r["individual"].last_name)]
+        records = [r for r in records if r["individual"].first_name or r["individual"].last_name]
 
-    # Filter to branch-tip ancestors only
-    def is_branch_tip(rec: dict) -> bool:
+    # Filter to branch-tip records only
+    def is_branch_tip_anc(rec: dict) -> bool:
         indi = rec["individual"]
         gen = rec["generation"]
-        # no recorded parent families -> root
         if not indi.family_ids_as_child:
             return True
         for fam_id in indi.family_ids_as_child:
@@ -96,36 +115,41 @@ def run(args: Any) -> None:
                 continue
             for parent_id in (fam.husband_id, fam.wife_id):
                 if parent_id and parent_id in data.individuals:
-                    parent_gen = gen + 1
-                    if g is None or parent_gen <= g:
+                    if g is None or gen + 1 <= g:
                         return False
         return True
 
-    tips = [r for r in records if is_branch_tip(r)]
+    def is_branch_tip_desc(rec: dict) -> bool:
+        indi = rec["individual"]
+        gen = rec["generation"]
+        for fam_id in indi.family_ids_as_spouse:
+            fam = data.families.get(fam_id)
+            if not fam:
+                continue
+            for child_id in fam.child_ids:
+                if child_id in data.individuals:
+                    if g is None or gen + 1 <= g:
+                        return False
+        return True
 
-    # Helper to convert path string to a sortable tuple (paternal-to-maternal order)
+    is_tip = is_branch_tip_desc if is_desc else is_branch_tip_anc
+    tips = [r for r in records if is_tip(r)]
+
     def path_to_sort_key(path: str) -> tuple:
-        """Convert path 'ppm...' to tuple where p=0, ?=1, m=2 for proper ordering."""
-        char_map = {'p': 0, '?': 1, 'm': 2}
+        char_map = {'p': 0, 's': 0, '?': 1, 'm': 1, 'd': 2}
         return tuple(char_map.get(ch, 3) for ch in path)
 
-    # Sorting
-    sort_key = getattr(args, "sort", None)
-    if sort_key is None:
-        sort_key = "path"
+    sort_key = getattr(args, "sort", None) or "path"
 
     if sort_key == "generation":
         tips.sort(key=lambda r: (r["generation"], path_to_sort_key(r["path"])))
     elif sort_key == "path":
         tips.sort(key=lambda r: (path_to_sort_key(r["path"]), (r["individual"].last_name or "").lower(), r["individual"].id))
     elif sort_key == "name":
-        # last_name None sorts last
         tips.sort(key=lambda r: ((r["individual"].last_name or "").lower() if r["individual"].last_name else "~", path_to_sort_key(r["path"]), r["individual"].id))
     elif sort_key == "id":
         tips.sort(key=lambda r: r["individual"].id)
 
-    # Format: generation, path, last_name (or (unknown)), id (without @)
-    # Add extra tab if last_name is shorter than 8 chars for ID alignment
     for r in tips:
         indi = r["individual"]
         gen = r["generation"]

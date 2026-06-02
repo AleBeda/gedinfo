@@ -70,13 +70,9 @@ def format_individual(ind: Individual, mode: Literal["id", "name", "both"]) -> s
 
 
 def add_sort_option(parser: argparse.ArgumentParser) -> None:
-    """Add `--sort {id,name}` option to *parser*.
-
-    Uses long-only `--sort` to avoid conflicts with `-s` (used by `roots`
-    for `--spouse` and by `ancestors`/`givennames` for their own sort modes).
-    """
+    """Add `-s/--sort {id,name}` option to *parser*."""
     parser.add_argument(
-        "--sort",
+        "-s", "--sort",
         choices=["id", "name"],
         default=None,
         help="Sort output: 'id' for numeric ID order, 'name' for alphabetical by name. Default is GEDCOM file order.",

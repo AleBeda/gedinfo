@@ -205,9 +205,12 @@ def register(subparsers: argparse._SubParsersAction) -> None:  # type: ignore
     )
     sub.add_argument(
         "-d", "--direction",
-        choices=["asc", "desc"],
-        default="desc",
-        help="Traversal direction: 'asc' for ancestors, 'desc' for descendants (default: desc)",
+        choices=["ancestors", "descendants", "up", "down"],
+        default="descendants",
+        help=(
+            "Traversal direction: 'ancestors'/'up' for ancestors, "
+            "'descendants'/'down' for descendants (default: descendants)"
+        ),
     )
     sub.add_argument("indi_id", help="Individual ID to inspect")
     sub.add_argument("gedcom_file", help="Path to GEDCOM file")
@@ -226,7 +229,8 @@ def run(args: Any) -> None:
 
     data = parse(args.gedcom_file)
 
-    masc, fem, unkn = _collect_names(data, args.indi_id, g, use_second, use_hebrew, args.direction)
+    direction = "asc" if args.direction in ("ancestors", "up") else "desc"
+    masc, fem, unkn = _collect_names(data, args.indi_id, g, use_second, use_hebrew, direction)
 
     variants: dict[str, str] = {}
     if args.fuzzy:

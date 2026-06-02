@@ -674,3 +674,72 @@ def apply_root_filters(
 def count_families_no_children(data: GedcomData) -> int:
     """Count families that have no children recorded."""
     return sum(1 for fam in data.families.values() if not fam.child_ids)
+
+
+def get_leaf_spouse_suppressed(data: GedcomData, leaves: list[Individual]) -> set[str]:
+    """Return IDs of leaves whose spouse has children with another partner.
+
+    A leaf is spouse-suppressed when it is in a childless family with a spouse
+    who has children in some other family — indicating they married into the
+    documented tree rather than representing an independent line.
+    """
+    suppressed: set[str] = set()
+    for leaf in leaves:
+        for fam_id in leaf.family_ids_as_spouse:
+            fam = data.families.get(fam_id)
+            if not fam:
+                continue
+            spouse_ids = []
+            if fam.husband_id and fam.husband_id != leaf.id:
+                spouse_ids.append(fam.husband_id)
+            if fam.wife_id and fam.wife_id != leaf.id:
+                spouse_ids.append(fam.wife_id)
+            for spouse_id in spouse_ids:
+                spouse = data.individuals.get(spouse_id)
+                if not spouse:
+                    continue
+                for sfam_id in spouse.family_ids_as_spouse:
+                    sfam = data.families.get(sfam_id)
+                    if sfam and sfam.child_ids:
+                        suppressed.add(leaf.id)
+                        break
+                if leaf.id in suppressed:
+                    break
+            if leaf.id in suppressed:
+                break
+    return suppressed
+
+
+def apply_leaf_filters(
+    data: GedcomData,
+    leaves: list[Individual],
+    include_spouse_suppressed: bool = False,
+    include_unknown: bool = False,
+) -> list[Individual]:
+    """Apply suppression filters to a list of leaves.
+
+    By default removes spouse-suppressed leaves and nameless leaves.
+    Each flag re-enables the corresponding group.
+    """
+    if not leaves:
+        return []
+    spouse_suppressed = get_leaf_spouse_suppressed(data, leaves)
+    unknowns = {leaf.id for leaf in leaves if not leaf.first_name and not leaf.last_name}
+    result: list[Individual] = []
+    for leaf in leaves:
+        if leaf.id in spouse_suppressed and not include_spouse_suppressed:
+            continue
+        if leaf.id in unknowns and not include_unknown:
+            continue
+        result.append(leaf)
+    return result
+
+
+def get_noname(data: GedcomData, sort_key: str | None = None) -> List[Individual]:
+    """Return all individuals with neither first nor last name."""
+    result = [i for i in data.individuals.values() if not i.first_name and not i.last_name]
+    if sort_key == "id":
+        return sorted(result, key=lambda i: id_sort_key(i.id))
+    if sort_key == "name":
+        return sorted(result, key=lambda i: display_name(i).lower())
+    return result

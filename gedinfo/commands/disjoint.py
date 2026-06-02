@@ -22,7 +22,7 @@ def register(subparsers: argparse._SubparsersAction) -> None:  # type: ignore
     add_output_options(sub)
     filter_group = sub.add_argument_group("filter options")
     filter_group.add_argument(
-        "-s", "--spouse",
+        "--spouse",
         action="store_true",
         default=False,
         help=(
@@ -31,7 +31,7 @@ def register(subparsers: argparse._SubparsersAction) -> None:  # type: ignore
         ),
     )
     filter_group.add_argument(
-        "-u", "--unknowns",
+        "-u", "--unknown",
         action="store_true",
         default=False,
         help=(
@@ -92,8 +92,8 @@ def render_component(
 
 def run(args: Any) -> None:
     # validate mutually exclusive flags
-    if getattr(args, "all", False) and (getattr(args, "spouse", False) or getattr(args, "unknowns", False)):
-        print("--all cannot be combined with --spouse or --unknowns", file=sys.stderr)
+    if getattr(args, "all", False) and (getattr(args, "spouse", False) or getattr(args, "unknown", False)):
+        print("--all cannot be combined with --spouse or --unknown", file=sys.stderr)
         sys.exit(1)
 
     data = parse(args.gedcom_file)
@@ -108,7 +108,7 @@ def run(args: Any) -> None:
             comp,
             mode,
             include_spouse_suppressed=(getattr(args, "all", False) or getattr(args, "spouse", False)),
-            include_unknowns=(getattr(args, "all", False) or getattr(args, "unknowns", False)),
+            include_unknowns=(getattr(args, "all", False) or getattr(args, "unknown", False)),
         )
         if not lines:
             # Skip empty components

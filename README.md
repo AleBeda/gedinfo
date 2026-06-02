@@ -2,7 +2,7 @@
 
 A command-line utility for querying GEDCOM genealogy files.
 
-Version: 0.13.1
+Version: 0.14.0
 
 Installation
 ------------
@@ -58,6 +58,7 @@ Commands
 | [males](#males) | List all male individuals |
 | [females](#females) | List all female individuals |
 | [nosex](#nosex) | List individuals with unknown or unspecified sex |
+| [noname](#noname) | List individuals with no name recorded |
 | [stat](#stat) | Print file statistics (individual count, family count, roots, leaves) |
 | [disjoint](#disjoint) | List the sizes of connected family components |
 | [givennames](#givennames) | Frequency count of given names among ancestors or descendants |
@@ -118,7 +119,7 @@ $ gedinfo id Smith tests/fixtures/refinements.ged
 ```
 ### names
 
-Print the distinct last names of individuals whose IDs are listed in a file.
+Print the distinct last names of individuals whose IDs are listed in a file (or from stdin).
 
 **Syntax:**
 ```
@@ -126,7 +127,7 @@ gedinfo names <ids_file> <gedcom_file>
 ```
 
 **Arguments:**
-- `<ids_file>`: Path to a file containing individual IDs (one per line, with @ delimiters)
+- `<ids_file>`: Path to a file containing individual IDs (one per line, with @ delimiters), or `-` to read from stdin
 - `<gedcom_file>`: Path to the GEDCOM file
 
 **Output:**
@@ -293,9 +294,11 @@ gedinfo lastnames [options] <indi_id> <gedcom_file>
   By default, nameless ancestors are suppressed. In short mode this flag has no visible effect
   (nameless ancestors have no last name to print). In `--long` mode, nameless ancestors 
   appear with '(unknown)' in the last-name field.
+- `-d DIRECTION, --direction DIRECTION`: Traversal direction: `ancestors`/`up` (default) or
+  `descendants`/`down`. Controls whether surnames are collected from ancestors or descendants.
 
 **Output (Short Mode - default):**
-Prints the distinct last names of all ancestors, one per line, sorted alphabetically.
+Prints the distinct last names of all traversed relatives, one per line, sorted alphabetically.
 Nameless ancestors are always excluded (they have no last name to print).
 
 **Output (Long Mode - with `-l`):**
@@ -381,9 +384,9 @@ gedinfo roots [options] <gedcom_file>
 **Options:**
 - `-i`: Print IDs only (without @ delimiters), one per line
 - `-n`: Print names only, one per line
-- `-s, --spouse`: Include roots whose spouse has parents with at least one known name. By default such individuals are suppressed because they likely married into a documented family rather than representing an independent lineage starting point.
-- `-u, --unknowns`: Include roots with no name at all (no NAME tag in the GEDCOM file). By default, nameless individuals are suppressed.
-- `-a, --all`: Include all roots without any suppression. Equivalent to combining `--spouse` and `--unknowns`. Cannot be combined with `--spouse` or `--unknowns`.
+- `--spouse`: Include roots whose spouse has parents with at least one known name. By default such individuals are suppressed because they likely married into a documented family rather than representing an independent lineage starting point.
+- `-u, --unknown`: Include roots with no name at all (no NAME tag in the GEDCOM file). By default, nameless individuals are suppressed.
+- `-a, --all`: Include all roots without any suppression. Equivalent to combining `--spouse` and `--unknown`. Cannot be combined with `--spouse` or `--unknown`.
 - (default): Print ID and name pairs in the format `ID	Name`
 
 ### living
@@ -433,6 +436,10 @@ Jane /Johnson/
 
 Print the leaf individuals (those with no recorded children) in the GEDCOM file.
 
+By default, two categories are suppressed (matching `roots` behaviour):
+- **Nameless leaves** — individuals with no NAME tag
+- **Married-in leaves** — individuals in a childless family whose spouse has children with another partner
+
 **Syntax:**
 ```
 gedinfo leaves [options] <gedcom_file>
@@ -444,10 +451,14 @@ gedinfo leaves [options] <gedcom_file>
 **Options:**
 - `-i`: Print IDs only (without @ delimiters), one per line
 - `-n`: Print names only, one per line
+- `-s, --sort {id,name}`: Sort output
+- `--spouse`: Include married-in leaves (whose spouse has children with another partner). By default such individuals are suppressed.
+- `-u, --unknown`: Include leaves with no name at all. By default, nameless individuals are suppressed.
+- `-a, --all`: Include all leaves without any suppression. Cannot be combined with `--spouse` or `--unknown`.
 - (default): Print ID and name pairs in the format `ID	Name`
 
 **Output:**
-Leaf individuals sorted by ID.
+Leaf individuals (after suppression filters) sorted by GEDCOM file order, or by sort key if `--sort` is given.
 
 **Examples:**
 
@@ -633,6 +644,27 @@ Smith
 Jane
 ```
 
+### noname
+
+List all individuals with no name recorded (no NAME tag in the GEDCOM file).
+
+**Syntax:**
+```
+gedinfo noname [options] <gedcom_file>
+```
+
+**Arguments:**
+- `<gedcom_file>`: Path to the GEDCOM file
+
+**Options:**
+- `-i`: Print IDs only (without @ delimiters), one per line
+- `-n`: Print names only, one per line
+- `-s, --sort {id,name}`: Sort output
+- (default): Print ID and `(unknown)` pairs in the format `ID	(unknown)`
+
+**Output:**
+Unnamed individuals in GEDCOM file order (or sorted if `--sort` is given).
+
 ### stat
 
 Print statistics about the GEDCOM file, including:
@@ -643,11 +675,16 @@ Print statistics about the GEDCOM file, including:
 
 **Syntax:**
 ```
-gedinfo stat <gedcom_file>
+gedinfo stat [options] <gedcom_file>
 ```
 
 **Arguments:**
 - `<gedcom_file>`: Path to the GEDCOM file
+
+**Options:**
+- `--spouse`: Include spouse-suppressed roots in the root count (same criteria as `roots --spouse`).
+- `-u, --unknown`: Include nameless roots in the root count.
+- `-a, --all`: Include all roots in the count. Cannot be combined with `--spouse` or `--unknown`.
 
 **Output:**
 Human-readable statistics summary.
@@ -677,9 +714,9 @@ gedinfo disjoint [options] <gedcom_file>
 **Options:**
 - `-i`: Print IDs from each component (without @ delimiters), grouped by component
 - `-n`: Print names from each component, grouped by component
-- `-s, --spouse`: As per the roots command: include roots whose spouse has parents with at least one known name. When this flag is passed and suppression removes all roots from a connected component, that component is shown with a single placeholder line "(roots suppressed)" instead of individual entries.
-- `-u, --unknowns`: Include nameless roots (no NAME tag). By default nameless individuals are suppressed.
-- `-a, --all`: Include all roots without suppression. Cannot be combined with `--spouse` or `--unknowns`.
+- `--spouse`: As per the roots command: include roots whose spouse has parents with at least one known name. When this flag is passed and suppression removes all roots from a connected component, that component is shown with a single placeholder line "(roots suppressed)" instead of individual entries.
+- `-u, --unknown`: Include nameless roots (no NAME tag). By default nameless individuals are suppressed.
+- `-a, --all`: Include all roots without suppression. Cannot be combined with `--spouse` or `--unknown`.
 - (default): Print the size of each component, one per line
 
 **Output:**
@@ -743,8 +780,8 @@ gedinfo givennames [options] <indi_id> <gedcom_file>
 - `-f, --fuzzy`: Group name variants together using the bundled variants file
   (`gedinfo/data/name_variants.txt`). When multiple variants of the same name appear, they
   are counted and reported on one line with individual variant counts in parentheses.
-- `-d DIRECTION, --direction DIRECTION`: Traversal direction: `asc` for ancestors, `desc` for
-  descendants (default: `desc`).
+- `-d DIRECTION, --direction DIRECTION`: Traversal direction: `ancestors` or `up` for ancestors,
+  `descendants` or `down` for descendants (default: `descendants`).
 
 **Output:**
 Prints output lines in the format `<count>\t<name>`, grouped under section headers.
@@ -780,7 +817,7 @@ group of space-separated variants. Lines starting with or containing `#` are com
 $ gedinfo givennames I001 tests/fixtures/simple.ged
 
 # Ancestors: given-name counts for all ancestors of I001
-$ gedinfo givennames --direction asc I001 tests/fixtures/simple.ged
+$ gedinfo givennames --direction ancestors I001 tests/fixtures/simple.ged
 Masculine names:
 2	John
 1	James
@@ -790,7 +827,7 @@ Feminine names:
 1	Anne
 
 # Ancestors sorted alphabetically by name
-$ gedinfo givennames --direction asc --sort name I001 tests/fixtures/simple.ged
+$ gedinfo givennames --direction ancestors --sort name I001 tests/fixtures/simple.ged
 Masculine names:
 1	James
 2	John
@@ -800,7 +837,7 @@ Feminine names:
 3	Mary
 
 # Fuzzy grouping with secondary names, ancestors only
-$ gedinfo givennames --direction asc -f -2 I001 tests/fixtures/simple.ged
+$ gedinfo givennames --direction ancestors -f -2 I001 tests/fixtures/simple.ged
 Masculine names:
 3	John  (John: 2, Yohanan: 1)
 1	James
@@ -821,14 +858,14 @@ gedinfo relatives [options] <indi_id> <gedcom_file>
 - `<gedcom_file>`: Path to the GEDCOM file
 
 **Options:**
-- `-i, --id`: Print individual ID
-- `-n, --name`: Print individual name
-- `-b, --birth`: Print birth date
-- `-d, --death`: Print death date
-- `-m, --marriage`: Print marriage date (parents' marriage for parent rows; individual's marriage to that spouse for spouse rows; blank for self and children)
-- `-l, --long`: Equivalent to `-i -n -b -d -m`
+- `-i, --id`: Print IDs only (suppress names), one per relative
+- `-n, --name`: Print names only (suppress IDs), one per relative
+- `-b, --birth`: Also print birth date column
+- `-d, --death`: Also print death date column
+- `-m, --marriage`: Also print marriage date column (parents' marriage for parent rows; individual's marriage to that spouse for spouse rows; blank for self and children)
+- `-l, --long`: Equivalent to `-b -d -m` (adds all date columns; ID and name follow the `-i`/`-n` convention)
 
-If none of `-i`, `-n`, `-b`, `-d`, `-m`, `-l` is specified, the default output is equivalent to `-i -n`.
+If none of `-i`, `-n`, `-b`, `-d`, `-m`, `-l` is specified, the default output shows both ID and name.
 
 **Output:**
 One row per relative, tab-separated. The first column is a relationship label:

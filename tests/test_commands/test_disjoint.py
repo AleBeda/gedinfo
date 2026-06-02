@@ -128,8 +128,8 @@ def test_disjoint_spouse_without_flag_unchanged():
 
 
 def test_disjoint_spouse_output_mode_id_only():
-    # with -s the spouse-suppressed roots are included; -i yields id-only
-    code, out, err = run_cmd(["disjoint", "-s", "-i", str(FIXTURES / "spouse.ged")])
+    # with --spouse the spouse-suppressed roots are included; -i yields id-only
+    code, out, err = run_cmd(["disjoint", "--spouse", "-i", str(FIXTURES / "spouse.ged")])
     assert code == 0
     assert "I001" in out
     assert "I008" in out
@@ -137,20 +137,20 @@ def test_disjoint_spouse_output_mode_id_only():
 
 
 def test_disjoint_spouse_output_mode_name_only():
-    code, out, err = run_cmd(["disjoint", "-s", "-n", str(FIXTURES / "spouse.ged")])
+    code, out, err = run_cmd(["disjoint", "--spouse", "-n", str(FIXTURES / "spouse.ged")])
     assert code == 0
     assert "Adam Root" in out
     assert "MultiSpouse Root" in out
 
 
 def test_disjoint_spouse_and_conflicting_output_flags():
-    code, out, err = run_cmd(["disjoint", "-s", "-i", "-n", str(FIXTURES / "spouse.ged")])
+    code, out, err = run_cmd(["disjoint", "--spouse", "-i", "-n", str(FIXTURES / "spouse.ged")])
     assert code == 1
     assert "Conflicting output flags" in err
 
 
 def test_disjoint_spouse_empty_ged():
-    code, out, err = run_cmd(["disjoint", "-s", str(FIXTURES / "empty.ged")])
+    code, out, err = run_cmd(["disjoint", "--spouse", str(FIXTURES / "empty.ged")])
     assert code == 0
     assert out.strip() == ""
 

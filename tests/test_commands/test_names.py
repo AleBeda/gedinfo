@@ -39,3 +39,15 @@ def test_names_ids_file_missing():
     )
     assert code == 1
     assert "IDs file not found" in err
+
+
+def test_names_stdin():
+    proc = subprocess.run(
+        [sys.executable, "-m", "gedinfo", "names", "-", str(FIXTURES / "simple.ged")],
+        input="@I001@\n@I002@\n",
+        capture_output=True,
+        text=True,
+    )
+    assert proc.returncode == 0
+    lines = [l.strip() for l in proc.stdout.splitlines() if l.strip()]
+    assert lines == ["John Smith", "Mary Jones"]

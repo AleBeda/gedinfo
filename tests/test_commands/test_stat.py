@@ -118,7 +118,7 @@ def test_stat_roots_default_count():
 
 
 def test_stat_roots_with_spouse_flag():
-    code, out, err = run_cmd(["stat", "-s", str(FIXTURES / "spouse.ged")])
+    code, out, err = run_cmd(["stat", "--spouse", str(FIXTURES / "spouse.ged")])
     assert code == 0
     from gedinfo import parser, queries
     data = parser.parse(FIXTURES / "spouse.ged")
@@ -152,7 +152,7 @@ def test_stat_roots_with_all_flag():
 
 
 def test_stat_all_with_spouse_error():
-    code, out, err = run_cmd(["stat", "-a", "-s", str(FIXTURES / "spouse.ged")])
+    code, out, err = run_cmd(["stat", "-a", "--spouse", str(FIXTURES / "spouse.ged")])
     assert code == 1
 
 

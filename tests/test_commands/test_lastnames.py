@@ -329,3 +329,77 @@ def test_long_with_existing_g_validation():
     ])
     assert code == 1
     assert "Invalid generations value" in err
+
+
+def test_direction_ancestors_default():
+    # Default direction is ancestors — same as explicit --direction ancestors
+    code_default, out_default, _ = run_cmd(["lastnames", "@I004@", str(FIXTURES / "deep.ged")])
+    code_explicit, out_explicit, _ = run_cmd(["lastnames", "--direction", "ancestors", "@I004@", str(FIXTURES / "deep.ged")])
+    assert code_default == 0
+    assert code_explicit == 0
+    assert out_default == out_explicit
+
+
+def test_direction_up_alias():
+    # 'up' is an alias for 'ancestors'
+    code_a, out_a, _ = run_cmd(["lastnames", "--direction", "ancestors", "@I004@", str(FIXTURES / "deep.ged")])
+    code_b, out_b, _ = run_cmd(["lastnames", "--direction", "up", "@I004@", str(FIXTURES / "deep.ged")])
+    assert code_a == 0
+    assert code_b == 0
+    assert out_a == out_b
+
+
+def test_direction_descendants_short_mode(tmp_path):
+    # I1 has two children with different last names
+    content = (
+        "0 HEAD\n"
+        "0 @I1@ INDI\n1 NAME Root /One/\n1 SEX M\n1 FAMS @F1@\n"
+        "0 @I2@ INDI\n1 NAME Son /Alpha/\n1 SEX M\n1 FAMC @F1@\n"
+        "0 @I3@ INDI\n1 NAME Daughter /Beta/\n1 SEX F\n1 FAMC @F1@\n"
+        "0 @F1@ FAM\n1 HUSB @I1@\n1 CHIL @I2@\n1 CHIL @I3@\n"
+        "0 TRLR\n"
+    )
+    f = tmp_path / "desc_lastnames.ged"
+    f.write_text(content)
+    code, out, err = run_cmd(["lastnames", "--direction", "descendants", "@I1@", str(f)])
+    assert code == 0
+    names = out.strip().splitlines()
+    assert "Alpha" in names
+    assert "Beta" in names
+    assert "One" not in names  # root's own surname not included
+
+
+def test_direction_down_alias(tmp_path):
+    content = (
+        "0 HEAD\n"
+        "0 @I1@ INDI\n1 NAME Root /A/\n1 SEX M\n1 FAMS @F1@\n"
+        "0 @I2@ INDI\n1 NAME Child /B/\n1 SEX M\n1 FAMC @F1@\n"
+        "0 @F1@ FAM\n1 HUSB @I1@\n1 CHIL @I2@\n"
+        "0 TRLR\n"
+    )
+    f = tmp_path / "desc_down.ged"
+    f.write_text(content)
+    code_a, out_a, _ = run_cmd(["lastnames", "--direction", "descendants", "@I1@", str(f)])
+    code_b, out_b, _ = run_cmd(["lastnames", "--direction", "down", "@I1@", str(f)])
+    assert code_a == 0
+    assert code_b == 0
+    assert out_a == out_b
+
+
+def test_direction_descendants_long_mode(tmp_path):
+    # I1 has a child I2; I2 has no children → I2 is a branch tip
+    content = (
+        "0 HEAD\n"
+        "0 @I1@ INDI\n1 NAME Root /Smith/\n1 SEX M\n1 FAMS @F1@\n"
+        "0 @I2@ INDI\n1 NAME Child /Jones/\n1 SEX M\n1 FAMC @F1@\n"
+        "0 @F1@ FAM\n1 HUSB @I1@\n1 CHIL @I2@\n"
+        "0 TRLR\n"
+    )
+    f = tmp_path / "desc_long.ged"
+    f.write_text(content)
+    code, out, err = run_cmd(["lastnames", "-l", "--direction", "descendants", "@I1@", str(f)])
+    assert code == 0
+    lines = [ln for ln in out.strip().splitlines() if ln.strip()]
+    assert len(lines) == 1
+    assert "Jones" in lines[0]
+    assert "I2" in lines[0]

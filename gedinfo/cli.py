@@ -63,6 +63,7 @@ def main() -> None:
         males as males_cmd,
         females as females_cmd,
         nosex as nosex_cmd,
+        noname as noname_cmd,
         fam as fam_cmd,
         relatives as relatives_cmd,
         anonymize as anonymize_cmd,
@@ -85,6 +86,7 @@ def main() -> None:
     males_cmd.register(subparsers)
     females_cmd.register(subparsers)
     nosex_cmd.register(subparsers)
+    noname_cmd.register(subparsers)
     fam_cmd.register(subparsers)
     relatives_cmd.register(subparsers)
     anonymize_cmd.register(subparsers)
@@ -93,7 +95,7 @@ def main() -> None:
     args = parser.parse_args()
 
     if args.version:
-        print("gedinfo 0.13.1")
+        print("gedinfo 0.14.0")
         sys.exit(0)
 
     if not args.command:

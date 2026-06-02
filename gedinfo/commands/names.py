@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import sys
 from typing import Any
 
 from ..parser import parse
@@ -17,7 +18,7 @@ def register(subparsers: argparse._SubParsersAction) -> None:      # type: ignor
         help="Batch print names for a file containing individual IDs",
         description="Batch print names for a file containing individual IDs",
     )
-    sub.add_argument("ids_file", help="Path to file with one individual ID per line")
+    sub.add_argument("ids_file", help="Path to file with one individual ID per line, or '-' to read from stdin")
     sub.add_argument("gedcom_file", help="Path to GEDCOM file")
     add_sort_option(sub)
     sub.set_defaults(func=run)
@@ -29,11 +30,14 @@ def run(args: Any) -> None:
     Reads `ids_file`, ignores blank lines and lines starting with `#`, and
     for each ID prints the corresponding display name or `"<id>: (not found)"`.
     """
-    try:
-        with open(args.ids_file, encoding="utf-8") as fh:
-            lines = [ln.rstrip("\n\r") for ln in fh]
-    except FileNotFoundError:
-        raise FileNotFoundError(f"IDs file not found: {args.ids_file}")
+    if args.ids_file == "-":
+        lines = [ln.rstrip("\n\r") for ln in sys.stdin]
+    else:
+        try:
+            with open(args.ids_file, encoding="utf-8") as fh:
+                lines = [ln.rstrip("\n\r") for ln in fh]
+        except FileNotFoundError:
+            raise FileNotFoundError(f"IDs file not found: {args.ids_file}")
 
     data = parse(args.gedcom_file)
     results = []  # list of (Individual or None, output_line_string)

@@ -21,7 +21,7 @@ def register(subparsers: argparse._SubParsersAction) -> None:  # type: ignore
     add_sort_option(sub)
     filter_group = sub.add_argument_group("filter options")
     filter_group.add_argument(
-        "-s", "--spouse",
+        "--spouse",
         action="store_true",
         default=False,
         help=(
@@ -32,7 +32,7 @@ def register(subparsers: argparse._SubParsersAction) -> None:  # type: ignore
         ),
     )
     filter_group.add_argument(
-        "-u", "--unknowns",
+        "-u", "--unknown",
         action="store_true",
         default=False,
         help=(
@@ -58,8 +58,8 @@ def register(subparsers: argparse._SubParsersAction) -> None:  # type: ignore
 def run(args: Any) -> None:
     data = parse(args.gedcom_file)
     # validate mutually exclusive flags
-    if getattr(args, "all", False) and (getattr(args, "spouse", False) or getattr(args, "unknowns", False)):
-        print("--all cannot be combined with --spouse or --unknowns", file=sys.stderr)
+    if getattr(args, "all", False) and (getattr(args, "spouse", False) or getattr(args, "unknown", False)):
+        print("--all cannot be combined with --spouse or --unknown", file=sys.stderr)
         sys.exit(1)
 
     mode = validate_output_mode(args)
@@ -68,7 +68,7 @@ def run(args: Any) -> None:
         data,
         roots,
         include_spouse_suppressed=(getattr(args, "all", False) or getattr(args, "spouse", False)),
-        include_unknowns=(getattr(args, "all", False) or getattr(args, "unknowns", False)),
+        include_unknowns=(getattr(args, "all", False) or getattr(args, "unknown", False)),
     )
     for r in roots:
         print(format_individual(r, mode))

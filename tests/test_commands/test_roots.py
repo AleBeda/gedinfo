@@ -55,7 +55,7 @@ def test_roots_default_suppresses_unknowns():
 
 
 def test_roots_spouse_flag_includes_spouse_roots():
-    code, out, err = run_cmd(["roots", "-s", str(FIXTURES / "spouse.ged")])
+    code, out, err = run_cmd(["roots", "--spouse", str(FIXTURES / "spouse.ged")])
     assert code == 0
     assert "I001\t" in out
     assert "I008\t" in out
@@ -72,7 +72,7 @@ def test_roots_unknowns_flag_includes_unknowns():
 
 
 def test_roots_spouse_and_unknowns_flags_combined():
-    code, out, err = run_cmd(["roots", "-s", "-u", str(FIXTURES / "spouse.ged")])
+    code, out, err = run_cmd(["roots", "--spouse", "-u", str(FIXTURES / "spouse.ged")])
     assert code == 0
     for id in ["I001\t", "I008\t", "I022\t", "I023\t"]:
         assert id in out
@@ -92,15 +92,15 @@ def test_roots_all_flag():
 
 
 def test_roots_all_with_spouse_is_error():
-    code, out, err = run_cmd(["roots", "-a", "-s", str(FIXTURES / "spouse.ged")])
+    code, out, err = run_cmd(["roots", "-a", "--spouse", str(FIXTURES / "spouse.ged")])
     assert code == 1
-    assert "--all cannot be combined with --spouse or --unknowns" in err
+    assert "--all cannot be combined with --spouse or --unknown" in err
 
 
 def test_roots_all_with_unknowns_is_error():
     code, out, err = run_cmd(["roots", "-a", "-u", str(FIXTURES / "spouse.ged")])
     assert code == 1
-    assert "--all cannot be combined with --spouse or --unknowns" in err
+    assert "--all cannot be combined with --spouse or --unknown" in err
 
 
 def test_roots_output_format_default_mode():
@@ -113,14 +113,14 @@ def test_roots_output_format_default_mode():
 
 
 def test_roots_output_id_only_with_filter():
-    code, out, err = run_cmd(["roots", "-s", "-i", str(FIXTURES / "spouse.ged")])
+    code, out, err = run_cmd(["roots", "--spouse", "-i", str(FIXTURES / "spouse.ged")])
     assert code == 0
     lines = [line for line in out.splitlines() if line.strip()]
     assert "I001" in "\n".join(lines)
 
 
 def test_roots_output_name_only_with_filter():
-    code, out, err = run_cmd(["roots", "-u", "-n", str(FIXTURES / "spouse.ged")])
+    code, out, err = run_cmd(["roots", "--unknown", "-n", str(FIXTURES / "spouse.ged")])
     assert code == 0
     lines = [line for line in out.splitlines() if line.strip()]
     # should contain names only (no leading I... ids)

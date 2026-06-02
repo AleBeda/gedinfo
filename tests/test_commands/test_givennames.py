@@ -16,7 +16,7 @@ def run_cmd(args):
 
 
 def test_basic_output():
-    code, out, err = run_cmd(["givennames", "--direction", "asc", "@I001@", GED])
+    code, out, err = run_cmd(["givennames", "--direction", "ancestors", "@I001@", GED])
     assert code == 0
     assert "Masculine names:" in out
     assert "Feminine names:" in out
@@ -43,14 +43,14 @@ def test_basic_output():
 
 def test_g1_no_output():
     # -g 1 means only generation 1 (subject itself), subject is not included → no output
-    code, out, err = run_cmd(["givennames", "-g", "1", "--direction", "asc", "@I001@", GED])
+    code, out, err = run_cmd(["givennames", "-g", "1", "--direction", "ancestors", "@I001@", GED])
     assert code == 0
     assert out.strip() == ""
 
 
 def test_g2_parents_only():
     # -g 2: only generation 2 (direct parents I002, I003) counted; I004/I005 not included
-    code, out, err = run_cmd(["givennames", "-g", "2", "--direction", "asc", "@I001@", GED])
+    code, out, err = run_cmd(["givennames", "-g", "2", "--direction", "ancestors", "@I001@", GED])
     assert code == 0
     assert "Masculine names:" in out
     assert "Feminine names:" in out
@@ -65,63 +65,63 @@ def test_g2_parents_only():
 
 
 def test_invalid_g_zero():
-    code, out, err = run_cmd(["givennames", "-g", "0", "--direction", "asc", "@I001@", GED])
+    code, out, err = run_cmd(["givennames", "-g", "0", "--direction", "ancestors", "@I001@", GED])
     assert code == 1
     assert "Invalid generations value" in err
 
 
 def test_unknown_id():
-    code, out, err = run_cmd(["givennames", "--direction", "asc", "@I999@", GED])
+    code, out, err = run_cmd(["givennames", "--direction", "ancestors", "@I999@", GED])
     assert code == 1
     assert "Unknown individual ID" in err
 
 
 def test_second_flag():
     # --second includes NAM2 tags; I004 has NAM2 "Raphael" → raphael in masculine
-    code, out, err = run_cmd(["givennames", "--second", "--direction", "asc", "@I001@", GED])
+    code, out, err = run_cmd(["givennames", "--second", "--direction", "ancestors", "@I001@", GED])
     assert code == 0
     assert "raphael" in out.lower()
 
 
 def test_second_flag_short():
     # -2 is the short form of --second
-    code, out, err = run_cmd(["givennames", "-2", "--direction", "asc", "@I001@", GED])
+    code, out, err = run_cmd(["givennames", "-2", "--direction", "ancestors", "@I001@", GED])
     assert code == 0
     assert "raphael" in out.lower()
 
 
 def test_second_flag_not_present_by_default():
     # Without --second, raphael should NOT appear
-    code, out, err = run_cmd(["givennames", "--direction", "asc", "@I001@", GED])
+    code, out, err = run_cmd(["givennames", "--direction", "ancestors", "@I001@", GED])
     assert code == 0
     assert "raphael" not in out.lower()
 
 
 def test_hebrew_flag():
     # --hebrew includes NAMH tags; I005 has NAMH "מרים" → appears in feminine
-    code, out, err = run_cmd(["givennames", "--hebrew", "--direction", "asc", "@I001@", GED])
+    code, out, err = run_cmd(["givennames", "--hebrew", "--direction", "ancestors", "@I001@", GED])
     assert code == 0
     assert "מרים" in out
 
 
 def test_hebrew_flag_short():
     # -e is the short form of --hebrew
-    code, out, err = run_cmd(["givennames", "-e", "--direction", "asc", "@I001@", GED])
+    code, out, err = run_cmd(["givennames", "-e", "--direction", "ancestors", "@I001@", GED])
     assert code == 0
     assert "מרים" in out
 
 
 def test_hebrew_flag_not_present_by_default():
     # Without --hebrew, מרים should NOT appear (it only comes from NAMH)
-    code, out, err = run_cmd(["givennames", "--direction", "asc", "@I001@", GED])
+    code, out, err = run_cmd(["givennames", "--direction", "ancestors", "@I001@", GED])
     assert code == 0
     assert "מרים" not in out
 
 
 def test_all_flag():
     # -a should give same names as --second --hebrew combined
-    code_a, out_a, _ = run_cmd(["givennames", "-a", "--direction", "asc", "@I001@", GED])
-    code_b, out_b, _ = run_cmd(["givennames", "--second", "--hebrew", "--direction", "asc", "@I001@", GED])
+    code_a, out_a, _ = run_cmd(["givennames", "-a", "--direction", "ancestors", "@I001@", GED])
+    code_b, out_b, _ = run_cmd(["givennames", "--second", "--hebrew", "--direction", "ancestors", "@I001@", GED])
     assert code_a == 0
     assert code_b == 0
     assert out_a == out_b
@@ -153,7 +153,7 @@ def test_fuzzy_groups_variants(tmp_path):
     )
     f = tmp_path / "fuzzy.ged"
     f.write_text(content, encoding="utf-8")
-    code, out, err = run_cmd(["givennames", "-f", "--direction", "asc", "@I001@", str(f)])
+    code, out, err = run_cmd(["givennames", "-f", "--direction", "ancestors", "@I001@", str(f)])
     assert code == 0
     # "Abraham" and "Abram" are both variants of "Abraham" in the variants file
     # They should be grouped: total=2, canonical="Abraham", with detail
@@ -201,7 +201,7 @@ def test_fuzzy_most_used_variant_as_representative(tmp_path):
     )
     f = tmp_path / "most_used_rep.ged"
     f.write_text(content, encoding="utf-8")
-    code, out, err = run_cmd(["givennames", "-f", "--direction", "asc", "@I001@", str(f)])
+    code, out, err = run_cmd(["givennames", "-f", "--direction", "ancestors", "@I001@", str(f)])
     assert code == 0
     lines = [l for l in out.splitlines() if "\t" in l]
     assert lines
@@ -231,7 +231,7 @@ def test_fuzzy_single_variant(tmp_path):
     )
     f = tmp_path / "single.ged"
     f.write_text(content, encoding="utf-8")
-    code, out, err = run_cmd(["givennames", "-f", "--direction", "asc", "@I001@", str(f)])
+    code, out, err = run_cmd(["givennames", "-f", "--direction", "ancestors", "@I001@", str(f)])
     assert code == 0
     assert "Zxqwerty" in out
     # No parenthetical detail for a name with only one variant
@@ -259,7 +259,7 @@ def test_givn_deduplication(tmp_path):
     )
     f = tmp_path / "dedup.ged"
     f.write_text(content, encoding="utf-8")
-    code, out, err = run_cmd(["givennames", "--direction", "asc", "@I001@", str(f)])
+    code, out, err = run_cmd(["givennames", "--direction", "ancestors", "@I001@", str(f)])
     assert code == 0
     lines = [l for l in out.splitlines() if "\t" in l and l.split("\t")[1] == "Abraham"]
     assert lines
@@ -287,7 +287,7 @@ def test_givn_nam2_deduplication(tmp_path):
     )
     f = tmp_path / "dedup_nam2.ged"
     f.write_text(content, encoding="utf-8")
-    code, out, err = run_cmd(["givennames", "--second", "--direction", "asc", "@I001@", str(f)])
+    code, out, err = run_cmd(["givennames", "--second", "--direction", "ancestors", "@I001@", str(f)])
     assert code == 0
     lines = [l for l in out.splitlines() if "\t" in l and l.split("\t")[1] == "Solomon"]
     assert lines
@@ -313,7 +313,7 @@ def test_unknown_sex_section(tmp_path):
     )
     f = tmp_path / "unknown_sex.ged"
     f.write_text(content, encoding="utf-8")
-    code, out, err = run_cmd(["givennames", "--direction", "asc", "@I001@", str(f)])
+    code, out, err = run_cmd(["givennames", "--direction", "ancestors", "@I001@", str(f)])
     assert code == 0
     assert "Unknown sex:" in out
     assert "Jordan" in out
@@ -322,7 +322,7 @@ def test_unknown_sex_section(tmp_path):
 def test_sibling_excluded():
     # I006 (Abram /Cohen/) is a sibling of I002, NOT an ancestor of I001
     # "abram" should NOT appear in basic output for @I001@
-    code, out, err = run_cmd(["givennames", "--direction", "asc", "@I001@", GED])
+    code, out, err = run_cmd(["givennames", "--direction", "ancestors", "@I001@", GED])
     assert code == 0
     lines = out.splitlines()
     name_tokens = [l.split("\t")[1] for l in lines if "\t" in l]
@@ -347,7 +347,7 @@ def test_name_split_spaces(tmp_path):
     )
     f = tmp_path / "multifirst.ged"
     f.write_text(content, encoding="utf-8")
-    code, out, err = run_cmd(["givennames", "--direction", "asc", "@I001@", str(f)])
+    code, out, err = run_cmd(["givennames", "--direction", "ancestors", "@I001@", str(f)])
     assert code == 0
     assert "John" in out
     assert "David" in out
@@ -371,14 +371,14 @@ def test_blank_name_ignored(tmp_path):
     )
     f = tmp_path / "blankname.ged"
     f.write_text(content, encoding="utf-8")
-    code, out, err = run_cmd(["givennames", "--direction", "asc", "@I001@", str(f)])
+    code, out, err = run_cmd(["givennames", "--direction", "ancestors", "@I001@", str(f)])
     assert code == 0
     # No name sections should appear since the ancestor has no names
     assert out.strip() == ""
 
 
 def test_direction_desc_basic():
-    # Default direction is desc; I004's descendants include I002, I006, I001 (all M)
+    # Default direction is descendants; I004's descendants include I002, I006, I001 (all M)
     code, out, err = run_cmd(["givennames", "@I004@", GED])
     assert code == 0
     assert "Masculine names:" in out
@@ -389,10 +389,10 @@ def test_direction_desc_basic():
 
 
 def test_direction_desc_explicit():
-    # Explicit --direction desc is equivalent to the default
+    # Explicit --direction descendants is equivalent to the default
     code_default, out_default, _ = run_cmd(["givennames", "@I004@", GED])
     code_explicit, out_explicit, _ = run_cmd(
-        ["givennames", "--direction", "desc", "@I004@", GED]
+        ["givennames", "--direction", "descendants", "@I004@", GED]
     )
     assert code_default == 0
     assert code_explicit == 0
@@ -400,12 +400,12 @@ def test_direction_desc_explicit():
 
 
 def test_direction_asc_short():
-    # -d asc is the short form and should match --direction asc
+    # -d ancestors is the short form and should match --direction ancestors
     code_long, out_long, _ = run_cmd(
-        ["givennames", "--direction", "asc", "@I001@", GED]
+        ["givennames", "--direction", "ancestors", "@I001@", GED]
     )
     code_short, out_short, _ = run_cmd(
-        ["givennames", "-d", "asc", "@I001@", GED]
+        ["givennames", "-d", "ancestors", "@I001@", GED]
     )
     assert code_long == 0
     assert code_short == 0
@@ -413,10 +413,10 @@ def test_direction_asc_short():
 
 
 def test_direction_desc_g2():
-    # -g 2 with --direction desc: only direct children of I004 (I002, I006),
+    # -g 2 with --direction descendants: only direct children of I004 (I002, I006),
     # not grandchildren (I001)
     code, out, err = run_cmd(
-        ["givennames", "--direction", "desc", "-g", "2", "@I004@", GED]
+        ["givennames", "--direction", "descendants", "-g", "2", "@I004@", GED]
     )
     assert code == 0
     assert "Abraham" in out   # I002
@@ -441,9 +441,9 @@ def test_direction_invalid():
 
 def test_sort_frequency_default():
     # Default sort is by frequency; same output as explicit --sort frequency
-    code_default, out_default, _ = run_cmd(["givennames", "--direction", "asc", "@I001@", GED])
+    code_default, out_default, _ = run_cmd(["givennames", "--direction", "ancestors", "@I001@", GED])
     code_explicit, out_explicit, _ = run_cmd(
-        ["givennames", "--sort", "frequency", "--direction", "asc", "@I001@", GED]
+        ["givennames", "--sort", "frequency", "--direction", "ancestors", "@I001@", GED]
     )
     assert code_default == 0
     assert code_explicit == 0
@@ -453,10 +453,10 @@ def test_sort_frequency_default():
 def test_sort_frequency_short():
     # -s frequency is the short form of --sort frequency
     code_long, out_long, _ = run_cmd(
-        ["givennames", "--sort", "frequency", "--direction", "asc", "@I001@", GED]
+        ["givennames", "--sort", "frequency", "--direction", "ancestors", "@I001@", GED]
     )
     code_short, out_short, _ = run_cmd(
-        ["givennames", "-s", "frequency", "--direction", "asc", "@I001@", GED]
+        ["givennames", "-s", "frequency", "--direction", "ancestors", "@I001@", GED]
     )
     assert code_long == 0
     assert code_short == 0
@@ -495,7 +495,7 @@ def test_sort_name_order(tmp_path):
     )
     f = tmp_path / "sort_name.ged"
     f.write_text(content, encoding="utf-8")
-    code, out, err = run_cmd(["givennames", "--sort", "name", "--direction", "asc", "@I001@", str(f)])
+    code, out, err = run_cmd(["givennames", "--sort", "name", "--direction", "ancestors", "@I001@", str(f)])
     assert code == 0
     lines = [l for l in out.splitlines() if "\t" in l]
     names = [l.split("\t")[1] for l in lines]
@@ -525,10 +525,10 @@ def test_sort_name_short(tmp_path):
     f = tmp_path / "sort_name_short.ged"
     f.write_text(content, encoding="utf-8")
     code_long, out_long, _ = run_cmd(
-        ["givennames", "--sort", "name", "--direction", "asc", "@I001@", str(f)]
+        ["givennames", "--sort", "name", "--direction", "ancestors", "@I001@", str(f)]
     )
     code_short, out_short, _ = run_cmd(
-        ["givennames", "-s", "name", "--direction", "asc", "@I001@", str(f)]
+        ["givennames", "-s", "name", "--direction", "ancestors", "@I001@", str(f)]
     )
     assert code_long == 0
     assert code_short == 0
@@ -538,6 +538,6 @@ def test_sort_name_short(tmp_path):
 def test_sort_invalid():
     # An invalid sort value should produce an error exit
     code, out, err = run_cmd(
-        ["givennames", "--sort", "random", "--direction", "asc", "@I001@", GED]
+        ["givennames", "--sort", "random", "--direction", "ancestors", "@I001@", GED]
     )
     assert code != 0

@@ -7,7 +7,7 @@ from typing import Any, Optional
 
 from ..parser import parse
 from ..queries import find_by_id, display_name
-from ._output import strip_id_delimiters
+from ._output import add_output_options, validate_output_mode, strip_id_delimiters
 
 
 def _parent_label(indi) -> str:
@@ -15,7 +15,7 @@ def _parent_label(indi) -> str:
 
 
 def _spouse_label(indi) -> str:
-    return {"M": "husband:", "F": "wife:"}.get(indi.sex, "parent:")
+    return {"M": "husband:", "F": "wife:"}.get(indi.sex, "spouse:")
 
 
 def _child_label(indi) -> str:
@@ -29,15 +29,14 @@ def register(subparsers: argparse._SubParsersAction) -> None:  # type: ignore
         help="Show immediate family of an individual",
         description="Show immediate family of an individual",
     )
-    sub.add_argument("-i", "--id",       action="store_true", help="Print individual ID")
-    sub.add_argument("-n", "--name",     action="store_true", help="Print individual name")
+    add_output_options(sub)
     sub.add_argument("-b", "--birth",    action="store_true", help="Print birth date")
     sub.add_argument("-d", "--death",    action="store_true", help="Print death date")
     sub.add_argument("-m", "--marriage", action="store_true", help="Print marriage date")
     sub.add_argument(
         "-l", "--long",
         action="store_true",
-        help="Equivalent to -i -n -b -d -m",
+        help="Equivalent to -b -d -m",
     )
     sub.add_argument("indi_id",     help="Individual ID")
     sub.add_argument("gedcom_file", help="Path to GEDCOM file")
@@ -46,13 +45,10 @@ def register(subparsers: argparse._SubParsersAction) -> None:  # type: ignore
 
 def run(args: Any) -> None:
     """Handler invoked when ``gedinfo relatives`` is run."""
-    show_id       = args.id       or args.long
-    show_name     = args.name     or args.long
+    mode = validate_output_mode(args)
     show_birth    = args.birth    or args.long
     show_death    = args.death    or args.long
     show_marriage = args.marriage or args.long
-    if not any([show_id, show_name, show_birth, show_death, show_marriage]):
-        show_id = show_name = True
 
     data = parse(args.gedcom_file)
     indi = find_by_id(data, args.indi_id)
@@ -107,9 +103,9 @@ def run(args: Any) -> None:
             print(label)
             continue
         fields: list[str] = []
-        if show_id:
+        if mode in ("id", "both"):
             fields.append(strip_id_delimiters(individual.id))
-        if show_name:
+        if mode in ("name", "both"):
             fields.append(display_name(individual))
         if show_birth:
             fields.append(individual.birth_date or "")
