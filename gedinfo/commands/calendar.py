@@ -12,6 +12,11 @@ _MONTH = {
     "JAN": 1, "FEB": 2, "MAR": 3, "APR": 4, "MAY": 5, "JUN": 6,
     "JUL": 7, "AUG": 8, "SEP": 9, "OCT": 10, "NOV": 11, "DEC": 12,
 }
+_FULL_MONTHS = {
+    "january": 1, "february": 2, "march": 3, "april": 4,
+    "may": 5, "june": 6, "july": 7, "august": 8,
+    "september": 9, "october": 10, "november": 11, "december": 12,
+}
 _DATE_RE = re.compile(r"^(\d{1,2})\s+([A-Za-z]{3})\s+(\d{4})$")
 
 
@@ -28,6 +33,13 @@ def _parse_date(s: Optional[str]) -> Optional[date]:
         return date(int(m.group(3)), month, int(m.group(1)))
     except ValueError:
         return None
+
+
+def _parse_month_name(name: str) -> Optional[int]:
+    lower = name.lower().strip()
+    if lower in _FULL_MONTHS:
+        return _FULL_MONTHS[lower]
+    return _MONTH.get(lower[:3].upper())
 
 
 def _display_name(indi) -> str:
@@ -83,8 +95,12 @@ def register(subparsers) -> None:
         help="Show only events matching today's day and month",
     )
     sub.add_argument(
-        "--month", action="store_true",
-        help="Show only events in the current month",
+        "--thismonth", action="store_true",
+        help="Show only events in the current calendar month",
+    )
+    sub.add_argument(
+        "--month", metavar="MONTHNAME", default=None,
+        help="Show only events in the specified month (full name or 3-letter abbreviation, any case)",
     )
     sub.add_argument(
         "--dateformat", metavar="PATTERN", default="%d %b %Y",
@@ -99,8 +115,9 @@ def register(subparsers) -> None:
 
 def run(args) -> None:
     """Handler invoked when ``gedinfo calendar`` is run."""
-    if args.today and args.month:
-        raise ValueError("--today and --month are mutually exclusive")
+    active_filters = sum([args.today, args.thismonth, args.month is not None])
+    if active_filters > 1:
+        raise ValueError("--today, --thismonth, and --month are mutually exclusive")
 
     from ..parser import parse
     data = parse(args.gedcom_file)
@@ -110,8 +127,13 @@ def run(args) -> None:
     if args.today:
         events = [e for e in events
                   if (e.date.month, e.date.day) == (today.month, today.day)]
-    elif args.month:
+    elif args.thismonth:
         events = [e for e in events if e.date.month == today.month]
+    elif args.month is not None:
+        month_num = _parse_month_name(args.month)
+        if month_num is None:
+            raise ValueError(f"Unknown month: {args.month!r}")
+        events = [e for e in events if e.date.month == month_num]
 
     events.sort(key=lambda e: (e.date.month, e.date.day, e.date.year))
 

@@ -2,7 +2,7 @@
 
 A command-line utility for querying GEDCOM genealogy files.
 
-Version: 0.13.0
+Version: 0.13.1
 
 Installation
 ------------
@@ -945,11 +945,12 @@ gedinfo calendar [options] <gedcom_file>
 **Options:**
 - `-o FILE` / `--output FILE`: write output to FILE instead of stdout
 - `--today`: show only events whose day and month match today's date
-- `--month`: show only events in the current calendar month
+- `--thismonth`: show only events in the current calendar month
+- `--month MONTHNAME`: show only events in the specified month; `MONTHNAME` can be a full English name or 3-letter abbreviation in any case (e.g. `January`, `jan`, `JAN`)
 - `--dateformat PATTERN`: strftime pattern for formatting dates (default: `%d %b %Y`, e.g. "01 Jan 1801")
 - `--nosep`: suppress the blank line printed between groups of events on different days
 
-`--today` and `--month` are mutually exclusive; specifying both exits with an error.
+`--today`, `--thismonth`, and `--month` are mutually exclusive; specifying more than one exits with an error.
 
 **Output format:**
 Each event is printed on one line with three TAB-separated fields:

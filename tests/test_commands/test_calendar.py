@@ -37,7 +37,6 @@ def test_sort_order():
     code, out, _ = run_cmd(["calendar", "--nosep", GED])
     assert code == 0
     lines = _event_lines(out)
-    # Extract the date portion (first tab-field) for ordering check
     dates = [ln.split("\t")[0] for ln in lines]
     assert dates == sorted(dates, key=lambda s: datetime.datetime.strptime(s, "%d %b %Y").timetuple()[1:3])
 
@@ -55,7 +54,6 @@ def test_same_day_sorted_by_year():
 def test_blank_line_separator():
     code, out, _ = run_cmd(["calendar", GED])
     assert code == 0
-    # There should be blank lines between day-month groups
     assert "\n\n" in out
 
 
@@ -63,7 +61,6 @@ def test_nosep():
     code, out, _ = run_cmd(["calendar", "--nosep", GED])
     assert code == 0
     assert "\n\n" not in out
-    # But all events still present
     assert len(_event_lines(out)) == 8
 
 
@@ -115,16 +112,66 @@ def test_today():
         assert line.startswith(today_str), f"Line not today's date: {line!r}"
 
 
-def test_month():
-    code, out, _ = run_cmd(["calendar", "--month", GED])
+def test_thismonth():
+    code, out, _ = run_cmd(["calendar", "--thismonth", GED])
     assert code == 0
     month_str = datetime.date.today().strftime("%b")
     for line in _event_lines(out):
         assert f" {month_str} " in line, f"Line not in current month: {line!r}"
 
 
-def test_today_month_conflict():
-    code, _, err = run_cmd(["calendar", "--today", "--month", GED])
+def test_month_by_full_name():
+    # January events in the fixture: 01 Jan 1801 birth, 02 Jan 1883 death
+    code, out, _ = run_cmd(["calendar", "--month", "January", GED])
+    assert code == 0
+    lines = _event_lines(out)
+    assert all("Jan" in ln for ln in lines)
+    assert any("John Doe" in ln and "birth" in ln for ln in lines)
+    assert any("John Doe" in ln and "death" in ln for ln in lines)
+    assert not any("Mar" in ln or "Apr" in ln or "Jun" in ln or "Sep" in ln for ln in lines)
+
+
+def test_month_by_abbreviated_uppercase():
+    code, out, _ = run_cmd(["calendar", "--month", "JAN", GED])
+    assert code == 0
+    lines = _event_lines(out)
+    assert all("Jan" in ln for ln in lines)
+
+
+def test_month_by_abbreviated_lowercase():
+    code, out, _ = run_cmd(["calendar", "--month", "jan", GED])
+    assert code == 0
+    lines = _event_lines(out)
+    assert all("Jan" in ln for ln in lines)
+
+
+def test_month_by_mixed_case():
+    code, out, _ = run_cmd(["calendar", "--month", "jAnUaRy", GED])
+    assert code == 0
+    lines = _event_lines(out)
+    assert all("Jan" in ln for ln in lines)
+
+
+def test_month_invalid():
+    code, _, err = run_cmd(["calendar", "--month", "Foobar", GED])
+    assert code == 1
+    assert "foobar" in err.lower() or "unknown" in err.lower()
+
+
+def test_today_thismonth_conflict():
+    code, _, err = run_cmd(["calendar", "--today", "--thismonth", GED])
+    assert code == 1
+    assert "mutually exclusive" in err.lower()
+
+
+def test_month_today_conflict():
+    code, _, err = run_cmd(["calendar", "--month", "January", "--today", GED])
+    assert code == 1
+    assert "mutually exclusive" in err.lower()
+
+
+def test_month_thismonth_conflict():
+    code, _, err = run_cmd(["calendar", "--month", "January", "--thismonth", GED])
     assert code == 1
     assert "mutually exclusive" in err.lower()
 
