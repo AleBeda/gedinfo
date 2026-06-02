@@ -12,7 +12,7 @@ _MONTH = {
     "JAN": 1, "FEB": 2, "MAR": 3, "APR": 4, "MAY": 5, "JUN": 6,
     "JUL": 7, "AUG": 8, "SEP": 9, "OCT": 10, "NOV": 11, "DEC": 12,
 }
-_DATE_RE = re.compile(r"^(\d{1,2})\s+([A-Z]{3})\s+(\d{4})$")
+_DATE_RE = re.compile(r"^(\d{1,2})\s+([A-Za-z]{3})\s+(\d{4})$")
 
 
 def _parse_date(s: Optional[str]) -> Optional[date]:
@@ -21,7 +21,7 @@ def _parse_date(s: Optional[str]) -> Optional[date]:
     m = _DATE_RE.match(s.strip())
     if not m:
         return None
-    month = _MONTH.get(m.group(2))
+    month = _MONTH.get(m.group(2).upper())
     if month is None:
         return None
     try:
