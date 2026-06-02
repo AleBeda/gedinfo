@@ -2,7 +2,7 @@
 
 A command-line utility for querying GEDCOM genealogy files.
 
-Version: 0.12.3
+Version: 0.13.0
 
 Installation
 ------------
@@ -63,6 +63,7 @@ Commands
 | [givennames](#givennames) | Frequency count of given names among ancestors or descendants |
 | [relatives](#relatives) | Show the immediate family of an individual (parents, spouses, children) |
 | [anonymize](#anonymize) | Output a privacy-safe derivative with fake names and locations |
+| [calendar](#calendar) | List birth, death, and marriage anniversaries from a GEDCOM file |
 
 ### name
 
@@ -926,6 +927,71 @@ $ gedinfo anonymize family.ged
 
 $ gedinfo anonymize --keep OCCU --remove DATE family.ged
 $ gedinfo anonymize -o anonymized.ged family.ged
+```
+
+### calendar
+
+List birth, death, and marriage anniversaries from a GEDCOM file, sorted by
+month and day so that all events on the same calendar date are grouped together.
+
+**Syntax:**
+```
+gedinfo calendar [options] <gedcom_file>
+```
+
+**Arguments:**
+- `<gedcom_file>`: Path to the GEDCOM file
+
+**Options:**
+- `-o FILE` / `--output FILE`: write output to FILE instead of stdout
+- `--today`: show only events whose day and month match today's date
+- `--month`: show only events in the current calendar month
+- `--dateformat PATTERN`: strftime pattern for formatting dates (default: `%d %b %Y`, e.g. "01 Jan 1801")
+- `--nosep`: suppress the blank line printed between groups of events on different days
+
+`--today` and `--month` are mutually exclusive; specifying both exits with an error.
+
+**Output format:**
+Each event is printed on one line with three TAB-separated fields:
+1. Date (formatted with `--dateformat`)
+2. Event type — `birth`, `death`, or `marriage` — left-padded to 8 characters
+3. Name(s) — for births and deaths, the individual's full name; for marriages, both spouses joined by `&`
+
+Events are sorted by month → day → year. A blank line is printed between groups
+with different day-month values (suppressed with `--nosep`).
+
+**Included / excluded:**
+- Only dates with a complete day, month, and year are included (format: `D MON YYYY`)
+- Year-only dates, month-year dates, and approximate/qualified dates (`ABT`, `BEF`, `AFT`, `BET…AND`) are silently skipped
+- Individuals with no name produce `(unknown)` in their event row
+- Missing spouses in a marriage produce `(unknown)` for that side
+
+**Example:**
+```bash
+$ gedinfo calendar tests/fixtures/calendar.ged
+01 Jan 1801	birth   	John Doe
+02 Jan 1883	death   	John Doe
+
+15 Mar 1820	birth   	Jane Smith
+15 Mar 1855	birth   	Bob Jones
+
+03 Apr 1930	death   	Bob Jones
+
+05 Jun 1825	marriage	John Doe & Jane Smith
+15 Jun 1900	birth   	Alice Brown
+
+20 Sep 1870	marriage	(unknown) & Jane Smith
+
+$ gedinfo calendar --today tests/fixtures/calendar.ged
+$ gedinfo calendar --dateformat "%Y-%m-%d" --nosep tests/fixtures/calendar.ged
+1801-01-01	birth   	John Doe
+1883-01-02	death   	John Doe
+1820-03-15	birth   	Jane Smith
+1855-03-15	birth   	Bob Jones
+1930-04-03	death   	Bob Jones
+1825-06-05	marriage	John Doe & Jane Smith
+1900-06-15	birth   	Alice Brown
+1870-09-20	marriage	(unknown) & Jane Smith
 ```
 
 Testing

@@ -66,6 +66,7 @@ def main() -> None:
         fam as fam_cmd,
         relatives as relatives_cmd,
         anonymize as anonymize_cmd,
+        calendar as calendar_cmd,
     )
 
     name_cmd.register(subparsers)
@@ -87,11 +88,12 @@ def main() -> None:
     fam_cmd.register(subparsers)
     relatives_cmd.register(subparsers)
     anonymize_cmd.register(subparsers)
+    calendar_cmd.register(subparsers)
 
     args = parser.parse_args()
 
     if args.version:
-        print("gedinfo 0.12.3")
+        print("gedinfo 0.13.0")
         sys.exit(0)
 
     if not args.command:
