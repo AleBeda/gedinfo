@@ -2,7 +2,7 @@
 
 A command-line utility for querying GEDCOM genealogy files.
 
-Version: 0.14.0
+Version: 0.15.0
 
 Installation
 ------------
@@ -65,6 +65,7 @@ Commands
 | [relatives](#relatives) | Show the immediate family of an individual (parents, spouses, children) |
 | [anonymize](#anonymize) | Output a privacy-safe derivative with fake names and locations |
 | [calendar](#calendar) | List birth, death, and marriage anniversaries from a GEDCOM file |
+| [tags](#tags) | List all GEDCOM tags found in a file with occurrence counts |
 
 ### name
 
@@ -1030,6 +1031,48 @@ $ gedinfo calendar --dateformat "%Y-%m-%d" --nosep tests/fixtures/calendar.ged
 1825-06-05	marriage	John Doe & Jane Smith
 1900-06-15	birth   	Alice Brown
 1870-09-20	marriage	(unknown) & Jane Smith
+```
+
+### tags
+
+List all GEDCOM tags found in a file, with occurrence counts and a flag for non-standard tags.
+
+**Syntax:**
+```
+gedinfo tags <gedcom_file>
+```
+
+**Arguments:**
+- `<gedcom_file>`: Path to the GEDCOM file
+
+**Output:**
+One line per unique tag found in the file, sorted alphabetically. Each line has three
+TAB-separated fields:
+1. Tag name
+2. Occurrence count, right-justified
+3. `not in GEDCOM 5.5.1` if the tag is non-standard; empty otherwise
+
+Non-standard tags are those not listed in GEDCOM 5.5.1 Appendix A. Custom tags (e.g., `_LIVING`, `_UID`) are always non-standard.
+
+**Example:**
+```bash
+$ gedinfo tags tests/fixtures/tags.ged
+BIRT	2	
+CHIL	1	
+DATE	3	
+DEAT	1	
+FAM	1	
+FAMC	1	
+FAMS	2	
+HEAD	1	
+HUSB	1	
+INDI	3	
+NAME	3	
+SEX	3	
+TRLR	1	
+WIFE	1	
+_LIVING	2	not in GEDCOM 5.5.1
+_UID	1	not in GEDCOM 5.5.1
 ```
 
 Testing
