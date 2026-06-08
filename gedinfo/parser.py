@@ -173,6 +173,9 @@ def _populate_individual(indi: Individual, tag: str, value: str,
     elif tag == "NAMH":
         if value.strip():
             indi.namh.append(value.strip())
+    elif tag == "NOTE" and level == 1:
+        if value.strip():
+            indi.notes.append(value.strip())
     # ignore other tags
 
 
@@ -193,6 +196,9 @@ def _populate_family(fam: Family, tag: str, value: str,
     elif tag == "CHIL":
         if value:
             fam.child_ids.append(value.strip())
+    elif tag == "NOTE" and level == 1:
+        if value.strip():
+            fam.notes.append(value.strip())
     # ignore others
 
 

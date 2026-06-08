@@ -42,6 +42,7 @@ class Individual:
     namh: list[str] = field(default_factory=list)   # values of all NAMH tags
     birth_date: Optional[str] = None
     death_date: Optional[str] = None
+    notes: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -61,6 +62,7 @@ class Family:
     wife_id: Optional[str] = None
     child_ids: list[str] = field(default_factory=list)
     marriage_date: Optional[str] = None
+    notes: list[str] = field(default_factory=list)
 
 
 @dataclass

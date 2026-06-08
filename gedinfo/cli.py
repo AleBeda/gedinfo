@@ -69,6 +69,7 @@ def main() -> None:
         anonymize as anonymize_cmd,
         calendar as calendar_cmd,
         tags as tags_cmd,
+        diff as diff_cmd,
     )
 
     name_cmd.register(subparsers)
@@ -93,11 +94,12 @@ def main() -> None:
     anonymize_cmd.register(subparsers)
     calendar_cmd.register(subparsers)
     tags_cmd.register(subparsers)
+    diff_cmd.register(subparsers)
 
     args = parser.parse_args()
 
     if args.version:
-        print("gedinfo 0.15.0")
+        print("gedinfo 0.16.0")
         sys.exit(0)
 
     if not args.command:

@@ -2,7 +2,7 @@
 
 A command-line utility for querying GEDCOM genealogy files.
 
-Version: 0.15.0
+Version: 0.16.0
 
 Installation
 ------------
@@ -66,6 +66,7 @@ Commands
 | [anonymize](#anonymize) | Output a privacy-safe derivative with fake names and locations |
 | [calendar](#calendar) | List birth, death, and marriage anniversaries from a GEDCOM file |
 | [tags](#tags) | List all GEDCOM tags found in a file with occurrence counts |
+| [diff](#diff) | Compare two GEDCOM files |
 
 ### name
 
@@ -1073,6 +1074,60 @@ TRLR	1
 WIFE	1	
 _LIVING	2	not in GEDCOM 5.5.1
 _UID	1	not in GEDCOM 5.5.1
+```
+
+### diff
+
+Compare two GEDCOM files and report individuals and families that were added, removed, or changed. Comparison is ID-based: the same GEDCOM xref ID means the same entity.
+
+**Syntax:**
+```
+gedinfo diff [options] <gedcom1> <gedcom2>
+```
+
+**Arguments:**
+- `<gedcom1>`: First GEDCOM file
+- `<gedcom2>`: Second GEDCOM file
+
+**Options:**
+
+| Option | Description |
+|--------|-------------|
+| `-l`, `--long` | For each `CHG` entry, show which fields changed and their old/new values |
+| `-s {id,name}`, `--sort` | Sort output by `id` (default, numeric) or `name` (alphabetical) |
+| `-i` | Print IDs only (not compatible with `-l`) |
+| `-n` | Print names only (not compatible with `-l`) |
+| `-a`, `--all` | Compare all model fields including sex, living status, name variants, and notes |
+
+**Change codes:**
+- `CHG` — exists in both files but at least one field differs
+- `DEL` — exists in the first file only
+- `INS` — exists in the second file only
+
+**Output:**
+One line per differing individual or family (individuals first, then families). Each line has three TAB-separated fields: ID, name, change code. Use `-i` or `-n` to suppress the ID or name column.
+
+With `-l`, each `CHG` entry is followed by the changed field names and their old (`<`) / new (`>`) values, indented for readability.
+
+**Example:**
+```bash
+$ gedinfo diff before.ged after.ged
+I001    John Smith      CHG
+I004    Bob Smith       DEL
+I005    New Person      INS
+F001    John Smith & Mary Jones CHG
+
+$ gedinfo diff -l before.ged after.ged
+I001    John Smith      CHG
+  birth_date
+    < 1 JAN 1800
+    > 2 JAN 1800
+I004    Bob Smith       DEL
+I005    New Person      INS
+F001    John Smith & Mary Jones CHG
+  child_ids
+    < I003, I004
+    > I003
 ```
 
 Testing
