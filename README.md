@@ -2,7 +2,7 @@
 
 A command-line utility for querying GEDCOM genealogy files.
 
-Version: 0.16.0
+Version: 0.16.1
 
 Installation
 ------------

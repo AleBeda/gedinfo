@@ -16,6 +16,7 @@ from ..queries import (
     get_connected_components,
     apply_root_filters,
     get_living,
+    count_generations,
 )
 import sys
 
@@ -87,6 +88,7 @@ def run(args: Any) -> None:
     unnamed_parents = count_families_with_unnamed_parent(data)
     no_children = count_families_no_children(data)
     disjoint = len(get_connected_components(data))
+    generations = count_generations(data)
 
     # Print report following specification formatting
     print(f"Individuals: {total_individuals}")
@@ -116,3 +118,4 @@ def run(args: Any) -> None:
     print(f"  Families with no children: {no_children}")
     print()
     print(f"Disjoint forests: {disjoint}")
+    print(f"Generations: {generations}")

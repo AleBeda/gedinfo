@@ -735,6 +735,53 @@ def apply_leaf_filters(
     return result
 
 
+def count_generations(data: GedcomData) -> int:
+    """Return the depth of the deepest generation in the family tree.
+
+    Defined as the longest root-to-leaf path measured in generations.
+    Roots (individuals with no known parents) are generation 1.
+    Returns 0 if there are no individuals.
+    """
+    if not data.individuals:
+        return 0
+
+    child_ids_map: dict[str, list[str]] = {i: [] for i in data.individuals}
+    remaining: dict[str, int] = {i: 0 for i in data.individuals}
+    max_parent_gen: dict[str, int] = {i: 0 for i in data.individuals}
+
+    for indi_id, indi in data.individuals.items():
+        for fam_id in indi.family_ids_as_child:
+            fam = data.families.get(fam_id)
+            if fam:
+                for p_id in [fam.husband_id, fam.wife_id]:
+                    if p_id and p_id in data.individuals:
+                        child_ids_map[p_id].append(indi_id)
+                        remaining[indi_id] += 1
+
+    gen: dict[str, int] = {}
+    queue: deque[str] = deque()
+    for indi_id in data.individuals:
+        if remaining[indi_id] == 0:
+            gen[indi_id] = 1
+            queue.append(indi_id)
+
+    while queue:
+        indi_id = queue.popleft()
+        for child_id in child_ids_map[indi_id]:
+            if gen[indi_id] > max_parent_gen[child_id]:
+                max_parent_gen[child_id] = gen[indi_id]
+            remaining[child_id] -= 1
+            if remaining[child_id] == 0:
+                gen[child_id] = max_parent_gen[child_id] + 1
+                queue.append(child_id)
+
+    for indi_id in data.individuals:
+        if indi_id not in gen:
+            gen[indi_id] = 1
+
+    return max(gen.values())
+
+
 def get_noname(data: GedcomData, sort_key: str | None = None) -> List[Individual]:
     """Return all individuals with neither first nor last name."""
     result = [i for i in data.individuals.values() if not i.first_name and not i.last_name]

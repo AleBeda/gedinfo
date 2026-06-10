@@ -34,6 +34,7 @@ def test_stat_simple():
         "  Families with no children: 0",
         "",
         "Disjoint forests: 1",
+        "Generations: 2",
     ]
     assert out.strip().splitlines() == expected
 
@@ -58,6 +59,7 @@ def test_stat_empty():
         "  Families with no children: 0",
         "",
         "Disjoint forests: 0",
+        "Generations: 0",
     ]
     assert out.strip().splitlines() == expected
 
@@ -100,6 +102,7 @@ def test_stat_multi_tree():
         "  Families with no children: 0",
         "",
         "Disjoint forests: 2",
+        "Generations: 2",
     ]
     assert out.strip().splitlines() == expected
 
