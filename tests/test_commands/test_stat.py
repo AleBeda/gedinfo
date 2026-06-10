@@ -33,8 +33,9 @@ def test_stat_simple():
         "  Families with unnamed/incomplete parent: 0",
         "  Families with no children: 0",
         "",
-        "Disjoint forests: 1",
         "Generations: 2",
+        "",
+        "Disjoint forests: 1",
     ]
     assert out.strip().splitlines() == expected
 
@@ -58,8 +59,9 @@ def test_stat_empty():
         "  Families with unnamed/incomplete parent: 0",
         "  Families with no children: 0",
         "",
-        "Disjoint forests: 0",
         "Generations: 0",
+        "",
+        "Disjoint forests: 0",
     ]
     assert out.strip().splitlines() == expected
 
@@ -101,8 +103,9 @@ def test_stat_multi_tree():
         "  Families with unnamed/incomplete parent: 0",
         "  Families with no children: 0",
         "",
-        "Disjoint forests: 2",
         "Generations: 2",
+        "",
+        "Disjoint forests: 2",
     ]
     assert out.strip().splitlines() == expected
 

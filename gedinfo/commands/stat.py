@@ -117,5 +117,6 @@ def run(args: Any) -> None:
     print(f"  Families with unnamed/incomplete parent: {unnamed_parents}")
     print(f"  Families with no children: {no_children}")
     print()
-    print(f"Disjoint forests: {disjoint}")
     print(f"Generations: {generations}")
+    print()
+    print(f"Disjoint forests: {disjoint}")
