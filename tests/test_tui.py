@@ -152,3 +152,64 @@ def test_left_items_before_center_before_right(relatives_data):
     first_right = min((j for j, p in enumerate(panes) if p == "right"), default=len(panes))
     assert last_left < first_center
     assert last_center < first_right
+
+
+def test_family_id_on_spouse_items(relatives_data):
+    # Spouse items in center pane should carry the marriage family_id; self item should be None
+    items = build_nav_items(relatives_data, "@I001@")
+    center = center_items(items)
+    self_item = center[0]
+    assert self_item.family_id is None
+    spouse_items = [i for i in center if i.label != "self:"]
+    for item in spouse_items:
+        assert item.family_id is not None
+        assert item.family_id.startswith("@F")
+
+
+def test_center_cursor_zero_shows_all_children(relatives_data):
+    # cursor on self (idx 0) → target_fam is None → all children shown
+    items_default = build_nav_items(relatives_data, "@I001@")
+    right_default = right_items(items_default)
+    labels_default = [i.label for i in right_default]
+    # I001 has children via F001 and F003 — should show all
+    assert "son:" in labels_default
+    assert "daughter:" in labels_default
+
+
+def test_center_cursor_on_spouse_filters_right_pane(relatives_data):
+    # I001's second spouse in F002 has no children; right pane should be empty for that cursor
+    # Find which center index corresponds to a spouse with no children (I007 via F002)
+    items = build_nav_items(relatives_data, "@I001@")
+    center = center_items(items)
+    # Find the spouse item whose family_id is @F002@
+    f002_idx = next(
+        (i for i, item in enumerate(center) if item.family_id == "@F002@"),
+        None,
+    )
+    assert f002_idx is not None, "Expected a spouse item for F002"
+    # Rebuild with cursor on that spouse — right pane should be empty (F002 has no children)
+    items_filtered = build_nav_items(relatives_data, "@I001@", center_cursor=f002_idx)
+    assert right_items(items_filtered) == []
+
+
+def test_center_cursor_on_f001_spouse_shows_f001_children(relatives_data):
+    # I001's spouse in F001 (Alice, I004) has children I005 + I006; cursor on that spouse
+    items = build_nav_items(relatives_data, "@I001@")
+    center = center_items(items)
+    f001_idx = next(
+        (i for i, item in enumerate(center) if item.family_id == "@F001@"),
+        None,
+    )
+    assert f001_idx is not None
+    items_filtered = build_nav_items(relatives_data, "@I001@", center_cursor=f001_idx)
+    right = right_items(items_filtered)
+    assert len(right) == 2
+    labels = [i.label for i in right]
+    assert "son:" in labels
+    assert "daughter:" in labels
+
+
+def test_idx_sequential_after_center_cursor_change(relatives_data):
+    # idx values must always be sequential 0..N-1 regardless of center_cursor
+    items = build_nav_items(relatives_data, "@I001@", center_cursor=1)
+    assert [i.idx for i in items] == list(range(len(items)))
