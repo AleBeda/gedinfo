@@ -221,9 +221,14 @@ def _go_to_root(data: GedcomData, start_id: str) -> str:
 # ---------------------------------------------------------------------------
 
 class VimListView(ListView):
-    """ListView that adds ctrl+d/u/f/b for half/full-page vim scrolling."""
+    """ListView that adds ctrl+d/u/f/b for half/full-page vim scrolling.
+
+    Also re-declares the Enter binding so it takes priority over app-level
+    Enter bindings when this widget is focused.
+    """
 
     BINDINGS = [
+        Binding("enter",  "select_cursor",    show=False),
         Binding("ctrl+d", "scroll_half_down", show=False),
         Binding("ctrl+u", "scroll_half_up",   show=False),
         Binding("ctrl+f", "scroll_full_down", show=False),
@@ -473,7 +478,13 @@ class FilePickerScreen(ModalScreen[str | None]):
                 yield Label("(no *.ged files found in current directory or subdirectories)")
 
     def on_mount(self) -> None:
-        self.query_one("#path-input", Input).focus()
+        if self._files:
+            lv = self.query_one(VimListView)
+            lv.focus()
+            # Show the first file's full path immediately.
+            self.query_one("#path-status", Label).update(str(self._files[0]))
+        else:
+            self.query_one("#path-input", Input).focus()
 
     def on_input_submitted(self, event: Input.Submitted) -> None:
         path = event.value.strip()
@@ -482,11 +493,14 @@ class FilePickerScreen(ModalScreen[str | None]):
 
     def on_list_view_highlighted(self, event: ListView.Highlighted) -> None:
         """Show full path in the status label when an item is highlighted."""
-        status = self.query_one("#path-status", Label)
-        if event.item and isinstance(event.item, _FileItem):
-            status.update(str(event.item.path))
-        else:
-            status.update("")
+        try:
+            status = self.query_one("#path-status", Label)
+            if event.item and isinstance(event.item, _FileItem):
+                status.update(str(event.item.path))
+            else:
+                status.update("")
+        except Exception:
+            pass
 
     def on_list_view_selected(self, event: ListView.Selected) -> None:
         if isinstance(event.item, _FileItem):
@@ -700,6 +714,9 @@ class GedTui(App):
         # Child-selection mode state
         self._in_child_selection: bool = False
         self._children_for_selection: list[Individual] = []
+        # Parent-selection mode state
+        self._in_parent_selection: bool = False
+        self._parents_for_selection: list[Individual] = []
 
     # --- lifecycle ---
 
@@ -721,7 +738,8 @@ class GedTui(App):
     # --- reactive watchers ---
 
     def watch_focus_id(self, new_id: str | None) -> None:
-        self._in_child_selection = False  # always leave selection mode on navigation
+        self._in_child_selection = False  # always leave selection modes on navigation
+        self._in_parent_selection = False
         if new_id and self._data:
             try:
                 self._nav_items = build_nav_items(self._data, new_id, 0)
@@ -735,6 +753,8 @@ class GedTui(App):
     def watch_cursor_idx(self, new_cursor: int) -> None:
         if self._in_child_selection:
             self._nav_items = self._build_child_selection_items(new_cursor)
+        elif self._in_parent_selection:
+            self._nav_items = self._build_parent_selection_items(new_cursor)
         elif self.focus_id and self._data:
             try:
                 self._nav_items = build_nav_items(self._data, self.focus_id, new_cursor)
@@ -845,14 +865,121 @@ class GedTui(App):
     def _cancel_child_selection(self) -> None:
         self._in_child_selection = False
         self._children_for_selection = []
-        # Restore normal nav items for the current focus person
         if self.focus_id and self._data:
             try:
                 self._nav_items = build_nav_items(self._data, self.focus_id, 0)
             except ValueError:
                 self._nav_items = []
         if self.cursor_idx != 0:
-            self.cursor_idx = 0  # watcher fires but _in_child_selection is False now
+            self.cursor_idx = 0
+        else:
+            self._refresh_panes()
+
+    def _build_parent_selection_items(self, cursor: int) -> list[NavItem]:
+        """Build nav items for parent-selection mode.
+
+        Left: grandparents (parents of the highlighted parent, live preview).
+        Center: parents of focus person — the list to choose between.
+        Right: focus person (the child context, with their spouses).
+        """
+        data = self._data
+        if not data or not self.focus_id:
+            return []
+        focus = find_by_id(data, self.focus_id)
+        if not focus:
+            return []
+
+        left: list[NavItem] = []
+        center: list[NavItem] = []
+        right: list[NavItem] = []
+
+        # Center: parents the user is choosing between
+        for parent in self._parents_for_selection:
+            p_dates: list[str] = []
+            if parent.birth_date:
+                p_dates.append(parent.birth_date)
+            if parent.death_date:
+                p_dates.append(parent.death_date)
+            center.append(NavItem(
+                label=_parent_label(parent),
+                individual=parent,
+                date_hint=" – ".join(p_dates),
+                pane="center",
+                idx=0,
+            ))
+
+        # Left: grandparents of the highlighted parent
+        safe = min(cursor, len(center) - 1) if center else 0
+        if center and 0 <= safe < len(center):
+            parent_indi = center[safe].individual
+            if parent_indi:
+                try:
+                    gp_items = build_nav_items(data, parent_indi.id)
+                    for item in gp_items:
+                        if item.pane == "left":
+                            left.append(NavItem(
+                                label=item.label,
+                                individual=item.individual,
+                                date_hint=item.date_hint,
+                                pane="left",
+                                idx=0,
+                            ))
+                except ValueError:
+                    pass
+
+        # Right: focus person and their spouses (the "child" context)
+        focus_dates: list[str] = []
+        if focus.birth_date:
+            focus_dates.append(focus.birth_date)
+        if focus.death_date:
+            focus_dates.append(focus.death_date)
+        right.append(NavItem(
+            label="self:",
+            individual=focus,
+            date_hint=" – ".join(focus_dates),
+            pane="right",
+            idx=0,
+        ))
+        for fam_id in focus.family_ids_as_spouse:
+            fam = data.families.get(fam_id)
+            if not fam:
+                continue
+            other_id = fam.wife_id if fam.husband_id == focus.id else fam.husband_id
+            if not other_id:
+                continue
+            spouse = data.individuals.get(other_id)
+            if spouse:
+                right.append(NavItem(
+                    label=_spouse_label(spouse),
+                    individual=spouse,
+                    date_hint=f"m. {fam.marriage_date}" if fam.marriage_date else "",
+                    pane="right",
+                    idx=0,
+                ))
+
+        all_items = left + center + right
+        for i, item in enumerate(all_items):
+            item.idx = i
+        return all_items
+
+    def _enter_parent_selection(self, parents: list[Individual]) -> None:
+        self._parents_for_selection = parents
+        self._in_parent_selection = True
+        self._nav_items = self._build_parent_selection_items(0)
+        if self.cursor_idx != 0:
+            self.cursor_idx = 0
+        self._refresh_panes()
+
+    def _cancel_parent_selection(self) -> None:
+        self._in_parent_selection = False
+        self._parents_for_selection = []
+        if self.focus_id and self._data:
+            try:
+                self._nav_items = build_nav_items(self._data, self.focus_id, 0)
+            except ValueError:
+                self._nav_items = []
+        if self.cursor_idx != 0:
+            self.cursor_idx = 0
         else:
             self._refresh_panes()
 
@@ -870,10 +997,13 @@ class GedTui(App):
     # --- lateral navigation (h/l: between generations) ---
 
     def action_navigate_right(self) -> None:
-        """l / →: navigate to single child; enter child-selection mode for multiple."""
+        """l / →: confirm child-selection, cancel parent-selection, or enter children."""
         if self._in_child_selection:
-            # Already selecting — confirm (same as Enter)
             self.action_navigate_select()
+            return
+        if self._in_parent_selection:
+            # Going right from parent-selection = go back to child (cancel)
+            self._cancel_parent_selection()
             return
         right = [i for i in self._nav_items if i.pane == "right" and i.individual]
         if not right:
@@ -882,26 +1012,34 @@ class GedTui(App):
         if len(right) == 1:
             self._navigate_to(right[0].individual.id)  # type: ignore[union-attr]
             return
-        # Multiple children: inline selection in center pane
         children = [i.individual for i in right]  # type: ignore[misc]
         self._enter_child_selection(children)
 
     def action_go_up(self) -> None:
-        """h / ←: cancel child-selection or navigate to first parent."""
+        """h / ←: confirm parent-selection, cancel child-selection, or enter parents."""
+        if self._in_parent_selection:
+            self.action_navigate_select()
+            return
         if self._in_child_selection:
             self._cancel_child_selection()
             return
         left = [i for i in self._nav_items if i.pane == "left" and i.individual]
-        if left:
+        if not left:
+            return
+        if len(left) == 1:
             self._navigate_to(left[0].individual.id)  # type: ignore[union-attr]
+            return
+        parents = [i.individual for i in left]  # type: ignore[misc]
+        self._enter_parent_selection(parents)
 
     def action_navigate_select(self) -> None:
-        """Enter: confirm child-selection or navigate to selected spouse."""
+        """Enter: confirm selection or navigate to selected center item."""
         center = [i for i in self._nav_items if i.pane == "center"]
         if 0 <= self.cursor_idx < len(center):
             item = center[self.cursor_idx]
             if item.individual and item.individual.id != self.focus_id:
-                self._in_child_selection = False  # clear before focus change
+                self._in_child_selection = False
+                self._in_parent_selection = False
                 self._navigate_to(item.individual.id)
 
     # --- history ---
@@ -909,6 +1047,9 @@ class GedTui(App):
     def action_go_back(self) -> None:
         if self._in_child_selection:
             self._cancel_child_selection()
+            return
+        if self._in_parent_selection:
+            self._cancel_parent_selection()
             return
         if self._history:
             self.focus_id = self._history.pop()
