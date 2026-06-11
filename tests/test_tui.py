@@ -1,11 +1,11 @@
-"""Unit tests for gedinfo.tui.build_nav_items (pure logic, no textual required)."""
+"""Unit tests for gedinfo.tui pure logic (no textual required)."""
 
 from pathlib import Path
 
 import pytest
 
 from gedinfo.parser import parse
-from gedinfo.tui import NavItem, build_nav_items
+from gedinfo.tui import NavItem, _go_to_root, build_nav_items
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -122,6 +122,24 @@ def test_idx_assignment(relatives_data):
 def test_idx_starts_at_zero(relatives_data):
     items = build_nav_items(relatives_data, "@I001@")
     assert items[0].idx == 0
+
+
+def test_go_to_root_from_child(relatives_data):
+    # I001's first parent is I002 (father, no parents) — root should be I002
+    root = _go_to_root(relatives_data, "@I001@")
+    assert root == "@I002@"
+
+
+def test_go_to_root_already_at_root(relatives_data):
+    # I002 (John Smith) has no parents — root is itself
+    root = _go_to_root(relatives_data, "@I002@")
+    assert root == "@I002@"
+
+
+def test_go_to_root_two_generations(relatives_data):
+    # I005 (Charlie) → parent I001 (Bob, father) → parent I002 (John, no parents)
+    root = _go_to_root(relatives_data, "@I005@")
+    assert root == "@I002@"
 
 
 def test_left_items_before_center_before_right(relatives_data):

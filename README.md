@@ -54,6 +54,7 @@ within the TUI by pressing `o`.
 | `l` / `→` / `Enter` | Navigate to person under cursor |
 | `h` / `←` | Navigate to first parent |
 | `b` | Go back (navigation history) |
+| `r` | Jump to root (oldest ancestor via first-parent path) |
 | `/` | Search by name or ID |
 | `o` | Open a different GEDCOM file |
 | `q` | Quit |
