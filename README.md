@@ -2,7 +2,7 @@
 
 A command-line utility for querying GEDCOM genealogy files.
 
-Version: 0.16.1
+Version: 0.17.0
 
 Installation
 ------------
@@ -39,6 +39,24 @@ gedinfo [--version] [--debug] <command> [options] <arguments>
 - `--version`  Print the package version and exit
 - `--debug`    Show a full Python traceback on error instead of a terse
                message
+
+### TUI mode
+
+    gedinfo --tui [FILE]
+
+Launches an interactive terminal browser. If FILE is omitted, open a file from
+within the TUI by pressing `o`.
+
+| Key | Action |
+|-----|--------|
+| `j` / `↓` | Move cursor down |
+| `k` / `↑` | Move cursor up |
+| `l` / `→` / `Enter` | Navigate to person under cursor |
+| `h` / `←` | Navigate to first parent |
+| `b` | Go back (navigation history) |
+| `/` | Search by name or ID |
+| `o` | Open a different GEDCOM file |
+| `q` | Quit |
 
 Commands
 --------

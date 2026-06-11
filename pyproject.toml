@@ -1,9 +1,9 @@
 [project]
 name = "gedinfo"
-version = "0.16.1"
+version = "0.17.0"
 requires-python = ">=3.10"
 description = "GEDCOM query utility"
-dependencies = ["faker"]
+dependencies = ["faker", "textual"]
 
 [tool.setuptools]
 packages = {find = {where = ["."]}}
