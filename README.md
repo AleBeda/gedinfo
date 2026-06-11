@@ -59,7 +59,7 @@ the center pane.
 | `k` / `↑` | Move cursor up within center pane |
 | `ctrl+d` / `ctrl+u` | Half-page down / up in list views |
 | `ctrl+f` / `ctrl+b` | Full-page down / up in list views |
-| `l` / `→` | Show all children in a navigable list |
+| `l` / `→` | Navigate to only child; or enter inline child-selection (multiple children) |
 | `h` / `←` | Navigate to first parent (left pane) |
 | `Enter` | Navigate to selected center item (e.g. a spouse) |
 | `b` | Go back (navigation history) |

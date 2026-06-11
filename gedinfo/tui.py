@@ -687,6 +687,7 @@ class GedTui(App):
     ]
 
     # cursor_idx is the center-pane-local index: 0 = self, 1 = first spouse, …
+    # In child-selection mode it is the index into _children_for_selection.
     focus_id: reactive[str | None] = reactive(None)
     cursor_idx: reactive[int] = reactive(0)
 
@@ -696,6 +697,9 @@ class GedTui(App):
         self._file_path = file_path
         self._history: list[str] = []
         self._nav_items: list[NavItem] = []
+        # Child-selection mode state
+        self._in_child_selection: bool = False
+        self._children_for_selection: list[Individual] = []
 
     # --- lifecycle ---
 
@@ -717,6 +721,7 @@ class GedTui(App):
     # --- reactive watchers ---
 
     def watch_focus_id(self, new_id: str | None) -> None:
+        self._in_child_selection = False  # always leave selection mode on navigation
         if new_id and self._data:
             try:
                 self._nav_items = build_nav_items(self._data, new_id, 0)
@@ -728,7 +733,9 @@ class GedTui(App):
         self._refresh_panes()
 
     def watch_cursor_idx(self, new_cursor: int) -> None:
-        if self.focus_id and self._data:
+        if self._in_child_selection:
+            self._nav_items = self._build_child_selection_items(new_cursor)
+        elif self.focus_id and self._data:
             try:
                 self._nav_items = build_nav_items(self._data, self.focus_id, new_cursor)
             except ValueError:
@@ -742,6 +749,112 @@ class GedTui(App):
             self.query_one(StatusPane).refresh()
         except Exception:
             pass
+
+    # --- child selection mode helpers ---
+
+    def _build_child_selection_items(self, cursor: int) -> list[NavItem]:
+        """Build nav items for child-selection mode.
+
+        Left: focus person (as context). Center: children to choose from.
+        Right: live preview of the highlighted child's spouses and their children.
+        """
+        data = self._data
+        if not data or not self.focus_id:
+            return []
+        focus = find_by_id(data, self.focus_id)
+        if not focus:
+            return []
+
+        left: list[NavItem] = []
+        center: list[NavItem] = []
+        right: list[NavItem] = []
+
+        # Left pane: show focus person as "where you came from"
+        focus_dates: list[str] = []
+        if focus.birth_date:
+            focus_dates.append(focus.birth_date)
+        if focus.death_date:
+            focus_dates.append(focus.death_date)
+        left.append(NavItem(
+            label="self:",
+            individual=focus,
+            date_hint=" – ".join(focus_dates),
+            pane="left",
+            idx=0,
+        ))
+
+        # Center pane: the children the user is choosing between
+        for child in self._children_for_selection:
+            c_dates: list[str] = []
+            if child.birth_date:
+                c_dates.append(child.birth_date)
+            if child.death_date:
+                c_dates.append(child.death_date)
+            center.append(NavItem(
+                label=_child_label(child),
+                individual=child,
+                date_hint=" – ".join(c_dates),
+                pane="center",
+                idx=0,
+            ))
+
+        # Right pane: preview of the highlighted child's family
+        safe = min(cursor, len(center) - 1) if center else 0
+        if center and 0 <= safe < len(center):
+            child_indi = center[safe].individual
+            if child_indi:
+                try:
+                    child_items = build_nav_items(data, child_indi.id)
+                    # Spouses of the child (center items except self)
+                    for item in child_items:
+                        if item.pane == "center" and item.label != "self:":
+                            right.append(NavItem(
+                                label=item.label,
+                                individual=item.individual,
+                                date_hint=item.date_hint,
+                                pane="right",
+                                idx=0,
+                            ))
+                    # Children of the child
+                    for item in child_items:
+                        if item.pane == "right":
+                            right.append(NavItem(
+                                label=item.label,
+                                individual=item.individual,
+                                date_hint=item.date_hint,
+                                pane="right",
+                                idx=0,
+                            ))
+                except ValueError:
+                    pass
+
+        all_items = left + center + right
+        for i, item in enumerate(all_items):
+            item.idx = i
+        return all_items
+
+    def _enter_child_selection(self, children: list[Individual]) -> None:
+        self._children_for_selection = children
+        self._in_child_selection = True
+        # cursor_idx may already be 0; force-rebuild regardless
+        self._nav_items = self._build_child_selection_items(0)
+        if self.cursor_idx != 0:
+            self.cursor_idx = 0  # watcher will rebuild, harmless double
+        self._refresh_panes()
+
+    def _cancel_child_selection(self) -> None:
+        self._in_child_selection = False
+        self._children_for_selection = []
+        # Restore normal nav items for the current focus person
+        if self.focus_id and self._data:
+            try:
+                self._nav_items = build_nav_items(self._data, self.focus_id, 0)
+            except ValueError:
+                self._nav_items = []
+        if self.cursor_idx != 0:
+            self.cursor_idx = 0  # watcher fires but _in_child_selection is False now
+        else:
+            self._refresh_panes()
 
     # --- cursor movement (j/k: within center pane only) ---
 
@@ -757,39 +870,46 @@ class GedTui(App):
     # --- lateral navigation (h/l: between generations) ---
 
     def action_navigate_right(self) -> None:
-        """l / →: show all children in a navigable list."""
+        """l / →: navigate to single child; enter child-selection mode for multiple."""
+        if self._in_child_selection:
+            # Already selecting — confirm (same as Enter)
+            self.action_navigate_select()
+            return
         right = [i for i in self._nav_items if i.pane == "right" and i.individual]
         if not right:
             self.notify("No children", timeout=2)
             return
+        if len(right) == 1:
+            self._navigate_to(right[0].individual.id)  # type: ignore[union-attr]
+            return
+        # Multiple children: inline selection in center pane
         children = [i.individual for i in right]  # type: ignore[misc]
-        focus_name = ""
-        if self.focus_id and self._data:
-            focus_indi = find_by_id(self._data, self.focus_id)
-            if focus_indi:
-                focus_name = display_name(focus_indi)
-        self.push_screen(
-            IndividualListScreen(f"Children of {focus_name}", children),
-            self._on_individual_selected,
-        )
+        self._enter_child_selection(children)
 
     def action_go_up(self) -> None:
-        """h / ←: navigate to the first parent shown in the left pane."""
+        """h / ←: cancel child-selection or navigate to first parent."""
+        if self._in_child_selection:
+            self._cancel_child_selection()
+            return
         left = [i for i in self._nav_items if i.pane == "left" and i.individual]
         if left:
             self._navigate_to(left[0].individual.id)  # type: ignore[union-attr]
 
     def action_navigate_select(self) -> None:
-        """Enter: navigate to the cursor-selected center pane item (e.g. a spouse)."""
+        """Enter: confirm child-selection or navigate to selected spouse."""
         center = [i for i in self._nav_items if i.pane == "center"]
         if 0 <= self.cursor_idx < len(center):
             item = center[self.cursor_idx]
             if item.individual and item.individual.id != self.focus_id:
+                self._in_child_selection = False  # clear before focus change
                 self._navigate_to(item.individual.id)
 
     # --- history ---
 
     def action_go_back(self) -> None:
+        if self._in_child_selection:
+            self._cancel_child_selection()
+            return
         if self._history:
             self.focus_id = self._history.pop()
 
