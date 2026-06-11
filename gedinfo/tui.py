@@ -8,6 +8,7 @@ from typing import Optional
 
 from rich.console import RenderableType
 from rich.text import Text
+from textual import events
 from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.containers import Horizontal, Vertical
@@ -177,6 +178,17 @@ def build_nav_items(
     return all_items
 
 
+def _fmt_path(path: str, max_len: int = 52) -> str:
+    """Truncate a path to max_len by keeping the head and tail with '...' in the middle."""
+    if len(path) <= max_len:
+        return path
+    ellipsis = "..."
+    keep = max_len - len(ellipsis)
+    head = keep // 3
+    tail = keep - head
+    return path[:head] + ellipsis + path[-tail:]
+
+
 def _find_ged_files() -> list[Path]:
     """Return *.ged files in CWD and one level of non-hidden subdirectories."""
     cwd = Path.cwd()
@@ -223,8 +235,8 @@ def _go_to_root(data: GedcomData, start_id: str) -> str:
 class VimListView(ListView):
     """ListView that adds ctrl+d/u/f/b for half/full-page vim scrolling.
 
-    Also re-declares the Enter binding so it takes priority over app-level
-    Enter bindings when this widget is focused.
+    Also handles Enter directly in on_key so it fires before the app-level
+    binding chain has a chance to intercept it.
     """
 
     BINDINGS = [
@@ -234,6 +246,12 @@ class VimListView(ListView):
         Binding("ctrl+f", "scroll_full_down", show=False),
         Binding("ctrl+b", "scroll_full_up",   show=False),
     ]
+
+    def on_key(self, event: events.Key) -> None:
+        """Handle Enter directly to guarantee it fires before app-level bindings."""
+        if event.key == "enter":
+            self.action_select_cursor()
+            event.stop()
 
     def _item_count(self) -> int:
         return len(self._nodes)
@@ -481,8 +499,9 @@ class FilePickerScreen(ModalScreen[str | None]):
         if self._files:
             lv = self.query_one(VimListView)
             lv.focus()
-            # Show the first file's full path immediately.
-            self.query_one("#path-status", Label).update(str(self._files[0]))
+            self.query_one("#path-status", Label).update(
+                _fmt_path(str(self._files[0]))
+            )
         else:
             self.query_one("#path-input", Input).focus()
 
@@ -492,11 +511,11 @@ class FilePickerScreen(ModalScreen[str | None]):
             self.dismiss(path)
 
     def on_list_view_highlighted(self, event: ListView.Highlighted) -> None:
-        """Show full path in the status label when an item is highlighted."""
+        """Show truncated full path in the status label when an item is highlighted."""
         try:
             status = self.query_one("#path-status", Label)
             if event.item and isinstance(event.item, _FileItem):
-                status.update(str(event.item.path))
+                status.update(_fmt_path(str(event.item.path)))
             else:
                 status.update("")
         except Exception:
@@ -594,7 +613,7 @@ class IndividualListScreen(ModalScreen[str | None]):
     #list-dialog {
         width: 72;
         height: auto;
-        max-height: 30;
+        max-height: 32;
         background: $surface;
         border: thick $accent;
         padding: 1 2;
@@ -602,6 +621,7 @@ class IndividualListScreen(ModalScreen[str | None]):
     #list-title   { text-style: bold; }
     #list-count   { color: $text-disabled; margin-bottom: 1; }
     #indi-list    { height: auto; max-height: 20; }
+    #indi-hint    { color: $text-disabled; margin-top: 1; }
     """
 
     def __init__(self, title: str, individuals: list[Individual], **kwargs: object) -> None:
@@ -617,12 +637,14 @@ class IndividualListScreen(ModalScreen[str | None]):
                 yield VimListView(*[_IndiItem(i) for i in self._individuals], id="indi-list")
             else:
                 yield Label("(none)")
+            yield Label("↵ Select  Esc Cancel  ctrl+d/u Scroll", id="indi-hint")
 
     def on_mount(self) -> None:
-        try:
-            self.query_one(VimListView).focus()
-        except Exception:
-            pass
+        if self._individuals:
+            try:
+                self.query_one("#indi-list").focus()
+            except Exception:
+                pass
 
     def on_list_view_selected(self, event: ListView.Selected) -> None:
         if isinstance(event.item, _IndiItem):
