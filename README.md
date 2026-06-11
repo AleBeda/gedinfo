@@ -48,20 +48,24 @@ Launches an interactive terminal browser. If FILE is omitted, open a file from
 within the TUI by pressing `o`.
 
 The layout has three columns: parents on the left, the focused person and their
-spouses in the center, children on the right. Side panes are informational;
-the cursor always stays in the center pane.
+spouses in the center, children on the right. A status pane below the columns
+shows birth/death dates, parents, spouse count, and children count for the
+focused individual. Side panes are informational; the cursor always stays in
+the center pane.
 
 | Key | Action |
 |-----|--------|
 | `j` / `↓` | Move cursor down within center pane |
 | `k` / `↑` | Move cursor up within center pane |
-| `l` / `→` | Navigate to first child (right pane) |
+| `ctrl+d` / `ctrl+u` | Half-page down / up in list views |
+| `ctrl+f` / `ctrl+b` | Full-page down / up in list views |
+| `l` / `→` | Show all children in a navigable list |
 | `h` / `←` | Navigate to first parent (left pane) |
 | `Enter` | Navigate to selected center item (e.g. a spouse) |
 | `b` | Go back (navigation history) |
 | `r` | Jump to root (oldest ancestor via first-parent path) |
 | `c` | Command palette (stat, roots, leaves, ancestors, descendants, …) |
-| `/` | Search by name or ID |
+| `/` | Search by name or ID; shows a list when multiple matches |
 | `o` | Open a different GEDCOM file |
 | `q` | Quit |
 

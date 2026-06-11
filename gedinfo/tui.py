@@ -217,6 +217,42 @@ def _go_to_root(data: GedcomData, start_id: str) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Vim-scrollable ListView
+# ---------------------------------------------------------------------------
+
+class VimListView(ListView):
+    """ListView that adds ctrl+d/u/f/b for half/full-page vim scrolling."""
+
+    BINDINGS = [
+        Binding("ctrl+d", "scroll_half_down", show=False),
+        Binding("ctrl+u", "scroll_half_up",   show=False),
+        Binding("ctrl+f", "scroll_full_down", show=False),
+        Binding("ctrl+b", "scroll_full_up",   show=False),
+    ]
+
+    def _item_count(self) -> int:
+        return len(self._nodes)
+
+    def _move(self, delta: int) -> None:
+        n = self._item_count()
+        if n == 0:
+            return
+        self.index = max(0, min(n - 1, (self.index or 0) + delta))
+
+    def action_scroll_half_down(self) -> None:
+        self._move(max(1, self.size.height // 2))
+
+    def action_scroll_half_up(self) -> None:
+        self._move(-max(1, self.size.height // 2))
+
+    def action_scroll_full_down(self) -> None:
+        self._move(max(1, self.size.height))
+
+    def action_scroll_full_up(self) -> None:
+        self._move(-max(1, self.size.height))
+
+
+# ---------------------------------------------------------------------------
 # Three-column person pane
 # ---------------------------------------------------------------------------
 
@@ -269,6 +305,77 @@ class PersonPane(Widget):
 
 
 # ---------------------------------------------------------------------------
+# Status pane
+# ---------------------------------------------------------------------------
+
+class StatusPane(Widget):
+    """Persistent pane showing details about the currently focused individual."""
+
+    DEFAULT_CSS = """
+    StatusPane {
+        height: 4;
+        border-top: solid $accent;
+        background: $surface;
+        padding: 0 1;
+    }
+    """
+
+    def render(self) -> RenderableType:
+        try:
+            app: GedTui = self.app  # type: ignore[assignment]
+            if not app.focus_id or not app._data:
+                return Text("No individual in focus", style="dim")
+            indi = find_by_id(app._data, app.focus_id)
+            if not indi:
+                return Text("")
+        except Exception:
+            return Text("")
+
+        lines = Text()
+
+        # Line 1: name (ID) · sex · birth · death
+        name = display_name(indi)
+        id_str = indi.id.strip("@")
+        sex_str = {"M": "male", "F": "female"}.get(indi.sex, "")
+        parts1: list[str] = [f"{name} ({id_str})"]
+        if sex_str:
+            parts1.append(sex_str)
+        if indi.birth_date:
+            parts1.append(f"b. {indi.birth_date}")
+        if indi.death_date:
+            parts1.append(f"d. {indi.death_date}")
+        lines.append(" · ".join(parts1) + "\n", style="bold")
+
+        # Line 2: parents | spouses count | children count
+        parents: list[str] = []
+        for fam_id in indi.family_ids_as_child:
+            fam = app._data.families.get(fam_id)
+            if not fam:
+                continue
+            for pid in [fam.husband_id, fam.wife_id]:
+                if pid:
+                    p = app._data.individuals.get(pid)
+                    if p:
+                        parents.append(display_name(p))
+
+        n_children = sum(
+            len(app._data.families[fam_id].child_ids)
+            for fam_id in indi.family_ids_as_spouse
+            if fam_id in app._data.families
+        )
+        n_spouses = len(indi.family_ids_as_spouse)
+
+        parts2: list[str] = []
+        if parents:
+            parts2.append("Parents: " + ", ".join(parents))
+        parts2.append(f"Spouses: {n_spouses}")
+        parts2.append(f"Children: {n_children}")
+        lines.append("  ".join(parts2) + "\n", style="dim")
+
+        return lines
+
+
+# ---------------------------------------------------------------------------
 # Search bar
 # ---------------------------------------------------------------------------
 
@@ -306,9 +413,14 @@ class SearchBar(Widget):
         if not results:
             app.notify(f"Not found: {query!r}", severity="warning")
             return
-        app._navigate_to(results[0].id)
-        if len(results) > 1:
-            app.notify(f"{len(results)} matches — navigated to first", timeout=3)
+        if len(results) == 1:
+            app._navigate_to(results[0].id)
+            return
+        # Multiple matches: show a navigable list.
+        app.push_screen(
+            IndividualListScreen(f'Search: "{query}"', results),
+            app._on_individual_selected,
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -355,7 +467,7 @@ class FilePickerScreen(ModalScreen[str | None]):
                 id="path-input",
             )
             if self._files:
-                yield ListView(*[_FileItem(f) for f in self._files], id="file-list")
+                yield VimListView(*[_FileItem(f) for f in self._files], id="file-list")
                 yield Label("", id="path-status")
             else:
                 yield Label("(no *.ged files found in current directory or subdirectories)")
@@ -425,10 +537,10 @@ class CommandScreen(ModalScreen[str | None]):
     def compose(self) -> ComposeResult:
         with Vertical(id="cmd-dialog"):
             yield Label("Commands", id="cmd-title")
-            yield ListView(*[_CmdItem(cmd, desc) for cmd, desc in _COMMANDS], id="cmd-list")
+            yield VimListView(*[_CmdItem(cmd, desc) for cmd, desc in _COMMANDS], id="cmd-list")
 
     def on_mount(self) -> None:
-        self.query_one(ListView).focus()
+        self.query_one(VimListView).focus()
 
     def on_list_view_selected(self, event: ListView.Selected) -> None:
         if isinstance(event.item, _CmdItem):
@@ -488,14 +600,15 @@ class IndividualListScreen(ModalScreen[str | None]):
             yield Label(self._title, id="list-title")
             yield Label(f"{len(self._individuals)} individuals", id="list-count")
             if self._individuals:
-                yield ListView(*[_IndiItem(i) for i in self._individuals], id="indi-list")
+                yield VimListView(*[_IndiItem(i) for i in self._individuals], id="indi-list")
             else:
                 yield Label("(none)")
 
     def on_mount(self) -> None:
-        lv = self.query_one(ListView, expect_type=ListView)
-        if lv:
-            lv.focus()
+        try:
+            self.query_one(VimListView).focus()
+        except Exception:
+            pass
 
     def on_list_view_selected(self, event: ListView.Selected) -> None:
         if isinstance(event.item, _IndiItem):
@@ -547,11 +660,12 @@ class GedTui(App):
     TITLE = "gedinfo"
 
     DEFAULT_CSS = """
-    Screen   { layout: vertical; }
-    #panes   { layout: horizontal; height: 1fr; }
-    #left-pane   { width: 1fr;  border: solid $panel;  padding: 0 1; }
-    #center-pane { width: 2fr;  border: solid $accent; padding: 0 1; }
-    #right-pane  { width: 1fr;  border: solid $panel;  padding: 0 1; }
+    Screen        { layout: vertical; }
+    #panes        { layout: horizontal; height: 1fr; }
+    #left-pane    { width: 1fr;  border: solid $panel;  padding: 0 1; }
+    #center-pane  { width: 2fr;  border: solid $accent; padding: 0 1; }
+    #right-pane   { width: 1fr;  border: solid $panel;  padding: 0 1; }
+    StatusPane    { height: 4;   border-top: solid $accent; background: $surface; padding: 0 1; }
     """
 
     BINDINGS = [
@@ -597,6 +711,7 @@ class GedTui(App):
             yield PersonPane("left",   id="left-pane")
             yield PersonPane("center", id="center-pane")
             yield PersonPane("right",  id="right-pane")
+        yield StatusPane()
         yield Footer()
 
     # --- reactive watchers ---
@@ -607,13 +722,12 @@ class GedTui(App):
                 self._nav_items = build_nav_items(self._data, new_id, 0)
             except ValueError:
                 self._nav_items = []
-            self.cursor_idx = 0   # may re-trigger watch_cursor_idx if was already 0
+            self.cursor_idx = 0
         else:
             self._nav_items = []
         self._refresh_panes()
 
     def watch_cursor_idx(self, new_cursor: int) -> None:
-        # Rebuild nav items so right pane reflects the selected family.
         if self.focus_id and self._data:
             try:
                 self._nav_items = build_nav_items(self._data, self.focus_id, new_cursor)
@@ -625,6 +739,7 @@ class GedTui(App):
         try:
             for pane_id in ("left-pane", "center-pane", "right-pane"):
                 self.query_one(f"#{pane_id}").refresh()
+            self.query_one(StatusPane).refresh()
         except Exception:
             pass
 
@@ -642,10 +757,21 @@ class GedTui(App):
     # --- lateral navigation (h/l: between generations) ---
 
     def action_navigate_right(self) -> None:
-        """l / →: navigate to the first child shown in the right pane."""
+        """l / →: show all children in a navigable list."""
         right = [i for i in self._nav_items if i.pane == "right" and i.individual]
-        if right:
-            self._navigate_to(right[0].individual.id)  # type: ignore[union-attr]
+        if not right:
+            self.notify("No children", timeout=2)
+            return
+        children = [i.individual for i in right]  # type: ignore[misc]
+        focus_name = ""
+        if self.focus_id and self._data:
+            focus_indi = find_by_id(self._data, self.focus_id)
+            if focus_indi:
+                focus_name = display_name(focus_indi)
+        self.push_screen(
+            IndividualListScreen(f"Children of {focus_name}", children),
+            self._on_individual_selected,
+        )
 
     def action_go_up(self) -> None:
         """h / ←: navigate to the first parent shown in the left pane."""
