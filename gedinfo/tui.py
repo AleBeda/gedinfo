@@ -421,6 +421,11 @@ class SearchBar(Widget):
     def on_mount(self) -> None:
         self.query_one(Input).focus()
 
+    def on_key(self, event: events.Key) -> None:
+        if event.key == "escape":
+            self.remove()
+            event.stop()
+
     def on_input_submitted(self, event: Input.Submitted) -> None:
         # Capture app reference BEFORE removing self from DOM.
         app: GedTui = self.app  # type: ignore[assignment]
@@ -440,10 +445,15 @@ class SearchBar(Widget):
             app._navigate_to(results[0].id)
             return
         # Multiple matches: show a navigable list.
-        app.push_screen(
-            IndividualListScreen(f'Search: "{query}"', results),
-            app._on_individual_selected,
-        )
+        # Use app._context() so active_message_pump is the App, not this
+        # SearchBar (which is already removed).  Without this, Textual
+        # registers the dismiss callback on the SearchBar's dead pump and
+        # _on_individual_selected is never called.
+        with app._context():
+            app.push_screen(
+                IndividualListScreen(f'Search: "{query}"', results),
+                app._on_individual_selected,
+            )
 
 
 # ---------------------------------------------------------------------------
@@ -606,7 +616,10 @@ class _IndiItem(ListItem):
 class IndividualListScreen(ModalScreen[str | None]):
     """Shows a navigable list of individuals; returns the selected ID."""
 
-    BINDINGS = [Binding("escape", "cancel", "Cancel")]
+    BINDINGS = [
+        Binding("escape", "cancel", "Cancel"),
+        Binding("enter", "select_item", "Select", priority=True),
+    ]
 
     DEFAULT_CSS = """
     IndividualListScreen { align: center middle; }
@@ -641,10 +654,16 @@ class IndividualListScreen(ModalScreen[str | None]):
 
     def on_mount(self) -> None:
         if self._individuals:
-            try:
-                self.query_one("#indi-list").focus()
-            except Exception:
-                pass
+            self.call_after_refresh(lambda: self.query_one("#indi-list").focus())
+
+    def action_select_item(self) -> None:
+        try:
+            lv = self.query_one("#indi-list", VimListView)
+            item = lv.highlighted_child
+            if isinstance(item, _IndiItem):
+                self.dismiss(item.individual.id)
+        except Exception:
+            pass
 
     def on_list_view_selected(self, event: ListView.Selected) -> None:
         if isinstance(event.item, _IndiItem):
