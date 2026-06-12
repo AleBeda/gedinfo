@@ -295,20 +295,66 @@ class PersonPane(Widget):
             app: GedTui = self.app  # type: ignore[assignment]
             items = [i for i in app._nav_items if i.pane == self._pane_id]
             center_cursor = app.cursor_idx
+            normal_mode = not app._in_child_selection and not app._in_parent_selection
         except Exception:
             return Text("")
+
+        try:
+            css = app.get_css_variables()
+            accent = css.get("accent-darken-2") or css.get("accent", "")
+            hint_style = f"bold {accent}" if accent else "bold yellow"
+        except Exception:
+            hint_style = "bold yellow"
+
+        # Index of first spouse item in center pane (for the 's' hint)
+        first_spouse_idx = next(
+            (i for i, it in enumerate(items) if self._pane_id == "center" and it.label != "self:"),
+            None,
+        )
 
         lines = Text()
         for enum_idx, item in enumerate(items):
             is_cursor = self._pane_id == "center" and enum_idx == center_cursor
-            prefix = "► " if is_cursor else "  "
             name = display_name(item.individual) if item.individual else "(unknown)"
             id_str = item.individual.id.strip("@") if item.individual else ""
-            style = "bold reverse" if is_cursor else ""
+            id_part = f" ({id_str})" if id_str else ""
 
             # Main line: label + name + (ID)
-            id_part = f" ({id_str})" if id_str else ""
-            lines.append(f"{prefix}{item.label} {name}{id_part}\n", style=style)
+            if self._pane_id == "center":
+                if is_cursor:
+                    # Cursor row: everything in bold reverse, no dimming
+                    lines.append(f"► {item.label} {name}{id_part}\n", style="bold reverse")
+                else:
+                    if normal_mode and enum_idx == first_spouse_idx and item.individual:
+                        lines.append("s", style=hint_style)
+                        lines.append(" ")
+                    else:
+                        lines.append("  ")
+                    lines.append(f"{item.label} ", style="dim")
+                    lines.append(name)
+                    if id_str:
+                        lines.append(f" ({id_str})", style="dim")
+                    lines.append("\n")
+            else:
+                hint = " "
+                if normal_mode and item.individual:
+                    if self._pane_id == "left":
+                        if item.label == "father:":
+                            hint = "f"
+                        elif item.label == "mother:":
+                            hint = "m"
+                    elif self._pane_id == "right" and enum_idx < 9:
+                        hint = str(enum_idx + 1)
+                if hint != " ":
+                    lines.append(hint, style=hint_style)
+                    lines.append(" ")
+                else:
+                    lines.append("  ")
+                lines.append(f"{item.label} ", style="dim")
+                lines.append(name)
+                if id_str:
+                    lines.append(f" ({id_str})", style="dim")
+                lines.append("\n")
 
             # Sub-line: sex + date info (only for center pane)
             if self._pane_id == "center":
@@ -717,9 +763,9 @@ class GedTui(App):
     DEFAULT_CSS = """
     Screen        { layout: vertical; }
     #panes        { layout: horizontal; height: 1fr; }
-    #left-pane    { width: 1fr;  border: solid $panel;  padding: 0 1; }
-    #center-pane  { width: 2fr;  border: solid $accent; padding: 0 1; }
-    #right-pane   { width: 1fr;  border: solid $panel;  padding: 0 1; }
+    #left-pane    { width: 30%;  border: solid $panel;  padding: 0 1; }
+    #center-pane  { width: 40%;  border: solid $accent; padding: 0 1; }
+    #right-pane   { width: 30%;  border: solid $panel;  padding: 0 1; }
     StatusPane    { height: 4;   border-top: solid $accent; background: $surface; padding: 0 1; }
     """
 
@@ -739,6 +785,18 @@ class GedTui(App):
         Binding("/",     "search",          "Search"),
         Binding("o",     "open_file",       "Open file"),
         Binding("q",     "quit",            "Quit"),
+        Binding("f",     "go_father",       show=False),
+        Binding("m",     "go_mother",       show=False),
+        Binding("s",     "go_spouse",       show=False),
+        Binding("1",     "child_1",         show=False),
+        Binding("2",     "child_2",         show=False),
+        Binding("3",     "child_3",         show=False),
+        Binding("4",     "child_4",         show=False),
+        Binding("5",     "child_5",         show=False),
+        Binding("6",     "child_6",         show=False),
+        Binding("7",     "child_7",         show=False),
+        Binding("8",     "child_8",         show=False),
+        Binding("9",     "child_9",         show=False),
     ]
 
     # cursor_idx is the center-pane-local index: 0 = self, 1 = first spouse, …
@@ -766,6 +824,13 @@ class GedTui(App):
         if self._data and self._data.individuals:
             first = sorted(self._data.individuals.values(), key=lambda i: id_sort_key(i.id))[0]
             self.focus_id = first.id
+
+    def on_resize(self, event: events.Resize) -> None:
+        w = event.size.width
+        side = w * 30 // 100
+        self.query_one("#left-pane").styles.width = side
+        self.query_one("#right-pane").styles.width = side
+        self.query_one("#center-pane").styles.width = w - 2 * side
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -1072,6 +1137,44 @@ class GedTui(App):
             return
         parents = [i.individual for i in left]  # type: ignore[misc]
         self._enter_parent_selection(parents)
+
+    def action_go_father(self) -> None:
+        if self._in_child_selection or self._in_parent_selection:
+            return
+        left = [i for i in self._nav_items if i.pane == "left" and i.label == "father:" and i.individual]
+        if left:
+            self._navigate_to(left[0].individual.id)  # type: ignore[union-attr]
+
+    def action_go_mother(self) -> None:
+        if self._in_child_selection or self._in_parent_selection:
+            return
+        left = [i for i in self._nav_items if i.pane == "left" and i.label == "mother:" and i.individual]
+        if left:
+            self._navigate_to(left[0].individual.id)  # type: ignore[union-attr]
+
+    def action_go_spouse(self) -> None:
+        if self._in_child_selection or self._in_parent_selection:
+            return
+        spouses = [i for i in self._nav_items if i.pane == "center" and i.label != "self:" and i.individual]
+        if spouses:
+            self._navigate_to(spouses[0].individual.id)  # type: ignore[union-attr]
+
+    def _go_to_child(self, n: int) -> None:
+        if self._in_child_selection or self._in_parent_selection:
+            return
+        right = [i for i in self._nav_items if i.pane == "right" and i.individual]
+        if 1 <= n <= len(right):
+            self._navigate_to(right[n - 1].individual.id)  # type: ignore[union-attr]
+
+    def action_child_1(self) -> None: self._go_to_child(1)
+    def action_child_2(self) -> None: self._go_to_child(2)
+    def action_child_3(self) -> None: self._go_to_child(3)
+    def action_child_4(self) -> None: self._go_to_child(4)
+    def action_child_5(self) -> None: self._go_to_child(5)
+    def action_child_6(self) -> None: self._go_to_child(6)
+    def action_child_7(self) -> None: self._go_to_child(7)
+    def action_child_8(self) -> None: self._go_to_child(8)
+    def action_child_9(self) -> None: self._go_to_child(9)
 
     def action_navigate_select(self) -> None:
         """Enter: confirm selection or navigate to selected center item."""
