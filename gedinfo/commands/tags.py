@@ -38,8 +38,7 @@ def run(args: Any) -> None:
     if not counts:
         return
 
-    tag_width = max(len(tag) for tag in counts)
     count_width = len(str(max(counts.values())))
     for tag in sorted(counts):
         flag = "" if tag in standard_tags else "not in GEDCOM 5.5.1"
-        print(f"{tag:<{tag_width}}\t{counts[tag]:>{count_width}}\t{flag}")
+        print(f"{tag}\t{counts[tag]:>{count_width}}\t{flag}")
