@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
@@ -128,8 +129,23 @@ def build_nav_items(
         family_id=None,
     ))
 
-    # --- Center pane: spouses ---
-    for fam_id in indi.family_ids_as_spouse:
+    # --- Center pane: spouses (chronological by marriage year, then GEDCOM order) ---
+    def _marr_sort_key(item: tuple[int, str]) -> tuple[int, int]:
+        idx, date_str = item
+        m = re.search(r'\b(\d{4})\b', date_str) if date_str else None
+        return (0, int(m.group(1))) if m else (1, idx)
+
+    sorted_fam_ids = [
+        fam_id
+        for _, fam_id in sorted(
+            ((i, fam_id) for i, fam_id in enumerate(indi.family_ids_as_spouse)),
+            key=lambda x: _marr_sort_key((
+                x[0],
+                (data.families[x[1]].marriage_date or "") if x[1] in data.families else "",
+            )),
+        )
+    ]
+    for fam_id in sorted_fam_ids:
         fam = data.families.get(fam_id)
         if fam is None:
             continue
