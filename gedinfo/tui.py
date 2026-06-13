@@ -35,6 +35,7 @@ from .queries import (
     get_leaves,
     get_roots,
     id_sort_key,
+    normalise_id,
 )
 
 
@@ -365,6 +366,8 @@ class PersonPane(Widget):
                         sub_parts.append(sex_str)
                 if item.date_hint:
                     sub_parts.append(item.date_hint)
+                if item.label != "self:" and item.family_id:
+                    sub_parts.append(f"({item.family_id.strip('@')})")
                 if sub_parts:
                     lines.append(f"    {' · '.join(sub_parts)}\n", style="dim")
             elif item.date_hint:
@@ -804,10 +807,11 @@ class GedTui(App):
     focus_id: reactive[str | None] = reactive(None)
     cursor_idx: reactive[int] = reactive(0)
 
-    def __init__(self, data: GedcomData | None, file_path: str | None) -> None:
+    def __init__(self, data: GedcomData | None, file_path: str | None, *, initial_id: str | None = None) -> None:
         super().__init__()
         self._data = data
         self._file_path = file_path
+        self._initial_id = initial_id
         self._history: list[str] = []
         self._nav_items: list[NavItem] = []
         # Child-selection mode state
@@ -822,8 +826,14 @@ class GedTui(App):
     def on_mount(self) -> None:
         self.sub_title = self._file_path or "(no file)"
         if self._data and self._data.individuals:
-            first = sorted(self._data.individuals.values(), key=lambda i: id_sort_key(i.id))[0]
-            self.focus_id = first.id
+            if self._initial_id:
+                norm = normalise_id(self._initial_id)
+                start = self._data.individuals.get(norm)
+            else:
+                start = None
+            if start is None:
+                start = sorted(self._data.individuals.values(), key=lambda i: id_sort_key(i.id))[0]
+            self.focus_id = start.id
 
     def on_resize(self, event: events.Resize) -> None:
         w = event.size.width
@@ -1320,6 +1330,6 @@ class GedTui(App):
 # Entry point
 # ---------------------------------------------------------------------------
 
-def run_tui(data: GedcomData | None, file_path: str | None) -> None:
-    """Entry point called from cli.main()."""
-    GedTui(data, file_path).run()
+def run_tui(data: GedcomData | None, file_path: str | None, *, initial_id: str | None = None) -> None:
+    """Entry point called from the explore command."""
+    GedTui(data, file_path, initial_id=initial_id).run()

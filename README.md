@@ -2,7 +2,7 @@
 
 A command-line utility for querying GEDCOM genealogy files.
 
-Version: 0.17.0
+Version: 0.18.0
 
 Installation
 ------------
@@ -42,10 +42,12 @@ gedinfo [--version] [--debug] <command> [options] <arguments>
 
 ### TUI mode
 
-    gedinfo --tui [FILE]
+    gedinfo explore [[INDIID] GEDCOMFILE]
 
-Launches an interactive terminal browser. If FILE is omitted, open a file from
-within the TUI by pressing `o`.
+Launches an interactive terminal browser. If no arguments are given, opens with
+an empty state (press `o` to load a file). With one argument the file is
+opened. With two arguments the first is the individual ID to start from and the
+second is the file.
 
 The layout has three columns: parents on the left, the focused person and their
 spouses in the center, children on the right. A status pane below the columns

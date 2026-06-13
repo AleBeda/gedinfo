@@ -42,13 +42,6 @@ def main() -> None:
     )
     parser.add_argument("--version", action="store_true", help="Print version and exit")
     parser.add_argument("--debug", action="store_true", help="Show tracebacks on error")
-    parser.add_argument(
-        "--tui",
-        nargs="?",
-        const="",
-        metavar="FILE",
-        help="Launch interactive TUI (optionally specify GEDCOM file)",
-    )
     subparsers = parser.add_subparsers(dest="command", parser_class=_DescriptionFirstParser)
     subparsers.required = False
 
@@ -77,6 +70,7 @@ def main() -> None:
         calendar as calendar_cmd,
         tags as tags_cmd,
         diff as diff_cmd,
+        explore as explore_cmd,
     )
 
     name_cmd.register(subparsers)
@@ -102,27 +96,12 @@ def main() -> None:
     calendar_cmd.register(subparsers)
     tags_cmd.register(subparsers)
     diff_cmd.register(subparsers)
+    explore_cmd.register(subparsers)
 
     args = parser.parse_args()
 
     if args.version:
-        print("gedinfo 0.17.0")
-        sys.exit(0)
-
-    if args.tui is not None:
-        file_path = args.tui or None
-        data = None
-        if file_path:
-            try:
-                from .parser import parse
-                data = parse(file_path)
-            except (GedcomParseError, FileNotFoundError) as e:
-                if args.debug:
-                    raise
-                print(str(e), file=sys.stderr)
-                sys.exit(1)
-        from .tui import run_tui
-        run_tui(data, file_path)
+        print("gedinfo 0.18.0")
         sys.exit(0)
 
     if not args.command:
