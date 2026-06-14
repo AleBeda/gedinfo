@@ -72,6 +72,7 @@ def main() -> None:
         diff as diff_cmd,
         explore as explore_cmd,
         gen as gen_cmd,
+        relationship as relationship_cmd,
     )
 
     name_cmd.register(subparsers)
@@ -99,11 +100,12 @@ def main() -> None:
     diff_cmd.register(subparsers)
     explore_cmd.register(subparsers)
     gen_cmd.register(subparsers)
+    relationship_cmd.register(subparsers)
 
     args = parser.parse_args()
 
     if args.version:
-        print("gedinfo 0.19.0")
+        print("gedinfo 0.20.0")
         sys.exit(0)
 
     if not args.command:

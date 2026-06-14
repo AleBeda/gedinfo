@@ -496,6 +496,54 @@ def get_descendant_details(
     return results
 
 
+def find_relationships(
+    data: GedcomData, id1: str, id2: str
+) -> list[tuple]:
+    """Find all common ancestors of two individuals.
+
+    Returns a list of (ancestor, path1, path2) tuples where path1 and path2
+    are lists of Individuals starting at the common ancestor and ending at
+    the respective individual (inclusive on both ends). Raises ValueError if
+    either ID is unknown. Returns an empty list when no common ancestor
+    exists. Sorted by total path length ascending (closest first), then by
+    ancestor display name for ties.
+    """
+    def _bfs_up(start_id: str) -> dict:
+        start = find_by_id(data, start_id)
+        if start is None:
+            raise ValueError(f"Unknown individual ID: {start_id}")
+        paths: dict = {start.id: [start]}
+        queue: deque = deque([start])
+        while queue:
+            current = queue.popleft()
+            for fam_id in current.family_ids_as_child:
+                fam = data.families.get(fam_id)
+                if not fam:
+                    continue
+                for parent_id in (fam.husband_id, fam.wife_id):
+                    if not parent_id or parent_id in paths:
+                        continue
+                    parent = data.individuals.get(parent_id)
+                    if not parent:
+                        continue
+                    paths[parent.id] = paths[current.id] + [parent]
+                    queue.append(parent)
+        return paths
+
+    paths1 = _bfs_up(id1)
+    paths2 = _bfs_up(id2)
+
+    results = []
+    for anc_id in set(paths1) & set(paths2):
+        ancestor = data.individuals[anc_id]
+        path1 = list(reversed(paths1[anc_id]))
+        path2 = list(reversed(paths2[anc_id]))
+        results.append((ancestor, path1, path2))
+
+    results.sort(key=lambda t: (len(t[1]) + len(t[2]), display_name(t[0])))
+    return results
+
+
 def count_no_name(data: GedcomData) -> int:
     """Number of individuals with neither first nor last name."""
     return sum(

@@ -2,7 +2,7 @@
 
 A command-line utility for querying GEDCOM genealogy files.
 
-Version: 0.19.0
+Version: 0.20.0
 
 Installation
 ------------
@@ -87,6 +87,7 @@ Commands
 | [ancestors](#ancestors) | List all ancestors of an individual |
 | [descendants](#descendants) | List all descendants of an individual |
 | [gen](#gen) | Count ancestor and descendant generations for an individual |
+| [relationship](#relationship) | Show all relationships between two individuals |
 | [lastnames](#lastnames) | Print distinct ancestor surnames with lineage paths |
 | [roots](#roots) | List root individuals (those with no recorded parents) |
 | [living](#living) | List individuals with a `_LIVING` flag |
@@ -324,6 +325,33 @@ Output is a single tab-separated line:
 ```
 $ gedinfo gen I003 tests/fixtures/descendants.ged
 ancestors: 1	descendants: 1	total: 3
+```
+
+### relationship
+
+Find all common ancestors of two individuals and print each relationship as a
+two-column block showing the lineage paths from the shared ancestor down to
+each individual.
+
+    gedinfo relationship <first_id> <second_id> <gedcom_file>
+
+Each block shows:
+- **Row 1**: the common ancestor, centered across both columns
+- **Rows 2–N**: one row per generation below the ancestor; left column is the
+  path to the first individual, right column is the path to the second
+
+Multiple relationships are separated by a blank line. Nothing is printed when
+the two individuals share no common ancestor.
+
+#### Example
+
+```
+$ gedinfo relationship I003 I004 tests/fixtures/simple.ged
+1        John Smith
+2  Alice Smith  Bob Smith
+
+1        Mary Jones
+2  Alice Smith  Bob Smith
 ```
 
 ### lastnames
