@@ -313,6 +313,7 @@ class PersonPane(Widget):
             items = [i for i in app._nav_items if i.pane == self._pane_id]
             center_cursor = app.cursor_idx
             normal_mode = not app._in_child_selection and not app._in_parent_selection
+            show_ids = app.show_ids
         except Exception:
             return Text("")
 
@@ -333,7 +334,7 @@ class PersonPane(Widget):
         for enum_idx, item in enumerate(items):
             is_cursor = self._pane_id == "center" and enum_idx == center_cursor
             name = display_name(item.individual) if item.individual else "(unknown)"
-            id_str = item.individual.id.strip("@") if item.individual else ""
+            id_str = item.individual.id.strip("@") if (item.individual and show_ids) else ""
             id_part = f" ({id_str})" if id_str else ""
 
             # Main line: label + name + (ID)
@@ -382,7 +383,7 @@ class PersonPane(Widget):
                         sub_parts.append(sex_str)
                 if item.date_hint:
                     sub_parts.append(item.date_hint)
-                if item.label != "self:" and item.family_id:
+                if show_ids and item.label != "self:" and item.family_id:
                     sub_parts.append(f"({item.family_id.strip('@')})")
                 if sub_parts:
                     lines.append(f"    {' · '.join(sub_parts)}\n", style="dim")
@@ -424,8 +425,9 @@ class StatusPane(Widget):
         # Line 1: name (ID) · sex · birth · death
         name = display_name(indi)
         id_str = indi.id.strip("@")
+        show_ids = getattr(app, "show_ids", False)
         sex_str = {"M": "male", "F": "female"}.get(indi.sex, "")
-        parts1: list[str] = [f"{name} ({id_str})"]
+        parts1: list[str] = [f"{name} ({id_str})" if show_ids else name]
         if sex_str:
             parts1.append(sex_str)
         if indi.birth_date:
@@ -615,14 +617,48 @@ _COMMANDS: list[tuple[str, str]] = [
     ("indi",        "All individuals"),
     ("ancestors",   "Ancestors of current person"),
     ("descendants", "Descendants of current person"),
-    ("lastnames",   "Distinct last names"),
-    ("givennames",  "Distinct given names"),
+    ("lastnames",   "Distinct last names in ancestor tree"),
+    ("givennames",  "Distinct given names in ancestor tree"),
 ]
+
+# Map first letter → command, only for commands with a unique first letter.
+_letter_to_cmd: dict[str, str] = {}
+for _cmd, _ in _COMMANDS:
+    _l = _cmd[0]
+    _letter_to_cmd[_l] = "" if _l in _letter_to_cmd else _cmd
+_letter_to_cmd = {k: v for k, v in _letter_to_cmd.items() if v}
+
+
+class _CmdLabel(Widget):
+    """Renders one command row with the shortcut letter highlighted."""
+
+    DEFAULT_CSS = "height: 1; width: 1fr;"
+
+    def __init__(self, cmd: str, desc: str, *, has_shortcut: bool) -> None:
+        super().__init__()
+        self._cmd = cmd
+        self._desc = desc
+        self._has_shortcut = has_shortcut
+
+    def render(self) -> RenderableType:
+        try:
+            css = self.app.get_css_variables()
+            accent = css.get("accent-darken-2") or css.get("accent", "")
+            hint_style = f"bold {accent}" if accent else "bold yellow"
+        except Exception:
+            hint_style = "bold yellow"
+        text = Text()
+        if self._has_shortcut:
+            text.append(self._cmd[0], style=hint_style)
+            text.append(f"{self._cmd[1:]:<13}{self._desc}")
+        else:
+            text.append(f"{self._cmd:<14}{self._desc}")
+        return text
 
 
 class _CmdItem(ListItem):
     def __init__(self, cmd: str, desc: str) -> None:
-        super().__init__(Label(f"{cmd:<14}{desc}"))
+        super().__init__(_CmdLabel(cmd, desc, has_shortcut=_letter_to_cmd.get(cmd[0]) == cmd))
         self.cmd = cmd
 
 
@@ -651,6 +687,11 @@ class CommandScreen(ModalScreen[str | None]):
 
     def on_mount(self) -> None:
         self.query_one(VimListView).focus()
+
+    def on_key(self, event: events.Key) -> None:
+        if event.key in _letter_to_cmd:
+            self.dismiss(_letter_to_cmd[event.key])
+            event.stop()
 
     def on_list_view_selected(self, event: ListView.Selected) -> None:
         if isinstance(event.item, _CmdItem):
@@ -806,6 +847,7 @@ class GedTui(App):
         Binding("/",     "search",          "Search"),
         Binding("o",     "open_file",       "Open file"),
         Binding("q",     "quit",            "Quit"),
+        Binding("i",     "toggle_ids",       show=False),
         Binding("f",     "go_father",       show=False),
         Binding("m",     "go_mother",       show=False),
         Binding("s",     "go_spouse",       show=False),
@@ -824,6 +866,7 @@ class GedTui(App):
     # In child-selection mode it is the index into _children_for_selection.
     focus_id: reactive[str | None] = reactive(None)
     cursor_idx: reactive[int] = reactive(0)
+    show_ids: reactive[bool] = reactive(False)
 
     def __init__(self, data: GedcomData | None, file_path: str | None, *, initial_id: str | None = None) -> None:
         super().__init__()
@@ -894,6 +937,9 @@ class GedTui(App):
                 self._nav_items = build_nav_items(self._data, self.focus_id, new_cursor)
             except ValueError:
                 pass
+        self._refresh_panes()
+
+    def watch_show_ids(self, _: bool) -> None:
         self._refresh_panes()
 
     def _refresh_panes(self) -> None:
@@ -1166,6 +1212,9 @@ class GedTui(App):
         parents = [i.individual for i in left]  # type: ignore[misc]
         self._enter_parent_selection(parents)
 
+    def action_toggle_ids(self) -> None:
+        self.show_ids = not self.show_ids
+
     def action_go_father(self) -> None:
         if self._in_child_selection or self._in_parent_selection:
             return
@@ -1293,12 +1342,22 @@ class GedTui(App):
                 self._on_individual_selected,
             )
         elif cmd == "lastnames":
-            names = sorted({i.last_name for i in self._data.individuals.values() if i.last_name})
-            text = f"{len(names)} distinct last names\n\n" + "\n".join(names)
+            if not self.focus_id:
+                self.notify("No person in focus", severity="warning")
+                return
+            records = get_ancestor_details(self._data, self.focus_id)
+            focus_name = display_name(find_by_id(self._data, self.focus_id))  # type: ignore[arg-type]
+            names = sorted({r["individual"].last_name for r in records if r["individual"].last_name})
+            text = f"{len(names)} distinct last names · ancestors of {focus_name}\n\n" + "\n".join(names)
             self.push_screen(TextResultScreen("Last names", text))
         elif cmd == "givennames":
-            names = sorted({i.first_name for i in self._data.individuals.values() if i.first_name})
-            text = f"{len(names)} distinct given names\n\n" + "\n".join(names)
+            if not self.focus_id:
+                self.notify("No person in focus", severity="warning")
+                return
+            records = get_ancestor_details(self._data, self.focus_id)
+            focus_name = display_name(find_by_id(self._data, self.focus_id))  # type: ignore[arg-type]
+            names = sorted({r["individual"].first_name for r in records if r["individual"].first_name})
+            text = f"{len(names)} distinct given names · ancestors of {focus_name}\n\n" + "\n".join(names)
             self.push_screen(TextResultScreen("Given names", text))
 
     def _on_individual_selected(self, indi_id: str | None) -> None:
