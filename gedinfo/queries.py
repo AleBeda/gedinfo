@@ -553,11 +553,11 @@ def find_relationships(
 
     results.sort(key=lambda t: (len(t[1]) + len(t[2]), display_name(t[0])))
 
-    # Drop ancestors where both paths immediately converge on the same child —
-    # that child is itself a closer common ancestor that already covers this one.
+    # Drop entries where any individual below the CA appears in both paths —
+    # such an individual is itself a closer common ancestor that covers this one.
     results = [
         (anc, p1, p2) for anc, p1, p2 in results
-        if len(p1) < 2 or len(p2) < 2 or p1[1].id != p2[1].id
+        if not ({x.id for x in p1[1:]} & {x.id for x in p2[1:]})
     ]
     return results
 
