@@ -25,21 +25,16 @@ def register(subparsers: argparse._SubParsersAction) -> None:  # type: ignore
 
 
 def _format_block(ancestor, path1, path2) -> list[str]:
-    names1 = [display_name(p) for p in path1[1:]]
-    names2 = [display_name(p) for p in path2[1:]]
-    left_w = max((len(n) for n in names1), default=0)
-    right_w = max((len(n) for n in names2), default=0)
-    total_w = left_w + 2 + right_w
+    names1 = [display_name(p) for p in path1]
+    names2 = [display_name(p) for p in path2]
+    left_w = max(len(n) for n in names1)
+    right_w = max(len(n) for n in names2)
 
-    ca_name = display_name(ancestor)
     max_gen = max(len(path1), len(path2))
     gen_w = len(str(max_gen))
-    center_w = max(total_w, len(ca_name))
 
     lines = []
-    lines.append(f"{'1':>{gen_w}}  {ca_name.center(center_w)}".rstrip())
-
-    for i in range(1, max_gen):
+    for i in range(max_gen):
         gen_str = f"{i + 1:>{gen_w}}"
         left_name = display_name(path1[i]) if i < len(path1) else ""
         right_name = display_name(path2[i]) if i < len(path2) else ""

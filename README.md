@@ -347,10 +347,10 @@ the two individuals share no common ancestor.
 
 ```
 $ gedinfo relationship I003 I004 tests/fixtures/simple.ged
-1        John Smith
+1  John Smith   John Smith
 2  Alice Smith  Bob Smith
 
-1        Mary Jones
+1  Mary Jones   Mary Jones
 2  Alice Smith  Bob Smith
 ```
 

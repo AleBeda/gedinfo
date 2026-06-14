@@ -20,10 +20,10 @@ def test_siblings():
     code, out, _ = run_rel("I003", "I004", SIMPLE)
     assert code == 0
     expected = (
-        "1        John Smith\n"
+        "1  John Smith   John Smith\n"
         "2  Alice Smith  Bob Smith\n"
         "\n"
-        "1        Mary Jones\n"
+        "1  Mary Jones   Mary Jones\n"
         "2  Alice Smith  Bob Smith\n"
     )
     assert out == expected
@@ -34,8 +34,8 @@ def test_parent_child():
     code, out, _ = run_rel("I001", "I003", SIMPLE)
     assert code == 0
     expected = (
-        "1    John Smith\n"
-        "2    Alice Smith\n"
+        "1  John Smith  John Smith\n"
+        "2              Alice Smith\n"
     )
     assert out == expected
 
