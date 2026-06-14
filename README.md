@@ -70,7 +70,8 @@ the center pane.
 | `Enter` | Navigate to selected center item (e.g. a spouse) |
 | `b` | Go back (navigation history) |
 | `r` | Jump to root (oldest ancestor via first-parent path) |
-| `c` | Command palette (stat, roots, leaves, ancestors, descendants, …) |
+| `i` | Toggle display of GEDCOM IDs (hidden by default) |
+| `c` | Command palette (stat, roots, leaves, lastnames, givennames, …); each entry shows its letter shortcut highlighted |
 | `/` | Search by name or ID; shows a list when multiple matches |
 | `o` | Open a different GEDCOM file |
 | `q` | Quit |
