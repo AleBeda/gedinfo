@@ -508,37 +508,48 @@ def find_relationships(
     exists. Sorted by total path length ascending (closest first), then by
     ancestor display name for ties.
     """
-    def _bfs_up(start_id: str) -> dict:
+    def _all_paths_up(start_id: str) -> dict:
+        """DFS upward collecting ALL distinct paths to every ancestor.
+
+        Returns {ancestor_id: [[start, ..., ancestor], ...]} — one list per
+        distinct path. Per-path cycle detection prevents infinite loops in
+        endogamous trees while still finding every valid lineage.
+        """
         start = find_by_id(data, start_id)
         if start is None:
             raise ValueError(f"Unknown individual ID: {start_id}")
-        paths: dict = {start.id: [start]}
-        queue: deque = deque([start])
-        while queue:
-            current = queue.popleft()
+        # {anc_id: [path_a, path_b, ...]} where each path goes UP from start
+        result: dict = {start.id: [[start]]}
+        # stack items: (current_individual, ids_in_current_path, current_path)
+        stack = [(start, {start.id}, [start])]
+        while stack:
+            current, path_ids, path = stack.pop()
             for fam_id in current.family_ids_as_child:
                 fam = data.families.get(fam_id)
                 if not fam:
                     continue
                 for parent_id in (fam.husband_id, fam.wife_id):
-                    if not parent_id or parent_id in paths:
-                        continue
+                    if not parent_id or parent_id in path_ids:
+                        continue  # already in this path — skip to avoid cycles
                     parent = data.individuals.get(parent_id)
                     if not parent:
                         continue
-                    paths[parent.id] = paths[current.id] + [parent]
-                    queue.append(parent)
-        return paths
+                    new_path = path + [parent]
+                    result.setdefault(parent.id, []).append(new_path)
+                    stack.append((parent, path_ids | {parent_id}, new_path))
+        return result
 
-    paths1 = _bfs_up(id1)
-    paths2 = _bfs_up(id2)
+    paths1 = _all_paths_up(id1)
+    paths2 = _all_paths_up(id2)
 
     results = []
     for anc_id in set(paths1) & set(paths2):
         ancestor = data.individuals[anc_id]
-        path1 = list(reversed(paths1[anc_id]))
-        path2 = list(reversed(paths2[anc_id]))
-        results.append((ancestor, path1, path2))
+        for p1_up in paths1[anc_id]:
+            for p2_up in paths2[anc_id]:
+                path1 = list(reversed(p1_up))
+                path2 = list(reversed(p2_up))
+                results.append((ancestor, path1, path2))
 
     results.sort(key=lambda t: (len(t[1]) + len(t[2]), display_name(t[0])))
 
