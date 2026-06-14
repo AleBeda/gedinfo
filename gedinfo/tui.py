@@ -615,6 +615,8 @@ _COMMANDS: list[tuple[str, str]] = [
     ("indi",        "All individuals"),
     ("ancestors",   "Ancestors of current person"),
     ("descendants", "Descendants of current person"),
+    ("lastnames",   "Distinct last names"),
+    ("givennames",  "Distinct given names"),
 ]
 
 
@@ -1290,6 +1292,14 @@ class GedTui(App):
                 IndividualListScreen(f"Descendants of {name}", indis),
                 self._on_individual_selected,
             )
+        elif cmd == "lastnames":
+            names = sorted({i.last_name for i in self._data.individuals.values() if i.last_name})
+            text = f"{len(names)} distinct last names\n\n" + "\n".join(names)
+            self.push_screen(TextResultScreen("Last names", text))
+        elif cmd == "givennames":
+            names = sorted({i.first_name for i in self._data.individuals.values() if i.first_name})
+            text = f"{len(names)} distinct given names\n\n" + "\n".join(names)
+            self.push_screen(TextResultScreen("Given names", text))
 
     def _on_individual_selected(self, indi_id: str | None) -> None:
         if indi_id:
