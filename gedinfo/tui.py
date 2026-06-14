@@ -621,44 +621,31 @@ _COMMANDS: list[tuple[str, str]] = [
     ("givennames",  "Distinct given names in ancestor tree"),
 ]
 
-# Map first letter → command, only for commands with a unique first letter.
-_letter_to_cmd: dict[str, str] = {}
-for _cmd, _ in _COMMANDS:
-    _l = _cmd[0]
-    _letter_to_cmd[_l] = "" if _l in _letter_to_cmd else _cmd
-_letter_to_cmd = {k: v for k, v in _letter_to_cmd.items() if v}
-
-
-class _CmdLabel(Widget):
-    """Renders one command row with the shortcut letter highlighted."""
-
-    DEFAULT_CSS = "height: 1; width: 1fr;"
-
-    def __init__(self, cmd: str, desc: str, *, has_shortcut: bool) -> None:
-        super().__init__()
-        self._cmd = cmd
-        self._desc = desc
-        self._has_shortcut = has_shortcut
-
-    def render(self) -> RenderableType:
-        try:
-            css = self.app.get_css_variables()
-            accent = css.get("accent-darken-2") or css.get("accent", "")
-            hint_style = f"bold {accent}" if accent else "bold yellow"
-        except Exception:
-            hint_style = "bold yellow"
-        text = Text()
-        if self._has_shortcut:
-            text.append(self._cmd[0], style=hint_style)
-            text.append(f"{self._cmd[1:]:<13}{self._desc}")
-        else:
-            text.append(f"{self._cmd:<14}{self._desc}")
-        return text
+# Explicit shortcut letter for each command (letter → cmd, cmd → letter).
+_CMD_SHORTCUTS: dict[str, str] = {
+    "stat":        "s",
+    "roots":       "r",
+    "leaves":      "v",  # lea[v]es
+    "indi":        "i",
+    "ancestors":   "a",
+    "descendants": "d",
+    "lastnames":   "l",  # [l]astnames
+    "givennames":  "g",
+}
+_letter_to_cmd: dict[str, str] = {v: k for k, v in _CMD_SHORTCUTS.items()}
 
 
 class _CmdItem(ListItem):
-    def __init__(self, cmd: str, desc: str) -> None:
-        super().__init__(_CmdLabel(cmd, desc, has_shortcut=_letter_to_cmd.get(cmd[0]) == cmd))
+    def __init__(self, cmd: str, desc: str, *, accent: str = "") -> None:
+        shortcut = _CMD_SHORTCUTS.get(cmd)
+        if shortcut:
+            style = f"bold {accent}" if accent else "bold"
+            pos = cmd.index(shortcut)
+            padding = " " * (14 - len(cmd))
+            markup = f"{cmd[:pos]}[{style}]{shortcut}[/]{cmd[pos + 1:]}{padding}{desc}"
+        else:
+            markup = f"{cmd:<14}{desc}"
+        super().__init__(Label(markup))
         self.cmd = cmd
 
 
@@ -681,9 +668,14 @@ class CommandScreen(ModalScreen[str | None]):
     """
 
     def compose(self) -> ComposeResult:
+        try:
+            css = self.app.get_css_variables()
+            accent = css.get("accent-darken-2") or css.get("accent", "")
+        except Exception:
+            accent = ""
         with Vertical(id="cmd-dialog"):
             yield Label("Commands", id="cmd-title")
-            yield VimListView(*[_CmdItem(cmd, desc) for cmd, desc in _COMMANDS], id="cmd-list")
+            yield VimListView(*[_CmdItem(cmd, desc, accent=accent) for cmd, desc in _COMMANDS], id="cmd-list")
 
     def on_mount(self) -> None:
         self.query_one(VimListView).focus()
@@ -847,7 +839,7 @@ class GedTui(App):
         Binding("/",     "search",          "Search"),
         Binding("o",     "open_file",       "Open file"),
         Binding("q",     "quit",            "Quit"),
-        Binding("i",     "toggle_ids",       show=False),
+        Binding("i",     "toggle_ids",       "IDs"),
         Binding("f",     "go_father",       show=False),
         Binding("m",     "go_mother",       show=False),
         Binding("s",     "go_spouse",       show=False),
