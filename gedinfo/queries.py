@@ -541,6 +541,13 @@ def find_relationships(
         results.append((ancestor, path1, path2))
 
     results.sort(key=lambda t: (len(t[1]) + len(t[2]), display_name(t[0])))
+
+    # Drop ancestors where both paths immediately converge on the same child —
+    # that child is itself a closer common ancestor that already covers this one.
+    results = [
+        (anc, p1, p2) for anc, p1, p2 in results
+        if len(p1) < 2 or len(p2) < 2 or p1[1].id != p2[1].id
+    ]
     return results
 
 
