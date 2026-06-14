@@ -34,8 +34,8 @@ def test_parent_child():
     code, out, _ = run_rel("I001", "I003", SIMPLE)
     assert code == 0
     expected = (
-        "1  John Smith  John Smith\n"
-        "2              Alice Smith\n"
+        "1  John Smith\n"
+        "2  Alice Smith\n"
     )
     assert out == expected
 
