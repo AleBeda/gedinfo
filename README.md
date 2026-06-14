@@ -2,7 +2,7 @@
 
 A command-line utility for querying GEDCOM genealogy files.
 
-Version: 0.18.0
+Version: 0.19.0
 
 Installation
 ------------
@@ -86,6 +86,7 @@ Commands
 | [names](#names) | Print distinct last names for a list of individual IDs |
 | [ancestors](#ancestors) | List all ancestors of an individual |
 | [descendants](#descendants) | List all descendants of an individual |
+| [gen](#gen) | Count ancestor and descendant generations for an individual |
 | [lastnames](#lastnames) | Print distinct ancestor surnames with lineage paths |
 | [roots](#roots) | List root individuals (those with no recorded parents) |
 | [living](#living) | List individuals with a `_LIVING` flag |
@@ -301,6 +302,28 @@ $ gedinfo descendants -l -g 2 I001 tests/fixtures/descendants.ged
 1		John Smith	I001
 2	s	Peter Smith	I003
 2	d	Anna Smith	I004
+```
+
+### gen
+
+Count the maximum number of ascending and descending generations relative to an
+individual. `generations` is an alias for `gen`.
+
+    gedinfo gen <indi_id> <gedcom_file>
+
+Output is a single tab-separated line:
+
+    ancestors: NGA	descendants: NGD	total: NGT
+
+- **ancestors** — generations above the individual (parents = 1, grandparents = 2, …); 0 if none known
+- **descendants** — generations below the individual (children = 1, grandchildren = 2, …); 0 if none known
+- **total** — ancestors + descendants + 1 (the individual themselves counts as 1)
+
+#### Example
+
+```
+$ gedinfo gen I003 tests/fixtures/descendants.ged
+ancestors: 1	descendants: 1	total: 3
 ```
 
 ### lastnames
