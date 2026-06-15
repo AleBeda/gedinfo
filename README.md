@@ -40,42 +40,6 @@ gedinfo [--version] [--debug] <command> [options] <arguments>
 - `--debug`    Show a full Python traceback on error instead of a terse
                message
 
-### TUI mode
-
-    gedinfo explore [[<indi_id>] <gedcom_file>]
-
-Launches an interactive terminal browser. If no arguments are given, opens with
-an empty state (press `o` to load a file). With one argument the file is
-opened. With two arguments the first is the individual ID to start from and the
-second is the file.
-
-The layout has three columns: parents on the left, the focused person and their
-spouses in the center, children on the right. A status pane below the columns
-shows birth/death dates, parents, spouse count, and children count for the
-focused individual. Side panes are informational; the cursor always stays in
-the center pane.
-
-| Key | Action |
-|-----|--------|
-| `j` / `↓` | Move cursor down within center pane |
-| `k` / `↑` | Move cursor up within center pane |
-| `ctrl+d` / `ctrl+u` | Half-page down / up in list views |
-| `ctrl+f` / `ctrl+b` | Full-page down / up in list views |
-| `l` / `→` | Navigate to only child; or enter inline child-selection (multiple children) |
-| `h` / `←` | Navigate to only parent; or enter inline parent-selection (two parents) |
-| `f` | Navigate directly to father (shown as key hint in left pane) |
-| `m` | Navigate directly to mother (shown as key hint in left pane) |
-| `s` | Navigate directly to first spouse (shown as key hint in center pane) |
-| `1`–`9` | Navigate directly to the 1st–9th child (shown as key hints in right pane) |
-| `Enter` | Navigate to selected center item (e.g. a spouse) |
-| `b` | Go back (navigation history) |
-| `r` | Jump to root (oldest ancestor via first-parent path) |
-| `i` | Toggle display of GEDCOM IDs (hidden by default) |
-| `c` | Command palette (stat, roots, leaves, lastnames, givennames, …); each entry shows its letter shortcut highlighted |
-| `/` | Search by name or ID; shows a list when multiple matches |
-| `o` | Open a different GEDCOM file |
-| `q` | Quit |
-
 Commands
 --------
 
@@ -105,6 +69,7 @@ Commands
 | [calendar](#calendar) | List birth, death, and marriage anniversaries from a GEDCOM file |
 | [tags](#tags) | List all GEDCOM tags found in a file with occurrence counts |
 | [diff](#diff) | Compare two GEDCOM files |
+| [explore](#explore-tui-mode) | Browse a GEDCOM file interactively in the terminal |
 
 ### name
 
@@ -1247,6 +1212,56 @@ F001    John Smith & Mary Jones CHG
     < I003, I004
     > I003
 ```
+
+### explore (TUI mode)
+
+Browse a GEDCOM file interactively in the terminal.
+
+**Syntax:**
+```
+gedinfo explore [[<indi_id>] <gedcom_file>]
+```
+
+**Arguments:**
+- `<gedcom_file>` (optional): Path to the GEDCOM file to open
+- `<indi_id>` (optional, requires `<gedcom_file>`): Individual ID to navigate to on launch
+
+If no arguments are given, the TUI opens in an empty state; press `o` to load a file from
+within the browser. With one argument the file is opened at the first individual. With two
+arguments the first argument is the individual ID to start from and the second is the file.
+
+**Layout:**
+
+Three columns are shown side by side:
+- **Left** — parents of the focused individual
+- **Center** — the focused individual and their spouses (cursor lives here)
+- **Right** — children of the focused individual
+
+A status pane below the columns shows birth/death dates, parents, spouse count, and children
+count for the focused individual.
+
+**Key bindings:**
+
+| Key | Action |
+|-----|--------|
+| `j` / `↓` | Move cursor down within center pane |
+| `k` / `↑` | Move cursor up within center pane |
+| `ctrl+d` / `ctrl+u` | Half-page down / up in list views |
+| `ctrl+f` / `ctrl+b` | Full-page down / up in list views |
+| `l` / `→` | Navigate to only child; or enter inline child-selection (multiple children) |
+| `h` / `←` | Navigate to only parent; or enter inline parent-selection (two parents) |
+| `f` | Navigate directly to father (shown as key hint in left pane) |
+| `m` | Navigate directly to mother (shown as key hint in left pane) |
+| `s` | Navigate directly to first spouse (shown as key hint in center pane) |
+| `1`–`9` | Navigate directly to the 1st–9th child (shown as key hints in right pane) |
+| `Enter` | Navigate to selected center item (e.g. a spouse) |
+| `b` | Go back (navigation history) |
+| `r` | Jump to root (oldest ancestor via first-parent path) |
+| `i` | Toggle display of GEDCOM IDs (hidden by default) |
+| `c` | Command palette (stat, roots, leaves, lastnames, givennames, …); each entry shows its letter shortcut highlighted |
+| `/` | Search by name or ID; shows a list when multiple matches |
+| `o` | Open a different GEDCOM file |
+| `q` | Quit |
 
 Testing
 -------
