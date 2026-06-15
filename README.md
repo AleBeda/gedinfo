@@ -42,7 +42,7 @@ gedinfo [--version] [--debug] <command> [options] <arguments>
 
 ### TUI mode
 
-    gedinfo explore [[INDIID] GEDCOMFILE]
+    gedinfo explore [[<indi_id>] <gedcom_file>]
 
 Launches an interactive terminal browser. If no arguments are given, opens with
 an empty state (press `o` to load a file). With one argument the file is
@@ -116,7 +116,7 @@ gedinfo name <indi_id> <gedcom_file>
 ```
 
 **Arguments:**
-- `<indi_id>`: The GEDCOM individual ID (with @ delimiters, e.g., I001)
+- `<indi_id>`: The GEDCOM individual ID (with or without @ delimiters, e.g. I001)
 - `<gedcom_file>`: Path to the GEDCOM file
 
 **Output:**
@@ -146,16 +146,16 @@ gedinfo id <name> <gedcom_file>
 **Output:**
 Prints one line per matching individual in the format:
 ```
-@I001@\tDisplay Name
+I001	Display Name
 ```
-(the ID includes `@` delimiters, followed by a tab and the display name).
+(ID without `@` delimiters, a tab, then the display name).
 Results are sorted by ID.
 
 **Example:**
 ```bash
 $ gedinfo id Smith tests/fixtures/refinements.ged
-@I001@\tJohn Smith
-@I002@\tMary Smithson
+I001	John Smith
+I002	Mary Smithson
 ```
 ### names
 
@@ -167,7 +167,7 @@ gedinfo names <ids_file> <gedcom_file>
 ```
 
 **Arguments:**
-- `<ids_file>`: Path to a file containing individual IDs (one per line, with @ delimiters), or `-` to read from stdin
+- `<ids_file>`: Path to a file containing individual IDs (one per line, with or without @ delimiters), or `-` to read from stdin
 - `<gedcom_file>`: Path to the GEDCOM file
 
 **Output:**
@@ -310,19 +310,28 @@ $ gedinfo descendants -l -g 2 I001 tests/fixtures/descendants.ged
 Count the maximum number of ascending and descending generations relative to an
 individual. `generations` is an alias for `gen`.
 
-    gedinfo gen <indi_id> <gedcom_file>
+**Syntax:**
+```
+gedinfo gen <indi_id> <gedcom_file>
+```
 
-Output is a single tab-separated line:
+**Arguments:**
+- `<indi_id>`: The GEDCOM individual ID (with or without @ delimiters, e.g. I001)
+- `<gedcom_file>`: Path to the GEDCOM file
 
-    ancestors: NGA	descendants: NGD	total: NGT
+**Output:**
+A single line with three tab-separated fields:
+
+```
+ancestors: NGA	descendants: NGD	total: NGT
+```
 
 - **ancestors** — generations above the individual (parents = 1, grandparents = 2, …); 0 if none known
 - **descendants** — generations below the individual (children = 1, grandchildren = 2, …); 0 if none known
 - **total** — ancestors + descendants + 1 (the individual themselves counts as 1)
 
-#### Example
-
-```
+**Example:**
+```bash
 $ gedinfo gen I003 tests/fixtures/descendants.ged
 ancestors: 1	descendants: 1	total: 3
 ```
@@ -330,22 +339,31 @@ ancestors: 1	descendants: 1	total: 3
 ### relationship
 
 Find all common ancestors of two individuals and print each relationship as a
-two-column block showing the lineage paths from the shared ancestor down to
+formatted block showing the lineage paths from the shared ancestor down to
 each individual.
 
-    gedinfo relationship <first_id> <second_id> <gedcom_file>
-
-Each block shows:
-- **Row 1**: the common ancestor, centered across both columns
-- **Rows 2–N**: one row per generation below the ancestor; left column is the
-  path to the first individual, right column is the path to the second
-
-Multiple relationships are separated by a blank line. Nothing is printed when
-the two individuals share no common ancestor.
-
-#### Example
-
+**Syntax:**
 ```
+gedinfo relationship <first_id> <second_id> <gedcom_file>
+```
+
+**Arguments:**
+- `<first_id>`: First individual ID (with or without @ delimiters, e.g. I001)
+- `<second_id>`: Second individual ID (with or without @ delimiters, e.g. I002)
+- `<gedcom_file>`: Path to the GEDCOM file
+
+**Output:**
+One block per common ancestor, with a blank line between blocks. Nothing is
+printed when the two individuals share no common ancestor.
+
+Each block has one row per generation. The generation number is shown on the
+left. When both individuals descend from the common ancestor, row 1 shows the
+ancestor name in both columns; subsequent rows show the lineage to each
+individual side by side. When one individual is the direct ancestor of the
+other, a single column is printed.
+
+**Example:**
+```bash
 $ gedinfo relationship I003 I004 tests/fixtures/simple.ged
 1  John Smith   John Smith
 2  Alice Smith  Bob Smith
@@ -366,7 +384,7 @@ gedinfo lastnames [options] <indi_id> <gedcom_file>
 ```
 
 **Arguments:**
-- `<indi_id>`: The GEDCOM individual ID (with @ delimiters)
+- `<indi_id>`: The GEDCOM individual ID (with or without @ delimiters, e.g. I001)
 - `<gedcom_file>`: Path to the GEDCOM file
 
 **Options:**
@@ -473,14 +491,37 @@ gedinfo roots [options] <gedcom_file>
 **Options:**
 - `-i`: Print IDs only (without @ delimiters), one per line
 - `-n`: Print names only, one per line
+- `-s, --sort {id,name}`: Sort output by numeric ID order or alphabetically by name. Default is GEDCOM file order.
 - `--spouse`: Include roots whose spouse has parents with at least one known name. By default such individuals are suppressed because they likely married into a documented family rather than representing an independent lineage starting point.
 - `-u, --unknown`: Include roots with no name at all (no NAME tag in the GEDCOM file). By default, nameless individuals are suppressed.
 - `-a, --all`: Include all roots without any suppression. Equivalent to combining `--spouse` and `--unknown`. Cannot be combined with `--spouse` or `--unknown`.
-- (default): Print ID and name pairs in the format `ID	Name`
+
+**Output:**
+Root individuals in GEDCOM file order (or sorted if `--sort` is given).
+Default format: `ID	Name` per line.
+
+**Examples:**
+
+```bash
+# IDs and names (default)
+$ gedinfo roots tests/fixtures/simple.ged
+I001	John Smith
+I002	Mary Jones
+
+# IDs only
+$ gedinfo roots -i tests/fixtures/simple.ged
+I001
+I002
+
+# Names only
+$ gedinfo roots -n tests/fixtures/simple.ged
+John Smith
+Mary Jones
+```
 
 ### living
 
-List individuals with a `_LIVING` flag.
+List individuals with a `_LIVING` flag set to a truthy value (`Y`, `yes`, `true`).
 
 **Syntax:**
 ```
@@ -491,35 +532,14 @@ gedinfo living [options] <gedcom_file>
 - `<gedcom_file>`: Path to the GEDCOM file
 
 **Options:**
-- `-v, --invert`: Invert the match and list individuals who are not
-  explicitly marked as living (includes those with `_LIVING` set to N/no/false,
-  those with an empty `_LIVING` value, and those with no `_LIVING` tag).
+- `-i`: Print IDs only (without @ delimiters), one per line
+- `-n`: Print names only, one per line
+- `-s, --sort {id,name}`: Sort output by numeric ID order or alphabetically by name. Default is GEDCOM file order.
+- `-v, --invert`: Invert the match and list individuals who are not explicitly marked as living (includes those with `_LIVING` set to N/no/false, those with an empty `_LIVING` value, and those with no `_LIVING` tag).
 
 **Output:**
-Prints one line per matching individual using the same output modes as other
-commands (use `-i`/`-n`/output options where available).
-
-**Output:**
-Root individuals sorted by ID.
-
-**Examples:**
-
-```bash
-# IDs and names (default)
-$ gedinfo roots tests/fixtures/simple.ged
-I001	John /Smith/
-I003	Jane /Johnson/
-
-# IDs only
-$ gedinfo roots -i tests/fixtures/simple.ged
-I001
-I003
-
-# Names only
-$ gedinfo roots -n tests/fixtures/simple.ged
-John /Smith/
-Jane /Johnson/
-```
+Matching individuals in GEDCOM file order (or sorted if `--sort` is given).
+Default format: `ID	Name` per line.
 
 ### leaves
 
@@ -554,18 +574,18 @@ Leaf individuals (after suppression filters) sorted by GEDCOM file order, or by 
 ```bash
 # IDs and names (default)
 $ gedinfo leaves tests/fixtures/simple.ged
-I002	Alice /Smith/
-I005	Bob /Johnson/
+I003	Alice Smith
+I004	Bob Smith
 
 # IDs only
 $ gedinfo leaves -i tests/fixtures/simple.ged
-I002
-I005
+I003
+I004
 
 # Names only
 $ gedinfo leaves -n tests/fixtures/simple.ged
-Alice /Smith/
-Bob /Johnson/
+Alice Smith
+Bob Smith
 ```
 
 ### indi
@@ -756,11 +776,9 @@ Unnamed individuals in GEDCOM file order (or sorted if `--sort` is given).
 
 ### stat
 
-Print statistics about the GEDCOM file, including:
-- Number of individuals
-- Number of families
-- Number of roots (individuals with no parents)
-- Number of leaves (individuals with no children)
+Print a statistics summary for the GEDCOM file, including counts of individuals
+(broken down by sex, name completeness, living status, and whether they are roots
+or leaves), families, generation depth, and number of disjoint family forests.
 
 **Syntax:**
 ```
@@ -771,21 +789,34 @@ gedinfo stat [options] <gedcom_file>
 - `<gedcom_file>`: Path to the GEDCOM file
 
 **Options:**
-- `--spouse`: Include spouse-suppressed roots in the root count (same criteria as `roots --spouse`).
-- `-u, --unknown`: Include nameless roots in the root count.
+- `--spouse`: Include spouse-suppressed individuals in the root count (same criteria as `roots --spouse`).
+- `-u, --unknown`: Include nameless individuals in the root count.
 - `-a, --all`: Include all roots in the count. Cannot be combined with `--spouse` or `--unknown`.
 
 **Output:**
-Human-readable statistics summary.
+Human-readable multi-section statistics report.
 
 **Example:**
 
 ```bash
 $ gedinfo stat tests/fixtures/simple.ged
-individuals: 5
-families: 2
-roots: 2
-leaves: 3
+Individuals: 4
+  Males: 2
+  Females: 2
+  Unknown sex: 0
+  Roots (no parents): 2
+  Leaves (no children): 2
+  No name: 0
+  Incomplete name: 0
+  Living (_LIVING = Y): 0
+
+Families: 1
+  Families with unnamed/incomplete parent: 0
+  Families with no children: 0
+
+Generations: 2
+
+Disjoint forests: 1
 ```
 
 ### disjoint

@@ -21,7 +21,7 @@ def register(subparsers: argparse._SubParsersAction) -> None:  # type: ignore
         "positional",
         nargs="*",
         metavar="ARG",
-        help="[INDIID] GEDCOMFILE",
+        help="[<indi_id>] <gedcom_file>",
     )
     sub.set_defaults(func=run)
 
