@@ -2,10 +2,12 @@
 
 A command-line utility for querying GEDCOM genealogy files.
 
-Version: 0.20.0
+Version: 0.21.0
 
 Installation
 ------------
+
+Requires Python ≥ 3.11.
 
 Installation is optional. You can run `gedinfo` directly from the repository using `./bin/gedinfo`.
 
@@ -39,6 +41,48 @@ gedinfo [--version] [--debug] <command> [options] <arguments>
 - `--version`  Print the package version and exit
 - `--debug`    Show a full Python traceback on error instead of a terse
                message
+
+Configuration
+-------------
+
+Some GEDCOM files use non-standard (custom) tags whose names vary between
+databases. `gedinfo` does not assume any default for these; you declare the tag
+names your files use in a TOML settings file. There are **no built-in
+defaults** — a command that needs an unconfigured tag aborts with a message
+explaining what to add and where.
+
+Settings are read from two optional files, with the per-directory file taking
+precedence (merged per key):
+
+1. **User-global:** `~/.config/gedinfo/settings.toml` (honors `$XDG_CONFIG_HOME`)
+   — applies to all your GEDCOM files.
+2. **Per-directory:** `.gedinfo.toml` beside the GEDCOM file — applies to GEDCOM
+   files in that directory and overrides the user-global file.
+
+Both use a `[gedcom_custom_tags]` table with these keys:
+
+| Key | Controls | Used by |
+|-----|----------|---------|
+| `living` | tag marking a living/private individual | `living` (required); `stat`, `anonymize` (optional) |
+| `secondary_name` | tag holding a secondary/additional name | `givennames --second-name` (required) |
+| `alternate_name` | tag holding a name in an alternate script/language | `givennames --alt-name` (required) |
+
+Example `~/.config/gedinfo/settings.toml` (or `.gedinfo.toml`):
+
+```toml
+[gedcom_custom_tags]
+living = "_LIVING"
+secondary_name = "NAM2"
+alternate_name = "NAMH"
+```
+
+Behaviour when a tag is not configured:
+
+- **Abort (with guidance):** the `living` command; `givennames` when
+  `--second-name`, `--alt-name`, or `-a/--all_names` is passed (`-a` needs both
+  `secondary_name` and `alternate_name`).
+- **Degrade gracefully:** `stat` marks its Living line as not configured;
+  `anonymize` simply does not specially preserve a living tag.
 
 Commands
 --------
@@ -857,11 +901,13 @@ gedinfo givennames [options] <indi_id> <gedcom_file>
 - `-g N, --generations N`: Limit traversal to N generations (N ≥ 1). Generation 1 is the
   subject, generation 2 is parents/children, generation 3 is grandparents/grandchildren, etc.
   If not specified, traverses all generations.
-- `-2, --second`: Also include names from the `NAM2` GEDCOM field (second/additional names).
+- `-2, --second-name`: Also include names from the configured secondary-name tag.
+  Requires `secondary_name` to be configured (see [Configuration](#configuration)).
 - `-s MODE, --sort MODE`: Sort order within each section. `frequency` (default) sorts by count
   descending, then alphabetically for ties. `name` sorts alphabetically regardless of count.
-- `-e, --hebrew`: Also include names from the `NAMH` GEDCOM field (Hebrew names).
-- `-a, --all_names`: Equivalent to `--second --hebrew`.
+- `-x, --alt-name`: Also include names from the configured alternate-name tag.
+  Requires `alternate_name` to be configured (see [Configuration](#configuration)).
+- `-a, --all_names`: Equivalent to `--second-name --alt-name`.
 - `-f, --fuzzy`: Group name variants together using the bundled variants file
   (`gedinfo/data/name_variants.txt`). When multiple variants of the same name appear, they
   are counted and reported on one line with individual variant counts in parentheses.

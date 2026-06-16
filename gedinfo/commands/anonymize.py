@@ -7,13 +7,15 @@ import sys
 from pathlib import Path
 from typing import Optional, Tuple
 
+from ..config import load_tag_config
+
 _fake = None      # Faker instance, initialized lazily in run()
 _fake_cls = None  # Faker class, cached after first import
 
 _MAX_LEN_ITERS: int = 20  # max retries for length-bounded fake generation
 
 _KEEP_TAGS: frozenset[str] = frozenset({
-    "SEX", "DATE", "HUSB", "WIFE", "CHIL", "FAMC", "FAMS", "_LIVING",
+    "SEX", "DATE", "HUSB", "WIFE", "CHIL", "FAMC", "FAMS",
     "BIRT", "DEAT", "MARR", "DIV", "BAPM", "CHR", "CREM", "BURI",
     "EMIG", "IMMI", "NATU", "ADOP", "CONF", "GRAD", "RETI", "WILL",
     "CENS", "RESI",
@@ -418,6 +420,10 @@ def run(args) -> None:
         action_map[f] = "strip"
     for f in fake_set:
         action_map[f] = "fake"
+
+    cfg = load_tag_config(args.gedcom_file)
+    if cfg.living:
+        action_map.setdefault(cfg.living, "keep")
 
     p = Path(args.gedcom_file)
     if not p.exists():

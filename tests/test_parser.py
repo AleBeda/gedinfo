@@ -3,6 +3,7 @@ from pathlib import Path
 import pytest
 
 from gedinfo import parser
+from gedinfo.config import TagConfig
 from gedinfo.parser import GedcomParseError
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -164,7 +165,7 @@ def test_parse_living_last_write_wins(tmp_path):
     )
     f = tmp_path / "twice.ged"
     f.write_text(content)
-    data = parser.parse(f)
+    data = parser.parse(f, tag_config=TagConfig(living="_LIVING"))
     assert data.individuals["@I001@"].living is False
 
 
@@ -175,15 +176,35 @@ def test_parse_givn(tmp_path):
     assert data.individuals["@I1@"].givn == ["John"]
 
 
-def test_parse_nam2(tmp_path):
+def test_parse_secondary_name(tmp_path):
     f = tmp_path / "t.ged"
     f.write_text("0 HEAD\n0 @I1@ INDI\n1 NAME Moshe /X/\n1 NAM2 Raphael\n0 TRLR\n")
-    data = parser.parse(str(f))
-    assert data.individuals["@I1@"].nam2 == ["Raphael"]
+    data = parser.parse(str(f), tag_config=TagConfig(secondary_name="NAM2"))
+    assert data.individuals["@I1@"].secondary_names == ["Raphael"]
 
 
-def test_parse_namh(tmp_path):
+def test_parse_alternate_name(tmp_path):
     f = tmp_path / "t.ged"
     f.write_text("0 HEAD\n0 @I1@ INDI\n1 NAME X /Y/\n1 NAMH יוחנן\n0 TRLR\n")
-    data = parser.parse(str(f))
-    assert data.individuals["@I1@"].namh == ["יוחנן"]
+    data = parser.parse(str(f), tag_config=TagConfig(alternate_name="NAMH"))
+    assert data.individuals["@I1@"].alternate_names == ["יוחנן"]
+
+
+def test_parse_custom_tag_names(tmp_path):
+    content = (
+        "0 HEAD\n"
+        "0 @I1@ INDI\n"
+        "1 NAME Jane /Doe/\n"
+        "1 _ALIVE Y\n"
+        "1 SNAME Janie\n"
+        "1 ANAME יוחנן\n"
+        "0 TRLR\n"
+    )
+    f = tmp_path / "custom.ged"
+    f.write_text(content)
+    cfg = TagConfig(living="_ALIVE", secondary_name="SNAME", alternate_name="ANAME")
+    data = parser.parse(str(f), tag_config=cfg)
+    indi = data.individuals["@I1@"]
+    assert indi.living is True
+    assert indi.secondary_names == ["Janie"]
+    assert indi.alternate_names == ["יוחנן"]

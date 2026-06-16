@@ -10,6 +10,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Literal, Optional
 
+from .config import TagConfig
+
 
 @dataclass
 class Individual:
@@ -22,10 +24,11 @@ class Individual:
         sex: One of ``"M"``, ``"F"`` or ``"U"`` (unknown).
         family_ids_as_child: List of family IDs where the individual is a child.
         family_ids_as_spouse: List of family IDs where the individual is a spouse.
-        living: Parsed value of ``_LIVING`` tag; ``True``, ``False``, or ``None``.
+        living: Parsed value of the configured living-flag tag; ``True``,
+            ``False``, or ``None``.
         givn: Values of all ``GIVN`` sub-tags (additional given-name fields).
-        nam2: Values of all ``NAM2`` tags (second/additional name fields).
-        namh: Values of all ``NAMH`` tags (Hebrew name fields).
+        secondary_names: Values of the configured secondary-name tag.
+        alternate_names: Values of the configured alternate-name tag.
         birth_date: Value of the ``DATE`` sub-tag under ``BIRT``, or ``None``.
         death_date: Value of the ``DATE`` sub-tag under ``DEAT``, or ``None``.
     """
@@ -38,8 +41,8 @@ class Individual:
     family_ids_as_spouse: list[str] = field(default_factory=list)
     living: bool | None = None
     givn: list[str] = field(default_factory=list)   # values of all GIVN sub-tags
-    nam2: list[str] = field(default_factory=list)   # values of all NAM2 tags
-    namh: list[str] = field(default_factory=list)   # values of all NAMH tags
+    secondary_names: list[str] = field(default_factory=list)  # secondary-name tag values
+    alternate_names: list[str] = field(default_factory=list)  # alternate-name tag values
     birth_date: Optional[str] = None
     death_date: Optional[str] = None
     notes: list[str] = field(default_factory=list)
@@ -72,7 +75,9 @@ class GedcomData:
     Attributes:
         individuals: Mapping from ID to ``Individual``.
         families: Mapping from ID to ``Family``.
+        tag_config: Resolved custom GEDCOM tag names for this dataset.
     """
 
     individuals: dict[str, Individual] = field(default_factory=dict)
     families: dict[str, Family] = field(default_factory=dict)
+    tag_config: TagConfig = field(default_factory=TagConfig)

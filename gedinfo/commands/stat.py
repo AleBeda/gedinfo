@@ -111,7 +111,10 @@ def run(args: Any) -> None:
     print(f"  Leaves (no children): {leaves}")
     print(f"  No name: {no_name}")
     print(f"  Incomplete name: {incomplete}")
-    print(f"  Living (_LIVING = Y): {living_count}")
+    if data.tag_config.living:
+        print(f"  Living ({data.tag_config.living} = Y): {living_count}")
+    else:
+        print("  Living: (no living tag configured)")
     print()
     print(f"Families: {total_families}")
     print(f"  Families with unnamed/incomplete parent: {unnamed_parents}")

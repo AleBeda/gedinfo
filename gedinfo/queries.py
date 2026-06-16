@@ -247,7 +247,7 @@ def get_nosex(data: GedcomData, sort_key: str | None = None) -> List[Individual]
 
 
 def get_living(data: GedcomData, sort_key: str | None = None) -> List[Individual]:
-    """Return individuals whose _LIVING field is True.
+    """Return individuals whose living-flag field is True.
 
     Only individuals with living == True are included.
 
@@ -263,7 +263,7 @@ def get_living(data: GedcomData, sort_key: str | None = None) -> List[Individual
 
 
 def get_not_living(data: GedcomData, sort_key: str | None = None) -> List[Individual]:
-    """Return individuals whose _LIVING field is not True.
+    """Return individuals whose living-flag field is not True.
 
     Includes individuals with living == False and living == None.
 

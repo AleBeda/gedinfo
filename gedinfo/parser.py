@@ -11,6 +11,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Optional, Tuple
 
+from .config import TagConfig, load_tag_config
 from .models import Family, GedcomData, Individual
 
 
@@ -29,8 +30,11 @@ class GedcomParseError(Exception):
     """
 
 
-def parse(path: str | Path) -> GedcomData:
+def parse(path: str | Path, tag_config: TagConfig | None = None) -> GedcomData:
     """Parse the GEDCOM file at ``path`` and return a ``GedcomData``.
+
+    ``tag_config`` supplies the custom (non-standard) GEDCOM tag names. When
+    ``None``, it is resolved from the settings files relative to ``path``.
 
     Raises
     ------
@@ -38,6 +42,8 @@ def parse(path: str | Path) -> GedcomData:
         If the file cannot be opened or does not appear to be a valid
         GEDCOM file (e.g. missing ``0 HEAD`` record).
     """
+    if tag_config is None:
+        tag_config = load_tag_config(path)
     p = Path(path)
     if not p.exists():
         raise GedcomParseError(f"File not found: {path}")
@@ -56,7 +62,7 @@ def parse(path: str | Path) -> GedcomData:
     if not meaningful or not meaningful[0].startswith("0 HEAD"):
         raise GedcomParseError("Not a valid GEDCOM file: missing 0 HEAD record")
 
-    data = GedcomData()
+    data = GedcomData(tag_config=tag_config)
     idx = 0
     total = len(raw_lines)
 
@@ -72,7 +78,7 @@ def parse(path: str | Path) -> GedcomData:
                     lvl, t, v, _ = _parse_line(raw_lines[idx])
                     if lvl == 0:
                         break
-                    _populate_individual(indi, t, v, lvl, ctx)
+                    _populate_individual(indi, t, v, lvl, ctx, tag_config)
                     idx += 1
                 data.individuals[indi.id] = indi
                 continue
@@ -125,9 +131,12 @@ def _parse_line(line: str) -> Tuple[int, str, str, Optional[str]]:
 
 
 def _populate_individual(indi: Individual, tag: str, value: str,
-                         level: int = 1, ctx: dict | None = None) -> None:
+                         level: int = 1, ctx: dict | None = None,
+                         cfg: TagConfig | None = None) -> None:
     if ctx is None:
         ctx = {}
+    if cfg is None:
+        cfg = TagConfig()
     tag = tag.upper()
     if level == 1:
         ctx["event"] = tag if tag in ("BIRT", "DEAT") else None
@@ -156,7 +165,7 @@ def _populate_individual(indi: Individual, tag: str, value: str,
     elif tag == "FAMS":
         if value:
             indi.family_ids_as_spouse.append(value.strip())
-    elif tag == "_LIVING":
+    elif cfg.living and tag == cfg.living:
         raw = value.strip()
         if raw == "":
             indi.living = None
@@ -167,12 +176,12 @@ def _populate_individual(indi: Individual, tag: str, value: str,
     elif tag == "GIVN":
         if value.strip():
             indi.givn.append(value.strip())
-    elif tag == "NAM2":
+    elif cfg.secondary_name and tag == cfg.secondary_name:
         if value.strip():
-            indi.nam2.append(value.strip())
-    elif tag == "NAMH":
+            indi.secondary_names.append(value.strip())
+    elif cfg.alternate_name and tag == cfg.alternate_name:
         if value.strip():
-            indi.namh.append(value.strip())
+            indi.alternate_names.append(value.strip())
     elif tag == "NOTE" and level == 1:
         if value.strip():
             indi.notes.append(value.strip())

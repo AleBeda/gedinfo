@@ -1,0 +1,6 @@
+# Test fixture configuration: declares the custom GEDCOM tags used by the
+# fixtures in this directory (formerly hard-coded defaults).
+[gedcom_custom_tags]
+living = "_LIVING"
+secondary_name = "NAM2"
+alternate_name = "NAMH"

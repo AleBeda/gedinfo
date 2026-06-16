@@ -77,51 +77,51 @@ def test_unknown_id():
 
 
 def test_second_flag():
-    # --second includes NAM2 tags; I004 has NAM2 "Raphael" → raphael in masculine
-    code, out, err = run_cmd(["givennames", "--second", "--direction", "ancestors", "@I001@", GED])
+    # --second-name includes secondary-name tags; I004 has NAM2 "Raphael" → masculine
+    code, out, err = run_cmd(["givennames", "--second-name", "--direction", "ancestors", "@I001@", GED])
     assert code == 0
     assert "raphael" in out.lower()
 
 
 def test_second_flag_short():
-    # -2 is the short form of --second
+    # -2 is the short form of --second-name
     code, out, err = run_cmd(["givennames", "-2", "--direction", "ancestors", "@I001@", GED])
     assert code == 0
     assert "raphael" in out.lower()
 
 
 def test_second_flag_not_present_by_default():
-    # Without --second, raphael should NOT appear
+    # Without --second-name, raphael should NOT appear
     code, out, err = run_cmd(["givennames", "--direction", "ancestors", "@I001@", GED])
     assert code == 0
     assert "raphael" not in out.lower()
 
 
-def test_hebrew_flag():
-    # --hebrew includes NAMH tags; I005 has NAMH "מרים" → appears in feminine
-    code, out, err = run_cmd(["givennames", "--hebrew", "--direction", "ancestors", "@I001@", GED])
+def test_alt_flag():
+    # --alt-name includes alternate-name tags; I005 has NAMH "מרים" → feminine
+    code, out, err = run_cmd(["givennames", "--alt-name", "--direction", "ancestors", "@I001@", GED])
     assert code == 0
     assert "מרים" in out
 
 
-def test_hebrew_flag_short():
-    # -e is the short form of --hebrew
-    code, out, err = run_cmd(["givennames", "-e", "--direction", "ancestors", "@I001@", GED])
+def test_alt_flag_short():
+    # -x is the short form of --alt-name
+    code, out, err = run_cmd(["givennames", "-x", "--direction", "ancestors", "@I001@", GED])
     assert code == 0
     assert "מרים" in out
 
 
-def test_hebrew_flag_not_present_by_default():
-    # Without --hebrew, מרים should NOT appear (it only comes from NAMH)
+def test_alt_flag_not_present_by_default():
+    # Without --alt-name, מרים should NOT appear (it only comes from NAMH)
     code, out, err = run_cmd(["givennames", "--direction", "ancestors", "@I001@", GED])
     assert code == 0
     assert "מרים" not in out
 
 
 def test_all_flag():
-    # -a should give same names as --second --hebrew combined
+    # -a should give same names as --second-name --alt-name combined
     code_a, out_a, _ = run_cmd(["givennames", "-a", "--direction", "ancestors", "@I001@", GED])
-    code_b, out_b, _ = run_cmd(["givennames", "--second", "--hebrew", "--direction", "ancestors", "@I001@", GED])
+    code_b, out_b, _ = run_cmd(["givennames", "--second-name", "--alt-name", "--direction", "ancestors", "@I001@", GED])
     assert code_a == 0
     assert code_b == 0
     assert out_a == out_b
@@ -287,7 +287,10 @@ def test_givn_nam2_deduplication(tmp_path):
     )
     f = tmp_path / "dedup_nam2.ged"
     f.write_text(content, encoding="utf-8")
-    code, out, err = run_cmd(["givennames", "--second", "--direction", "ancestors", "@I001@", str(f)])
+    (tmp_path / ".gedinfo.toml").write_text(
+        '[gedcom_custom_tags]\nsecondary_name = "NAM2"\n', encoding="utf-8"
+    )
+    code, out, err = run_cmd(["givennames", "--second-name", "--direction", "ancestors", "@I001@", str(f)])
     assert code == 0
     lines = [l for l in out.splitlines() if "\t" in l and l.split("\t")[1] == "Solomon"]
     assert lines

@@ -10,6 +10,7 @@ from importlib import resources
 from pathlib import Path
 from typing import Any
 
+from ..config import require_tag
 from ..parser import parse
 from ..queries import get_ancestor_details, get_descendant_details
 
@@ -59,7 +60,7 @@ def _collect_names(
     indi_id: str,
     max_generations: int | None,
     use_second: bool,
-    use_hebrew: bool,
+    use_alt: bool,
     direction: str = "desc",
 ) -> tuple[Counter, Counter, Counter]:
     """Collect given-name counts for relatives in the chosen direction, split by sex.
@@ -90,12 +91,12 @@ def _collect_names(
                 names.add(n.lower())
 
         if use_second:
-            for raw in indi.nam2:
+            for raw in indi.secondary_names:
                 for n in _split_field(raw):
                     names.add(n.lower())
 
-        if use_hebrew:
-            for raw in indi.namh:
+        if use_alt:
+            for raw in indi.alternate_names:
                 for n in _split_field(raw):
                     names.add(n.lower())
 
@@ -178,9 +179,10 @@ def register(subparsers: argparse._SubParsersAction) -> None:  # type: ignore
         help="Limit traversal to N generations (>=1)",
     )
     sub.add_argument(
-        "-2", "--second",
+        "-2", "--second-name",
+        dest="second_name",
         action="store_true", default=False,
-        help="Include names from NAM2 (second/additional names)",
+        help="Include names from the configured secondary-name tag",
     )
     sub.add_argument(
         "-s", "--sort",
@@ -189,14 +191,15 @@ def register(subparsers: argparse._SubParsersAction) -> None:  # type: ignore
         help="Sort output by 'frequency' (default) or 'name'",
     )
     sub.add_argument(
-        "-e", "--hebrew",
+        "-x", "--alt-name",
+        dest="alt_name",
         action="store_true", default=False,
-        help="Include names from NAMH (Hebrew names)",
+        help="Include names from the configured alternate-name tag",
     )
     sub.add_argument(
         "-a", "--all_names",
         action="store_true", default=False,
-        help="Equivalent to --second --hebrew",
+        help="Equivalent to --second-name --alt-name",
     )
     sub.add_argument(
         "-f", "--fuzzy",
@@ -224,13 +227,18 @@ def run(args: Any) -> None:
         print("Invalid generations value: must be >= 1", file=sys.stderr)
         sys.exit(1)
 
-    use_second = args.second or args.all_names
-    use_hebrew = args.hebrew or args.all_names
+    use_second = args.second_name or args.all_names
+    use_alt = args.alt_name or args.all_names
 
     data = parse(args.gedcom_file)
 
+    if use_second:
+        require_tag(data.tag_config, "secondary_name")
+    if use_alt:
+        require_tag(data.tag_config, "alternate_name")
+
     direction = "asc" if args.direction in ("ancestors", "up") else "desc"
-    masc, fem, unkn = _collect_names(data, args.indi_id, g, use_second, use_hebrew, direction)
+    masc, fem, unkn = _collect_names(data, args.indi_id, g, use_second, use_alt, direction)
 
     variants: dict[str, str] = {}
     if args.fuzzy:

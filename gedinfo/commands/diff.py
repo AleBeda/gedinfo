@@ -12,11 +12,11 @@ from ._output import validate_output_mode, strip_id_delimiters, add_output_optio
 
 
 _CORE_INDI_FIELDS = ["first_name", "last_name", "birth_date", "death_date"]
-_EXTRA_INDI_FIELDS = ["sex", "living", "givn", "nam2", "namh", "notes"]
+_EXTRA_INDI_FIELDS = ["sex", "living", "givn", "secondary_names", "alternate_names", "notes"]
 _CORE_FAM_FIELDS = ["husband_id", "wife_id", "child_ids", "marriage_date"]
 _EXTRA_FAM_FIELDS = ["notes"]
 _ID_FIELDS = {"husband_id", "wife_id"}
-_LIST_FIELDS = {"child_ids", "givn", "nam2", "namh", "notes"}
+_LIST_FIELDS = {"child_ids", "givn", "secondary_names", "alternate_names", "notes"}
 
 
 def _family_name(fam: Family, data: GedcomData) -> str:
