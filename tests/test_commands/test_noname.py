@@ -41,11 +41,7 @@ def test_noname_finds_unnamed(tmp_path):
 
 
 def test_noname_id_only(tmp_path):
-    content = (
-        "0 HEAD\n"
-        "0 @I1@ INDI\n1 SEX M\n"
-        "0 TRLR\n"
-    )
+    content = "0 HEAD\n0 @I1@ INDI\n1 SEX M\n0 TRLR\n"
     f = tmp_path / "noname_id.ged"
     f.write_text(content)
     code, out, err = run_cmd(["noname", "-i", str(f)])
@@ -54,11 +50,7 @@ def test_noname_id_only(tmp_path):
 
 
 def test_noname_name_only(tmp_path):
-    content = (
-        "0 HEAD\n"
-        "0 @I1@ INDI\n1 SEX M\n"
-        "0 TRLR\n"
-    )
+    content = "0 HEAD\n0 @I1@ INDI\n1 SEX M\n0 TRLR\n"
     f = tmp_path / "noname_name.ged"
     f.write_text(content)
     code, out, err = run_cmd(["noname", "-n", str(f)])

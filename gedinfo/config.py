@@ -19,11 +19,13 @@ from pathlib import Path
 from typing import Optional
 
 # Generic function keys recognised in the [gedcom_custom_tags] settings table.
-_VALID_KEYS: frozenset[str] = frozenset({
-    "living",
-    "secondary_name",
-    "alternate_name",
-})
+_VALID_KEYS: frozenset[str] = frozenset(
+    {
+        "living",
+        "secondary_name",
+        "alternate_name",
+    }
+)
 
 # Example tag values, shown only in error messages and documentation.
 _EXAMPLE_TAGS: dict[str, str] = {

@@ -17,7 +17,11 @@ def run_cmd(args):
 
 
 def _rows(out: str) -> list[list[str]]:
-    return [line.split("\t") for line in out.splitlines() if line and not line.startswith(" ")]
+    return [
+        line.split("\t")
+        for line in out.splitlines()
+        if line and not line.startswith(" ")
+    ]
 
 
 def test_basic_chg_del_ins():
@@ -90,7 +94,9 @@ def test_long_del_ins_no_field_details():
     # DEL entry (I004) should be followed by I005 or another top-level line, not indented details
     idx = next(i for i, l in enumerate(lines) if l.startswith("I004"))
     if idx + 1 < len(lines):
-        assert not lines[idx + 1].startswith("  "), "DEL entry should have no field details"
+        assert not lines[idx + 1].startswith("  "), (
+            "DEL entry should have no field details"
+        )
 
 
 def test_long_family_chg_shows_child_ids():
@@ -98,7 +104,7 @@ def test_long_family_chg_shows_child_ids():
     assert code == 0
     lines = out.splitlines()
     idx = next(i for i, l in enumerate(lines) if l.startswith("F001"))
-    detail_block = "\n".join(lines[idx:idx + 10])
+    detail_block = "\n".join(lines[idx : idx + 10])
     assert "child_ids" in detail_block
     assert "I003, I004" in detail_block
     assert "> I003" in detail_block

@@ -70,6 +70,7 @@ def test_no_relatives_individual(relatives_data):
     # Test with an individual that has no parents, no spouses, no children
     # Build minimal data: use simple.ged or craft inline
     from gedinfo.models import GedcomData, Individual
+
     data = GedcomData()
     lone = Individual(id="@I999@", first_name="Lone", last_name="Wolf")
     data.individuals["@I999@"] = lone
@@ -147,9 +148,13 @@ def test_left_items_before_center_before_right(relatives_data):
     panes = [i.pane for i in items]
     # All "left" items come before any "center" item, which come before any "right" item
     last_left = max((j for j, p in enumerate(panes) if p == "left"), default=-1)
-    first_center = min((j for j, p in enumerate(panes) if p == "center"), default=len(panes))
+    first_center = min(
+        (j for j, p in enumerate(panes) if p == "center"), default=len(panes)
+    )
     last_center = max((j for j, p in enumerate(panes) if p == "center"), default=-1)
-    first_right = min((j for j, p in enumerate(panes) if p == "right"), default=len(panes))
+    first_right = min(
+        (j for j, p in enumerate(panes) if p == "right"), default=len(panes)
+    )
     assert last_left < first_center
     assert last_center < first_right
 

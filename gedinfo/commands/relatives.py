@@ -30,15 +30,18 @@ def register(subparsers: argparse._SubParsersAction) -> None:  # type: ignore
         description="Show immediate family of an individual",
     )
     add_output_options(sub)
-    sub.add_argument("-b", "--birth",    action="store_true", help="Print birth date")
-    sub.add_argument("-d", "--death",    action="store_true", help="Print death date")
-    sub.add_argument("-m", "--marriage", action="store_true", help="Print marriage date")
+    sub.add_argument("-b", "--birth", action="store_true", help="Print birth date")
+    sub.add_argument("-d", "--death", action="store_true", help="Print death date")
     sub.add_argument(
-        "-l", "--long",
+        "-m", "--marriage", action="store_true", help="Print marriage date"
+    )
+    sub.add_argument(
+        "-l",
+        "--long",
         action="store_true",
         help="Equivalent to -b -d -m",
     )
-    sub.add_argument("indi_id",     help="Individual ID")
+    sub.add_argument("indi_id", help="Individual ID")
     sub.add_argument("gedcom_file", help="Path to GEDCOM file")
     sub.set_defaults(func=run)
 
@@ -46,8 +49,8 @@ def register(subparsers: argparse._SubParsersAction) -> None:  # type: ignore
 def run(args: Any) -> None:
     """Handler invoked when ``gedinfo relatives`` is run."""
     mode = validate_output_mode(args)
-    show_birth    = args.birth    or args.long
-    show_death    = args.death    or args.long
+    show_birth = args.birth or args.long
+    show_death = args.death or args.long
     show_marriage = args.marriage or args.long
 
     data = parse(args.gedcom_file)

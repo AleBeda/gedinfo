@@ -72,7 +72,8 @@ def format_individual(ind: Individual, mode: Literal["id", "name", "both"]) -> s
 def add_sort_option(parser: argparse.ArgumentParser) -> None:
     """Add `-s/--sort {id,name}` option to *parser*."""
     parser.add_argument(
-        "-s", "--sort",
+        "-s",
+        "--sort",
         choices=["id", "name"],
         default=None,
         help="Sort output: 'id' for numeric ID order, 'name' for alphabetical by name. Default is GEDCOM file order.",
@@ -84,7 +85,9 @@ def get_sort_key(args: argparse.Namespace) -> str | None:
     return getattr(args, "sort", None)
 
 
-def sort_individuals(individuals: list[Individual], sort_key: str | None = None) -> list[Individual]:
+def sort_individuals(
+    individuals: list[Individual], sort_key: str | None = None
+) -> list[Individual]:
     """Sort a list of individuals by *sort_key*.
 
     If sort_key is 'id', sort by numeric ID. If 'name', sort by display name.

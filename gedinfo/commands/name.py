@@ -17,7 +17,7 @@ def register(subparsers: argparse._SubParsersAction) -> None:  # type: ignore
         help="Print the full name of an individual by ID",
         description="Print the full name of an individual by ID",
     )
-    sub.add_argument("indi_id", help="Individual ID (" "@I...@" " optional)")
+    sub.add_argument("indi_id", help="Individual ID (@I...@ optional)")
     sub.add_argument("gedcom_file", help="Path to GEDCOM file")
     sub.set_defaults(func=run)
 

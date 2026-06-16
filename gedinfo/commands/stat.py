@@ -38,7 +38,8 @@ def register(subparsers: argparse._SubParsersAction) -> None:  # type: ignore
         ),
     )
     filter_group.add_argument(
-        "-u", "--unknown",
+        "-u",
+        "--unknown",
         action="store_true",
         default=False,
         help=(
@@ -47,7 +48,8 @@ def register(subparsers: argparse._SubParsersAction) -> None:  # type: ignore
         ),
     )
     filter_group.add_argument(
-        "-a", "--all",
+        "-a",
+        "--all",
         action="store_true",
         default=False,
         help=(
@@ -61,7 +63,9 @@ def register(subparsers: argparse._SubParsersAction) -> None:  # type: ignore
 
 def run(args: Any) -> None:
     # validate mutually exclusive flags if present
-    if getattr(args, "all", False) and (getattr(args, "spouse", False) or getattr(args, "unknown", False)):
+    if getattr(args, "all", False) and (
+        getattr(args, "spouse", False) or getattr(args, "unknown", False)
+    ):
         print("--all cannot be combined with --spouse or --unknown", file=sys.stderr)
         sys.exit(1)
 
@@ -75,8 +79,12 @@ def run(args: Any) -> None:
     roots_list = apply_root_filters(
         data,
         raw_roots,
-        include_spouse_suppressed=(getattr(args, "all", False) or getattr(args, "spouse", False)),
-        include_unknowns=(getattr(args, "all", False) or getattr(args, "unknown", False)),
+        include_spouse_suppressed=(
+            getattr(args, "all", False) or getattr(args, "spouse", False)
+        ),
+        include_unknowns=(
+            getattr(args, "all", False) or getattr(args, "unknown", False)
+        ),
     )
     roots = len(roots_list)
     leaves = len(get_leaves(data))
@@ -97,7 +105,11 @@ def run(args: Any) -> None:
     print(f"  Unknown sex: {unknown}")
     # add optional note when flags change the root count
     note = ""
-    if getattr(args, "all", False) or getattr(args, "spouse", False) or getattr(args, "unknown", False):
+    if (
+        getattr(args, "all", False)
+        or getattr(args, "spouse", False)
+        or getattr(args, "unknown", False)
+    ):
         if getattr(args, "all", False):
             note = "  (all)"
         else:

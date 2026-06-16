@@ -45,7 +45,7 @@ def _load_variants(variants_file: str | Path | None = None) -> dict[str, str]:
     mapping: dict[str, str] = {}
     for line in text.splitlines():
         if "#" in line:
-            line = line[:line.index("#")]
+            line = line[: line.index("#")]
         tokens = line.lower().split()
         if not tokens:
             continue
@@ -174,40 +174,52 @@ def register(subparsers: argparse._SubParsersAction) -> None:  # type: ignore
         description="Print given-name frequency for ancestors",
     )
     sub.add_argument(
-        "-g", "--generations",
-        type=int, default=None,
+        "-g",
+        "--generations",
+        type=int,
+        default=None,
         help="Limit traversal to N generations (>=1)",
     )
     sub.add_argument(
-        "-2", "--second-name",
+        "-2",
+        "--second-name",
         dest="second_name",
-        action="store_true", default=False,
+        action="store_true",
+        default=False,
         help="Include names from the configured secondary-name tag",
     )
     sub.add_argument(
-        "-s", "--sort",
+        "-s",
+        "--sort",
         choices=["frequency", "name"],
         default="frequency",
         help="Sort output by 'frequency' (default) or 'name'",
     )
     sub.add_argument(
-        "-x", "--alt-name",
+        "-x",
+        "--alt-name",
         dest="alt_name",
-        action="store_true", default=False,
+        action="store_true",
+        default=False,
         help="Include names from the configured alternate-name tag",
     )
     sub.add_argument(
-        "-a", "--all_names",
-        action="store_true", default=False,
+        "-a",
+        "--all_names",
+        action="store_true",
+        default=False,
         help="Equivalent to --second-name --alt-name",
     )
     sub.add_argument(
-        "-f", "--fuzzy",
-        action="store_true", default=False,
+        "-f",
+        "--fuzzy",
+        action="store_true",
+        default=False,
         help="Group name variants together using the bundled variants file",
     )
     sub.add_argument(
-        "-d", "--direction",
+        "-d",
+        "--direction",
         choices=["ancestors", "descendants", "up", "down"],
         default="descendants",
         help=(
@@ -238,7 +250,9 @@ def run(args: Any) -> None:
         require_tag(data.tag_config, "alternate_name")
 
     direction = "asc" if args.direction in ("ancestors", "up") else "desc"
-    masc, fem, unkn = _collect_names(data, args.indi_id, g, use_second, use_alt, direction)
+    masc, fem, unkn = _collect_names(
+        data, args.indi_id, g, use_second, use_alt, direction
+    )
 
     variants: dict[str, str] = {}
     if args.fuzzy:

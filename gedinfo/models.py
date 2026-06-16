@@ -40,9 +40,13 @@ class Individual:
     family_ids_as_child: list[str] = field(default_factory=list)
     family_ids_as_spouse: list[str] = field(default_factory=list)
     living: bool | None = None
-    givn: list[str] = field(default_factory=list)   # values of all GIVN sub-tags
-    secondary_names: list[str] = field(default_factory=list)  # secondary-name tag values
-    alternate_names: list[str] = field(default_factory=list)  # alternate-name tag values
+    givn: list[str] = field(default_factory=list)  # values of all GIVN sub-tags
+    secondary_names: list[str] = field(
+        default_factory=list
+    )  # secondary-name tag values
+    alternate_names: list[str] = field(
+        default_factory=list
+    )  # alternate-name tag values
     birth_date: Optional[str] = None
     death_date: Optional[str] = None
     notes: list[str] = field(default_factory=list)

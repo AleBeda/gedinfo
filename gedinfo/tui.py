@@ -44,19 +44,21 @@ from .queries import (
 # Data model
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class NavItem:
     label: str
     individual: Optional[Individual]
-    date_hint: str      # birth/death for self, "m. DATE" for spouses, ""
-    pane: str           # "left", "center", or "right"
-    idx: int            # sequential position in the full nav list
+    date_hint: str  # birth/death for self, "m. DATE" for spouses, ""
+    pane: str  # "left", "center", or "right"
+    idx: int  # sequential position in the full nav list
     family_id: Optional[str] = None  # set on spouse items: the marriage family ID
 
 
 # ---------------------------------------------------------------------------
 # Label helpers (mirrors relatives.py)
 # ---------------------------------------------------------------------------
+
 
 def _parent_label(indi: Individual) -> str:
     return {"M": "father:", "F": "mother:"}.get(indi.sex, "parent:")
@@ -73,6 +75,7 @@ def _child_label(indi: Individual) -> str:
 # ---------------------------------------------------------------------------
 # Pure functions
 # ---------------------------------------------------------------------------
+
 
 def build_nav_items(
     data: GedcomData,
@@ -106,13 +109,15 @@ def build_nav_items(
             parent = data.individuals.get(parent_id)
             if parent is None:
                 continue
-            left.append(NavItem(
-                label=_parent_label(parent),
-                individual=parent,
-                date_hint="",
-                pane="left",
-                idx=0,
-            ))
+            left.append(
+                NavItem(
+                    label=_parent_label(parent),
+                    individual=parent,
+                    date_hint="",
+                    pane="left",
+                    idx=0,
+                )
+            )
 
     # --- Center pane: self ---
     parts: list[str] = []
@@ -120,29 +125,35 @@ def build_nav_items(
         parts.append(indi.birth_date)
     if indi.death_date:
         parts.append(indi.death_date)
-    center.append(NavItem(
-        label="self:",
-        individual=indi,
-        date_hint=" – ".join(parts),
-        pane="center",
-        idx=0,
-        family_id=None,
-    ))
+    center.append(
+        NavItem(
+            label="self:",
+            individual=indi,
+            date_hint=" – ".join(parts),
+            pane="center",
+            idx=0,
+            family_id=None,
+        )
+    )
 
     # --- Center pane: spouses (chronological by marriage year, then GEDCOM order) ---
     def _marr_sort_key(item: tuple[int, str]) -> tuple[int, int]:
         idx, date_str = item
-        m = re.search(r'\b(\d{4})\b', date_str) if date_str else None
+        m = re.search(r"\b(\d{4})\b", date_str) if date_str else None
         return (0, int(m.group(1))) if m else (1, idx)
 
     sorted_fam_ids = [
         fam_id
         for _, fam_id in sorted(
             ((i, fam_id) for i, fam_id in enumerate(indi.family_ids_as_spouse)),
-            key=lambda x: _marr_sort_key((
-                x[0],
-                (data.families[x[1]].marriage_date or "") if x[1] in data.families else "",
-            )),
+            key=lambda x: _marr_sort_key(
+                (
+                    x[0],
+                    (data.families[x[1]].marriage_date or "")
+                    if x[1] in data.families
+                    else "",
+                )
+            ),
         )
     ]
     for fam_id in sorted_fam_ids:
@@ -155,14 +166,16 @@ def build_nav_items(
         spouse = data.individuals.get(other_id)
         if spouse is None:
             continue
-        center.append(NavItem(
-            label=_spouse_label(spouse),
-            individual=spouse,
-            date_hint=f"m. {fam.marriage_date}" if fam.marriage_date else "",
-            pane="center",
-            idx=0,
-            family_id=fam_id,
-        ))
+        center.append(
+            NavItem(
+                label=_spouse_label(spouse),
+                individual=spouse,
+                date_hint=f"m. {fam.marriage_date}" if fam.marriage_date else "",
+                pane="center",
+                idx=0,
+                family_id=fam_id,
+            )
+        )
 
     # --- Right pane: children filtered by selected center item ---
     safe_cursor = min(center_cursor, len(center) - 1) if center else 0
@@ -179,13 +192,15 @@ def build_nav_items(
             child = data.individuals.get(child_id)
             if child is None:
                 continue
-            right.append(NavItem(
-                label=_child_label(child),
-                individual=child,
-                date_hint="",
-                pane="right",
-                idx=0,
-            ))
+            right.append(
+                NavItem(
+                    label=_child_label(child),
+                    individual=child,
+                    date_hint="",
+                    pane="right",
+                    idx=0,
+                )
+            )
 
     # Assign sequential global idx values
     all_items = left + center + right
@@ -210,7 +225,9 @@ def _find_ged_files() -> list[Path]:
     """Return *.ged files in CWD and one level of non-hidden subdirectories."""
     cwd = Path.cwd()
     found: list[Path] = sorted(cwd.glob("*.ged"))
-    for subdir in sorted(p for p in cwd.iterdir() if p.is_dir() and not p.name.startswith(".")):
+    for subdir in sorted(
+        p for p in cwd.iterdir() if p.is_dir() and not p.name.startswith(".")
+    ):
         found.extend(sorted(subdir.glob("*.ged")))
     return found
 
@@ -249,6 +266,7 @@ def _go_to_root(data: GedcomData, start_id: str) -> str:
 # Vim-scrollable ListView
 # ---------------------------------------------------------------------------
 
+
 class VimListView(ListView):
     """ListView that adds ctrl+d/u/f/b for half/full-page vim scrolling.
 
@@ -257,11 +275,11 @@ class VimListView(ListView):
     """
 
     BINDINGS = [
-        Binding("enter",  "select_cursor",    show=False),
+        Binding("enter", "select_cursor", show=False),
         Binding("ctrl+d", "scroll_half_down", show=False),
-        Binding("ctrl+u", "scroll_half_up",   show=False),
+        Binding("ctrl+u", "scroll_half_up", show=False),
         Binding("ctrl+f", "scroll_full_down", show=False),
-        Binding("ctrl+b", "scroll_full_up",   show=False),
+        Binding("ctrl+b", "scroll_full_up", show=False),
     ]
 
     def on_key(self, event: events.Key) -> None:
@@ -296,6 +314,7 @@ class VimListView(ListView):
 # Three-column person pane
 # ---------------------------------------------------------------------------
 
+
 class PersonPane(Widget):
     """Renders one column (left / center / right) of the family view.
 
@@ -326,7 +345,11 @@ class PersonPane(Widget):
 
         # Index of first spouse item in center pane (for the 's' hint)
         first_spouse_idx = next(
-            (i for i, it in enumerate(items) if self._pane_id == "center" and it.label != "self:"),
+            (
+                i
+                for i, it in enumerate(items)
+                if self._pane_id == "center" and it.label != "self:"
+            ),
             None,
         )
 
@@ -334,14 +357,18 @@ class PersonPane(Widget):
         for enum_idx, item in enumerate(items):
             is_cursor = self._pane_id == "center" and enum_idx == center_cursor
             name = display_name(item.individual) if item.individual else "(unknown)"
-            id_str = item.individual.id.strip("@") if (item.individual and show_ids) else ""
+            id_str = (
+                item.individual.id.strip("@") if (item.individual and show_ids) else ""
+            )
             id_part = f" ({id_str})" if id_str else ""
 
             # Main line: label + name + (ID)
             if self._pane_id == "center":
                 if is_cursor:
                     # Cursor row: everything in bold reverse, no dimming
-                    lines.append(f"► {item.label} {name}{id_part}\n", style="bold reverse")
+                    lines.append(
+                        f"► {item.label} {name}{id_part}\n", style="bold reverse"
+                    )
                 else:
                     if normal_mode and enum_idx == first_spouse_idx and item.individual:
                         lines.append("s", style=hint_style)
@@ -396,6 +423,7 @@ class PersonPane(Widget):
 # ---------------------------------------------------------------------------
 # Status pane
 # ---------------------------------------------------------------------------
+
 
 class StatusPane(Widget):
     """Persistent pane showing details about the currently focused individual."""
@@ -469,6 +497,7 @@ class StatusPane(Widget):
 # Search bar
 # ---------------------------------------------------------------------------
 
+
 class SearchBar(Widget):
     """Inline search input docked at the bottom of the screen."""
 
@@ -483,7 +512,9 @@ class SearchBar(Widget):
     """
 
     def compose(self) -> ComposeResult:
-        yield Input(placeholder="Search by name or ID — Enter to confirm, empty Enter to cancel")
+        yield Input(
+            placeholder="Search by name or ID — Enter to confirm, empty Enter to cancel"
+        )
 
     def on_mount(self) -> None:
         self.query_one(Input).focus()
@@ -526,6 +557,7 @@ class SearchBar(Widget):
 # ---------------------------------------------------------------------------
 # File picker screen
 # ---------------------------------------------------------------------------
+
 
 class _FileItem(ListItem):
     """ListView item that holds a Path; displays only the filename."""
@@ -570,15 +602,15 @@ class FilePickerScreen(ModalScreen[str | None]):
                 yield VimListView(*[_FileItem(f) for f in self._files], id="file-list")
                 yield Label("", id="path-status")
             else:
-                yield Label("(no *.ged files found in current directory or subdirectories)")
+                yield Label(
+                    "(no *.ged files found in current directory or subdirectories)"
+                )
 
     def on_mount(self) -> None:
         if self._files:
             lv = self.query_one(VimListView)
             lv.focus()
-            self.query_one("#path-status", Label).update(
-                _fmt_path(str(self._files[0]))
-            )
+            self.query_one("#path-status", Label).update(_fmt_path(str(self._files[0])))
         else:
             self.query_one("#path-input", Input).focus()
 
@@ -611,26 +643,26 @@ class FilePickerScreen(ModalScreen[str | None]):
 # ---------------------------------------------------------------------------
 
 _COMMANDS: list[tuple[str, str]] = [
-    ("stat",        "File statistics"),
-    ("roots",       "Root individuals (no known parents)"),
-    ("leaves",      "Leaf individuals (no known children)"),
-    ("indi",        "All individuals"),
-    ("ancestors",   "Ancestors of current person"),
+    ("stat", "File statistics"),
+    ("roots", "Root individuals (no known parents)"),
+    ("leaves", "Leaf individuals (no known children)"),
+    ("indi", "All individuals"),
+    ("ancestors", "Ancestors of current person"),
     ("descendants", "Descendants of current person"),
-    ("lastnames",   "Distinct last names in ancestor tree"),
-    ("givennames",  "Distinct given names in ancestor tree"),
+    ("lastnames", "Distinct last names in ancestor tree"),
+    ("givennames", "Distinct given names in ancestor tree"),
 ]
 
 # Explicit shortcut letter for each command (letter → cmd, cmd → letter).
 _CMD_SHORTCUTS: dict[str, str] = {
-    "stat":        "s",
-    "roots":       "r",
-    "leaves":      "v",  # lea[v]es
-    "indi":        "i",
-    "ancestors":   "a",
+    "stat": "s",
+    "roots": "r",
+    "leaves": "v",  # lea[v]es
+    "indi": "i",
+    "ancestors": "a",
     "descendants": "d",
-    "lastnames":   "l",  # [l]astnames
-    "givennames":  "g",
+    "lastnames": "l",  # [l]astnames
+    "givennames": "g",
 }
 _letter_to_cmd: dict[str, str] = {v: k for k, v in _CMD_SHORTCUTS.items()}
 
@@ -642,7 +674,7 @@ class _CmdItem(ListItem):
             style = f"bold {accent}" if accent else "bold"
             pos = cmd.index(shortcut)
             padding = " " * (14 - len(cmd))
-            markup = f"{cmd[:pos]}[{style}]{shortcut}[/]{cmd[pos + 1:]}{padding}{desc}"
+            markup = f"{cmd[:pos]}[{style}]{shortcut}[/]{cmd[pos + 1 :]}{padding}{desc}"
         else:
             markup = f"{cmd:<14}{desc}"
         super().__init__(Label(markup))
@@ -675,7 +707,10 @@ class CommandScreen(ModalScreen[str | None]):
             accent = ""
         with Vertical(id="cmd-dialog"):
             yield Label("Commands", id="cmd-title")
-            yield VimListView(*[_CmdItem(cmd, desc, accent=accent) for cmd, desc in _COMMANDS], id="cmd-list")
+            yield VimListView(
+                *[_CmdItem(cmd, desc, accent=accent) for cmd, desc in _COMMANDS],
+                id="cmd-list",
+            )
 
     def on_mount(self) -> None:
         self.query_one(VimListView).focus()
@@ -696,6 +731,7 @@ class CommandScreen(ModalScreen[str | None]):
 # ---------------------------------------------------------------------------
 # Results screens
 # ---------------------------------------------------------------------------
+
 
 class _IndiItem(ListItem):
     def __init__(self, individual: Individual) -> None:
@@ -737,7 +773,9 @@ class IndividualListScreen(ModalScreen[str | None]):
     #indi-hint    { color: $text-disabled; margin-top: 1; }
     """
 
-    def __init__(self, title: str, individuals: list[Individual], **kwargs: object) -> None:
+    def __init__(
+        self, title: str, individuals: list[Individual], **kwargs: object
+    ) -> None:
         super().__init__(**kwargs)
         self._title = title
         self._individuals = individuals
@@ -747,7 +785,9 @@ class IndividualListScreen(ModalScreen[str | None]):
             yield Label(self._title, id="list-title")
             yield Label(f"{len(self._individuals)} individuals", id="list-count")
             if self._individuals:
-                yield VimListView(*[_IndiItem(i) for i in self._individuals], id="indi-list")
+                yield VimListView(
+                    *[_IndiItem(i) for i in self._individuals], id="indi-list"
+                )
             else:
                 yield Label("(none)")
             yield Label("↵ Select  Esc Cancel  ctrl+d/u Scroll", id="indi-hint")
@@ -809,6 +849,7 @@ class TextResultScreen(ModalScreen[None]):
 # Main application
 # ---------------------------------------------------------------------------
 
+
 class GedTui(App):
     """Interactive TUI for navigating a GEDCOM family tree."""
 
@@ -824,34 +865,34 @@ class GedTui(App):
     """
 
     BINDINGS = [
-        Binding("j",     "cursor_down",     "Down"),
-        Binding("k",     "cursor_up",       "Up"),
-        Binding("down",  "cursor_down",     ""),
-        Binding("up",    "cursor_up",       ""),
-        Binding("l",     "navigate_right",  "Children"),
-        Binding("right", "navigate_right",  ""),
-        Binding("h",     "go_up",           "Parents"),
-        Binding("left",  "go_up",           ""),
+        Binding("j", "cursor_down", "Down"),
+        Binding("k", "cursor_up", "Up"),
+        Binding("down", "cursor_down", ""),
+        Binding("up", "cursor_up", ""),
+        Binding("l", "navigate_right", "Children"),
+        Binding("right", "navigate_right", ""),
+        Binding("h", "go_up", "Parents"),
+        Binding("left", "go_up", ""),
         Binding("enter", "navigate_select", "Select"),
-        Binding("b",     "go_back",         "Back"),
-        Binding("r",     "go_to_root",      "Root"),
-        Binding("c",     "commands",        "Commands"),
-        Binding("/",     "search",          "Search"),
-        Binding("o",     "open_file",       "Open file"),
-        Binding("q",     "quit",            "Quit"),
-        Binding("i",     "toggle_ids",       "IDs"),
-        Binding("f",     "go_father",       show=False),
-        Binding("m",     "go_mother",       show=False),
-        Binding("s",     "go_spouse",       show=False),
-        Binding("1",     "child_1",         show=False),
-        Binding("2",     "child_2",         show=False),
-        Binding("3",     "child_3",         show=False),
-        Binding("4",     "child_4",         show=False),
-        Binding("5",     "child_5",         show=False),
-        Binding("6",     "child_6",         show=False),
-        Binding("7",     "child_7",         show=False),
-        Binding("8",     "child_8",         show=False),
-        Binding("9",     "child_9",         show=False),
+        Binding("b", "go_back", "Back"),
+        Binding("r", "go_to_root", "Root"),
+        Binding("c", "commands", "Commands"),
+        Binding("/", "search", "Search"),
+        Binding("o", "open_file", "Open file"),
+        Binding("q", "quit", "Quit"),
+        Binding("i", "toggle_ids", "IDs"),
+        Binding("f", "go_father", show=False),
+        Binding("m", "go_mother", show=False),
+        Binding("s", "go_spouse", show=False),
+        Binding("1", "child_1", show=False),
+        Binding("2", "child_2", show=False),
+        Binding("3", "child_3", show=False),
+        Binding("4", "child_4", show=False),
+        Binding("5", "child_5", show=False),
+        Binding("6", "child_6", show=False),
+        Binding("7", "child_7", show=False),
+        Binding("8", "child_8", show=False),
+        Binding("9", "child_9", show=False),
     ]
 
     # cursor_idx is the center-pane-local index: 0 = self, 1 = first spouse, …
@@ -860,7 +901,13 @@ class GedTui(App):
     cursor_idx: reactive[int] = reactive(0)
     show_ids: reactive[bool] = reactive(False)
 
-    def __init__(self, data: GedcomData | None, file_path: str | None, *, initial_id: str | None = None) -> None:
+    def __init__(
+        self,
+        data: GedcomData | None,
+        file_path: str | None,
+        *,
+        initial_id: str | None = None,
+    ) -> None:
         super().__init__()
         self._data = data
         self._file_path = file_path
@@ -885,7 +932,9 @@ class GedTui(App):
             else:
                 start = None
             if start is None:
-                start = sorted(self._data.individuals.values(), key=lambda i: id_sort_key(i.id))[0]
+                start = sorted(
+                    self._data.individuals.values(), key=lambda i: id_sort_key(i.id)
+                )[0]
             self.focus_id = start.id
 
     def on_resize(self, event: events.Resize) -> None:
@@ -898,9 +947,9 @@ class GedTui(App):
     def compose(self) -> ComposeResult:
         yield Header()
         with Horizontal(id="panes"):
-            yield PersonPane("left",   id="left-pane")
+            yield PersonPane("left", id="left-pane")
             yield PersonPane("center", id="center-pane")
-            yield PersonPane("right",  id="right-pane")
+            yield PersonPane("right", id="right-pane")
         yield StatusPane()
         yield Footer()
 
@@ -967,13 +1016,15 @@ class GedTui(App):
             focus_dates.append(focus.birth_date)
         if focus.death_date:
             focus_dates.append(focus.death_date)
-        left.append(NavItem(
-            label="self:",
-            individual=focus,
-            date_hint=" – ".join(focus_dates),
-            pane="left",
-            idx=0,
-        ))
+        left.append(
+            NavItem(
+                label="self:",
+                individual=focus,
+                date_hint=" – ".join(focus_dates),
+                pane="left",
+                idx=0,
+            )
+        )
 
         # Center pane: the children the user is choosing between
         for child in self._children_for_selection:
@@ -982,13 +1033,15 @@ class GedTui(App):
                 c_dates.append(child.birth_date)
             if child.death_date:
                 c_dates.append(child.death_date)
-            center.append(NavItem(
-                label=_child_label(child),
-                individual=child,
-                date_hint=" – ".join(c_dates),
-                pane="center",
-                idx=0,
-            ))
+            center.append(
+                NavItem(
+                    label=_child_label(child),
+                    individual=child,
+                    date_hint=" – ".join(c_dates),
+                    pane="center",
+                    idx=0,
+                )
+            )
 
         # Right pane: preview of the highlighted child's family
         safe = min(cursor, len(center) - 1) if center else 0
@@ -1000,23 +1053,27 @@ class GedTui(App):
                     # Spouses of the child (center items except self)
                     for item in child_items:
                         if item.pane == "center" and item.label != "self:":
-                            right.append(NavItem(
-                                label=item.label,
-                                individual=item.individual,
-                                date_hint=item.date_hint,
-                                pane="right",
-                                idx=0,
-                            ))
+                            right.append(
+                                NavItem(
+                                    label=item.label,
+                                    individual=item.individual,
+                                    date_hint=item.date_hint,
+                                    pane="right",
+                                    idx=0,
+                                )
+                            )
                     # Children of the child
                     for item in child_items:
                         if item.pane == "right":
-                            right.append(NavItem(
-                                label=item.label,
-                                individual=item.individual,
-                                date_hint=item.date_hint,
-                                pane="right",
-                                idx=0,
-                            ))
+                            right.append(
+                                NavItem(
+                                    label=item.label,
+                                    individual=item.individual,
+                                    date_hint=item.date_hint,
+                                    pane="right",
+                                    idx=0,
+                                )
+                            )
                 except ValueError:
                     pass
 
@@ -1072,13 +1129,15 @@ class GedTui(App):
                 p_dates.append(parent.birth_date)
             if parent.death_date:
                 p_dates.append(parent.death_date)
-            center.append(NavItem(
-                label=_parent_label(parent),
-                individual=parent,
-                date_hint=" – ".join(p_dates),
-                pane="center",
-                idx=0,
-            ))
+            center.append(
+                NavItem(
+                    label=_parent_label(parent),
+                    individual=parent,
+                    date_hint=" – ".join(p_dates),
+                    pane="center",
+                    idx=0,
+                )
+            )
 
         # Left: grandparents of the highlighted parent
         safe = min(cursor, len(center) - 1) if center else 0
@@ -1089,13 +1148,15 @@ class GedTui(App):
                     gp_items = build_nav_items(data, parent_indi.id)
                     for item in gp_items:
                         if item.pane == "left":
-                            left.append(NavItem(
-                                label=item.label,
-                                individual=item.individual,
-                                date_hint=item.date_hint,
-                                pane="left",
-                                idx=0,
-                            ))
+                            left.append(
+                                NavItem(
+                                    label=item.label,
+                                    individual=item.individual,
+                                    date_hint=item.date_hint,
+                                    pane="left",
+                                    idx=0,
+                                )
+                            )
                 except ValueError:
                     pass
 
@@ -1105,13 +1166,15 @@ class GedTui(App):
             focus_dates.append(focus.birth_date)
         if focus.death_date:
             focus_dates.append(focus.death_date)
-        right.append(NavItem(
-            label="self:",
-            individual=focus,
-            date_hint=" – ".join(focus_dates),
-            pane="right",
-            idx=0,
-        ))
+        right.append(
+            NavItem(
+                label="self:",
+                individual=focus,
+                date_hint=" – ".join(focus_dates),
+                pane="right",
+                idx=0,
+            )
+        )
         for fam_id in focus.family_ids_as_spouse:
             fam = data.families.get(fam_id)
             if not fam:
@@ -1121,13 +1184,17 @@ class GedTui(App):
                 continue
             spouse = data.individuals.get(other_id)
             if spouse:
-                right.append(NavItem(
-                    label=_spouse_label(spouse),
-                    individual=spouse,
-                    date_hint=f"m. {fam.marriage_date}" if fam.marriage_date else "",
-                    pane="right",
-                    idx=0,
-                ))
+                right.append(
+                    NavItem(
+                        label=_spouse_label(spouse),
+                        individual=spouse,
+                        date_hint=f"m. {fam.marriage_date}"
+                        if fam.marriage_date
+                        else "",
+                        pane="right",
+                        idx=0,
+                    )
+                )
 
         all_items = left + center + right
         for i, item in enumerate(all_items):
@@ -1210,21 +1277,33 @@ class GedTui(App):
     def action_go_father(self) -> None:
         if self._in_child_selection or self._in_parent_selection:
             return
-        left = [i for i in self._nav_items if i.pane == "left" and i.label == "father:" and i.individual]
+        left = [
+            i
+            for i in self._nav_items
+            if i.pane == "left" and i.label == "father:" and i.individual
+        ]
         if left:
             self._navigate_to(left[0].individual.id)  # type: ignore[union-attr]
 
     def action_go_mother(self) -> None:
         if self._in_child_selection or self._in_parent_selection:
             return
-        left = [i for i in self._nav_items if i.pane == "left" and i.label == "mother:" and i.individual]
+        left = [
+            i
+            for i in self._nav_items
+            if i.pane == "left" and i.label == "mother:" and i.individual
+        ]
         if left:
             self._navigate_to(left[0].individual.id)  # type: ignore[union-attr]
 
     def action_go_spouse(self) -> None:
         if self._in_child_selection or self._in_parent_selection:
             return
-        spouses = [i for i in self._nav_items if i.pane == "center" and i.label != "self:" and i.individual]
+        spouses = [
+            i
+            for i in self._nav_items
+            if i.pane == "center" and i.label != "self:" and i.individual
+        ]
         if spouses:
             self._navigate_to(spouses[0].individual.id)  # type: ignore[union-attr]
 
@@ -1235,15 +1314,32 @@ class GedTui(App):
         if 1 <= n <= len(right):
             self._navigate_to(right[n - 1].individual.id)  # type: ignore[union-attr]
 
-    def action_child_1(self) -> None: self._go_to_child(1)
-    def action_child_2(self) -> None: self._go_to_child(2)
-    def action_child_3(self) -> None: self._go_to_child(3)
-    def action_child_4(self) -> None: self._go_to_child(4)
-    def action_child_5(self) -> None: self._go_to_child(5)
-    def action_child_6(self) -> None: self._go_to_child(6)
-    def action_child_7(self) -> None: self._go_to_child(7)
-    def action_child_8(self) -> None: self._go_to_child(8)
-    def action_child_9(self) -> None: self._go_to_child(9)
+    def action_child_1(self) -> None:
+        self._go_to_child(1)
+
+    def action_child_2(self) -> None:
+        self._go_to_child(2)
+
+    def action_child_3(self) -> None:
+        self._go_to_child(3)
+
+    def action_child_4(self) -> None:
+        self._go_to_child(4)
+
+    def action_child_5(self) -> None:
+        self._go_to_child(5)
+
+    def action_child_6(self) -> None:
+        self._go_to_child(6)
+
+    def action_child_7(self) -> None:
+        self._go_to_child(7)
+
+    def action_child_8(self) -> None:
+        self._go_to_child(8)
+
+    def action_child_9(self) -> None:
+        self._go_to_child(9)
 
     def action_navigate_select(self) -> None:
         """Enter: confirm selection or navigate to selected center item."""
@@ -1303,14 +1399,25 @@ class GedTui(App):
         if cmd == "stat":
             self.push_screen(TextResultScreen("Statistics", self._build_stat_text()))
         elif cmd == "roots":
-            roots = apply_root_filters(self._data, get_roots(self._data, sort_key="name"))
-            self.push_screen(IndividualListScreen("Roots", roots), self._on_individual_selected)
+            roots = apply_root_filters(
+                self._data, get_roots(self._data, sort_key="name")
+            )
+            self.push_screen(
+                IndividualListScreen("Roots", roots), self._on_individual_selected
+            )
         elif cmd == "leaves":
-            leaves = apply_leaf_filters(self._data, get_leaves(self._data, sort_key="name"))
-            self.push_screen(IndividualListScreen("Leaves", leaves), self._on_individual_selected)
+            leaves = apply_leaf_filters(
+                self._data, get_leaves(self._data, sort_key="name")
+            )
+            self.push_screen(
+                IndividualListScreen("Leaves", leaves), self._on_individual_selected
+            )
         elif cmd == "indi":
             indis = get_all_individuals(self._data, sort_key="name")
-            self.push_screen(IndividualListScreen("All individuals", indis), self._on_individual_selected)
+            self.push_screen(
+                IndividualListScreen("All individuals", indis),
+                self._on_individual_selected,
+            )
         elif cmd == "ancestors":
             if not self.focus_id:
                 self.notify("No person in focus", severity="warning")
@@ -1339,8 +1446,17 @@ class GedTui(App):
                 return
             records = get_ancestor_details(self._data, self.focus_id)
             focus_name = display_name(find_by_id(self._data, self.focus_id))  # type: ignore[arg-type]
-            names = sorted({r["individual"].last_name for r in records if r["individual"].last_name})
-            text = f"{len(names)} distinct last names · ancestors of {focus_name}\n\n" + "\n".join(names)
+            names = sorted(
+                {
+                    r["individual"].last_name
+                    for r in records
+                    if r["individual"].last_name
+                }
+            )
+            text = (
+                f"{len(names)} distinct last names · ancestors of {focus_name}\n\n"
+                + "\n".join(names)
+            )
             self.push_screen(TextResultScreen("Last names", text))
         elif cmd == "givennames":
             if not self.focus_id:
@@ -1348,8 +1464,17 @@ class GedTui(App):
                 return
             records = get_ancestor_details(self._data, self.focus_id)
             focus_name = display_name(find_by_id(self._data, self.focus_id))  # type: ignore[arg-type]
-            names = sorted({r["individual"].first_name for r in records if r["individual"].first_name})
-            text = f"{len(names)} distinct given names · ancestors of {focus_name}\n\n" + "\n".join(names)
+            names = sorted(
+                {
+                    r["individual"].first_name
+                    for r in records
+                    if r["individual"].first_name
+                }
+            )
+            text = (
+                f"{len(names)} distinct given names · ancestors of {focus_name}\n\n"
+                + "\n".join(names)
+            )
             self.push_screen(TextResultScreen("Given names", text))
 
     def _on_individual_selected(self, indi_id: str | None) -> None:
@@ -1374,7 +1499,9 @@ class GedTui(App):
         self._history.clear()
         self.sub_title = path
         if new_data.individuals:
-            first = sorted(new_data.individuals.values(), key=lambda i: id_sort_key(i.id))[0]
+            first = sorted(
+                new_data.individuals.values(), key=lambda i: id_sort_key(i.id)
+            )[0]
             self.focus_id = first.id
         else:
             self.focus_id = None
@@ -1407,6 +1534,9 @@ class GedTui(App):
 # Entry point
 # ---------------------------------------------------------------------------
 
-def run_tui(data: GedcomData | None, file_path: str | None, *, initial_id: str | None = None) -> None:
+
+def run_tui(
+    data: GedcomData | None, file_path: str | None, *, initial_id: str | None = None
+) -> None:
     """Entry point called from the explore command."""
     GedTui(data, file_path, initial_id=initial_id).run()

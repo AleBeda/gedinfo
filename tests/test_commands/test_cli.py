@@ -99,7 +99,7 @@ def test_direct_command_runs(tmp_path):
     # relationship
     args = SimpleNamespace(first_id="@I003@", second_id="@I004@", gedcom_file=gedfile)
     commands.relationship.run(args)
-      # indi/males/females/nosex with default flags
+    # indi/males/females/nosex with default flags
     for mod in (commands.indi, commands.males, commands.females, commands.nosex):
         args = SimpleNamespace(gedcom_file=gedfile, id=False, name=False)
         mod.run(args)

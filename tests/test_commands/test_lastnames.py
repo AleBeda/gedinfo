@@ -85,12 +85,14 @@ def test_debug_flag_shows_traceback():
 
 
 def test_long_no_g():
-    code, out, err = run_cmd([
-        "lastnames",
-        "-l",
-        "@I001@",
-        str(FIXTURES / "long_ancestors.ged"),
-    ])
+    code, out, err = run_cmd(
+        [
+            "lastnames",
+            "-l",
+            "@I001@",
+            str(FIXTURES / "long_ancestors.ged"),
+        ]
+    )
     assert code == 0
     lines = [ln for ln in out.strip().splitlines() if ln.strip()]
     # should contain 5 branch-tip ancestors
@@ -108,14 +110,16 @@ def test_long_no_g():
 
 
 def test_long_g3():
-    code, out, err = run_cmd([
-        "lastnames",
-        "-l",
-        "-g",
-        "3",
-        "@I001@",
-        str(FIXTURES / "long_ancestors.ged"),
-    ])
+    code, out, err = run_cmd(
+        [
+            "lastnames",
+            "-l",
+            "-g",
+            "3",
+            "@I001@",
+            str(FIXTURES / "long_ancestors.ged"),
+        ]
+    )
     assert code == 0
     lines = [ln for ln in out.strip().splitlines() if ln.strip()]
     assert len(lines) == 4
@@ -124,14 +128,16 @@ def test_long_g3():
 
 
 def test_long_g2():
-    code, out, err = run_cmd([
-        "lastnames",
-        "-l",
-        "-g",
-        "2",
-        "@I001@",
-        str(FIXTURES / "long_ancestors.ged"),
-    ])
+    code, out, err = run_cmd(
+        [
+            "lastnames",
+            "-l",
+            "-g",
+            "2",
+            "@I001@",
+            str(FIXTURES / "long_ancestors.ged"),
+        ]
+    )
     assert code == 0
     lines = [ln for ln in out.strip().splitlines() if ln.strip()]
     assert len(lines) == 2
@@ -140,14 +146,16 @@ def test_long_g2():
 
 
 def test_long_sort_generation():
-    code, out, err = run_cmd([
-        "lastnames",
-        "-l",
-        "-s",
-        "generation",
-        "@I001@",
-        str(FIXTURES / "long_ancestors.ged"),
-    ])
+    code, out, err = run_cmd(
+        [
+            "lastnames",
+            "-l",
+            "-s",
+            "generation",
+            "@I001@",
+            str(FIXTURES / "long_ancestors.ged"),
+        ]
+    )
     assert code == 0
     lines = [ln for ln in out.strip().splitlines() if ln.strip()]
     gens = [int(ln.split("\t")[0]) for ln in lines]
@@ -159,14 +167,16 @@ def test_long_sort_generation():
 
 
 def test_long_sort_name():
-    code, out, err = run_cmd([
-        "lastnames",
-        "-l",
-        "-s",
-        "name",
-        "@I001@",
-        str(FIXTURES / "long_ancestors.ged"),
-    ])
+    code, out, err = run_cmd(
+        [
+            "lastnames",
+            "-l",
+            "-s",
+            "name",
+            "@I001@",
+            str(FIXTURES / "long_ancestors.ged"),
+        ]
+    )
     assert code == 0
     lines = [ln for ln in out.strip().splitlines() if ln.strip()]
     last_names = [ln.split("\t")[2] for ln in lines]
@@ -174,14 +184,16 @@ def test_long_sort_name():
 
 
 def test_long_sort_id():
-    code, out, err = run_cmd([
-        "lastnames",
-        "-l",
-        "-s",
-        "id",
-        "@I001@",
-        str(FIXTURES / "long_ancestors.ged"),
-    ])
+    code, out, err = run_cmd(
+        [
+            "lastnames",
+            "-l",
+            "-s",
+            "id",
+            "@I001@",
+            str(FIXTURES / "long_ancestors.ged"),
+        ]
+    )
     assert code == 0
     lines = [ln for ln in out.strip().splitlines() if ln.strip()]
     ids = [ln.split("\t")[-1] for ln in lines]
@@ -296,45 +308,55 @@ def test_long_unknown_included_with_flag(tmp_path):
 
 
 def test_sort_without_long():
-    code, out, err = run_cmd([
-        "lastnames",
-        "-s",
-        "name",
-        "@I001@",
-        str(FIXTURES / "long_ancestors.ged"),
-    ])
+    code, out, err = run_cmd(
+        [
+            "lastnames",
+            "-s",
+            "name",
+            "@I001@",
+            str(FIXTURES / "long_ancestors.ged"),
+        ]
+    )
     assert code == 1
     assert "--sort requires --long" in err
 
 
 def test_long_empty_output():
-    code, out, err = run_cmd([
-        "lastnames",
-        "-l",
-        "@I001@",
-        str(FIXTURES / "simple.ged"),
-    ])
+    code, out, err = run_cmd(
+        [
+            "lastnames",
+            "-l",
+            "@I001@",
+            str(FIXTURES / "simple.ged"),
+        ]
+    )
     assert code == 0
     assert out.strip() == ""
 
 
 def test_long_with_existing_g_validation():
-    code, out, err = run_cmd([
-        "lastnames",
-        "-l",
-        "-g",
-        "0",
-        "@I001@",
-        str(FIXTURES / "long_ancestors.ged"),
-    ])
+    code, out, err = run_cmd(
+        [
+            "lastnames",
+            "-l",
+            "-g",
+            "0",
+            "@I001@",
+            str(FIXTURES / "long_ancestors.ged"),
+        ]
+    )
     assert code == 1
     assert "Invalid generations value" in err
 
 
 def test_direction_ancestors_default():
     # Default direction is ancestors — same as explicit --direction ancestors
-    code_default, out_default, _ = run_cmd(["lastnames", "@I004@", str(FIXTURES / "deep.ged")])
-    code_explicit, out_explicit, _ = run_cmd(["lastnames", "--direction", "ancestors", "@I004@", str(FIXTURES / "deep.ged")])
+    code_default, out_default, _ = run_cmd(
+        ["lastnames", "@I004@", str(FIXTURES / "deep.ged")]
+    )
+    code_explicit, out_explicit, _ = run_cmd(
+        ["lastnames", "--direction", "ancestors", "@I004@", str(FIXTURES / "deep.ged")]
+    )
     assert code_default == 0
     assert code_explicit == 0
     assert out_default == out_explicit
@@ -342,8 +364,12 @@ def test_direction_ancestors_default():
 
 def test_direction_up_alias():
     # 'up' is an alias for 'ancestors'
-    code_a, out_a, _ = run_cmd(["lastnames", "--direction", "ancestors", "@I004@", str(FIXTURES / "deep.ged")])
-    code_b, out_b, _ = run_cmd(["lastnames", "--direction", "up", "@I004@", str(FIXTURES / "deep.ged")])
+    code_a, out_a, _ = run_cmd(
+        ["lastnames", "--direction", "ancestors", "@I004@", str(FIXTURES / "deep.ged")]
+    )
+    code_b, out_b, _ = run_cmd(
+        ["lastnames", "--direction", "up", "@I004@", str(FIXTURES / "deep.ged")]
+    )
     assert code_a == 0
     assert code_b == 0
     assert out_a == out_b
@@ -361,7 +387,9 @@ def test_direction_descendants_short_mode(tmp_path):
     )
     f = tmp_path / "desc_lastnames.ged"
     f.write_text(content)
-    code, out, err = run_cmd(["lastnames", "--direction", "descendants", "@I1@", str(f)])
+    code, out, err = run_cmd(
+        ["lastnames", "--direction", "descendants", "@I1@", str(f)]
+    )
     assert code == 0
     names = out.strip().splitlines()
     assert "Alpha" in names
@@ -379,7 +407,9 @@ def test_direction_down_alias(tmp_path):
     )
     f = tmp_path / "desc_down.ged"
     f.write_text(content)
-    code_a, out_a, _ = run_cmd(["lastnames", "--direction", "descendants", "@I1@", str(f)])
+    code_a, out_a, _ = run_cmd(
+        ["lastnames", "--direction", "descendants", "@I1@", str(f)]
+    )
     code_b, out_b, _ = run_cmd(["lastnames", "--direction", "down", "@I1@", str(f)])
     assert code_a == 0
     assert code_b == 0
@@ -397,7 +427,9 @@ def test_direction_descendants_long_mode(tmp_path):
     )
     f = tmp_path / "desc_long.ged"
     f.write_text(content)
-    code, out, err = run_cmd(["lastnames", "-l", "--direction", "descendants", "@I1@", str(f)])
+    code, out, err = run_cmd(
+        ["lastnames", "-l", "--direction", "descendants", "@I1@", str(f)]
+    )
     assert code == 0
     lines = [ln for ln in out.strip().splitlines() if ln.strip()]
     assert len(lines) == 1

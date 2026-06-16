@@ -72,6 +72,7 @@ def test_stat_no_names():
     assert err == ""
     # two individuals have no name (I001, I004), two have incomplete names (I002, I003)
     from gedinfo import parser, queries
+
     data = parser.parse(FIXTURES / "no_names.ged")
     roots = queries.get_roots(data)
     expected_roots = len(queries.apply_root_filters(data, roots))
@@ -115,6 +116,7 @@ def test_stat_roots_default_count():
     assert code == 0
     # compute expected via queries.apply_root_filters default
     from gedinfo import parser, queries
+
     data = parser.parse(FIXTURES / "spouse.ged")
     roots = queries.get_roots(data)
     expected = len(queries.apply_root_filters(data, roots))
@@ -127,10 +129,15 @@ def test_stat_roots_with_spouse_flag():
     code, out, err = run_cmd(["stat", "--spouse", str(FIXTURES / "spouse.ged")])
     assert code == 0
     from gedinfo import parser, queries
+
     data = parser.parse(FIXTURES / "spouse.ged")
     roots = queries.get_roots(data)
-    expected = len(queries.apply_root_filters(data, roots, include_spouse_suppressed=True))
-    roots_line = [l for l in out.splitlines() if l.strip().startswith("Roots (no parents):")][0]
+    expected = len(
+        queries.apply_root_filters(data, roots, include_spouse_suppressed=True)
+    )
+    roots_line = [
+        l for l in out.splitlines() if l.strip().startswith("Roots (no parents):")
+    ][0]
     assert str(expected) in roots_line
     assert "+spouse" in roots_line or "(all)" in roots_line
 
@@ -139,10 +146,13 @@ def test_stat_roots_with_unknowns_flag():
     code, out, err = run_cmd(["stat", "-u", str(FIXTURES / "spouse.ged")])
     assert code == 0
     from gedinfo import parser, queries
+
     data = parser.parse(FIXTURES / "spouse.ged")
     roots = queries.get_roots(data)
     expected = len(queries.apply_root_filters(data, roots, include_unknowns=True))
-    roots_line = [l for l in out.splitlines() if l.strip().startswith("Roots (no parents):")][0]
+    roots_line = [
+        l for l in out.splitlines() if l.strip().startswith("Roots (no parents):")
+    ][0]
     assert str(expected) in roots_line
 
 
@@ -150,10 +160,17 @@ def test_stat_roots_with_all_flag():
     code, out, err = run_cmd(["stat", "-a", str(FIXTURES / "spouse.ged")])
     assert code == 0
     from gedinfo import parser, queries
+
     data = parser.parse(FIXTURES / "spouse.ged")
     roots = queries.get_roots(data)
-    expected = len(queries.apply_root_filters(data, roots, include_spouse_suppressed=True, include_unknowns=True))
-    roots_line = [l for l in out.splitlines() if l.strip().startswith("Roots (no parents):")][0]
+    expected = len(
+        queries.apply_root_filters(
+            data, roots, include_spouse_suppressed=True, include_unknowns=True
+        )
+    )
+    roots_line = [
+        l for l in out.splitlines() if l.strip().startswith("Roots (no parents):")
+    ][0]
     assert str(expected) in roots_line
 
 
@@ -165,6 +182,7 @@ def test_stat_all_with_spouse_error():
 def test_stat_other_counts_unaffected_by_flags():
     code1, out1, err1 = run_cmd(["stat", str(FIXTURES / "spouse.ged")])
     code2, out2, err2 = run_cmd(["stat", "-a", str(FIXTURES / "spouse.ged")])
+
     # compare Individuals, Families, Leaves lines are identical
     def pick(lines, prefix):
         return [l for l in lines if l.startswith(prefix)][0]
@@ -173,4 +191,6 @@ def test_stat_other_counts_unaffected_by_flags():
     lines2 = out2.splitlines()
     assert pick(lines1, "Individuals:") == pick(lines2, "Individuals:")
     assert pick(lines1, "Families:") == pick(lines2, "Families:")
-    assert pick(lines1, "  Leaves (no children):") == pick(lines2, "  Leaves (no children):")
+    assert pick(lines1, "  Leaves (no children):") == pick(
+        lines2, "  Leaves (no children):"
+    )

@@ -37,7 +37,9 @@ def run(args: Any) -> None:
     data = None
     if file_path:
         from gedinfo.parser import parse
+
         data = parse(file_path)
 
     from gedinfo.tui import run_tui
+
     run_tui(data, file_path, initial_id=initial_id)

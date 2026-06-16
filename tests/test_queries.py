@@ -218,7 +218,16 @@ def test_get_ancestor_details_all():
     data = parser.parse(FIXTURES / "long_ancestors.ged")
     res = get_ancestor_details(data, "@I001@")
     ids = {r["individual"].id for r in res}
-    assert ids == {"@I002@", "@I003@", "@I004@", "@I005@", "@I006@", "@I007@", "@I008@", "@I009@"}
+    assert ids == {
+        "@I002@",
+        "@I003@",
+        "@I004@",
+        "@I005@",
+        "@I006@",
+        "@I007@",
+        "@I008@",
+        "@I009@",
+    }
     # spot checks
     found = {r["individual"].id: r for r in res}
     assert found["@I004@"]["generation"] == 3
@@ -349,13 +358,7 @@ def test_has_parents_false_no_famc():
 
 
 def test_has_parents_false_empty_family(tmp_path):
-    content = (
-        "0 HEAD\n"
-        "0 @I1@ INDI\n"
-        "1 FAMC @F1@\n"
-        "0 @F1@ FAM\n"
-        "0 TRLR\n"
-    )
+    content = "0 HEAD\n0 @I1@ INDI\n1 FAMC @F1@\n0 @F1@ FAM\n0 TRLR\n"
     f = tmp_path / "temp.ged"
     f.write_text(content)
     data = parser.parse(f)
@@ -363,12 +366,7 @@ def test_has_parents_false_empty_family(tmp_path):
 
 
 def test_has_parents_false_missing_family(tmp_path):
-    content = (
-        "0 HEAD\n"
-        "0 @I1@ INDI\n"
-        "1 FAMC @F999@\n"
-        "0 TRLR\n"
-    )
+    content = "0 HEAD\n0 @I1@ INDI\n1 FAMC @F999@\n0 TRLR\n"
     f = tmp_path / "temp.ged"
     f.write_text(content)
     data = parser.parse(f)
@@ -460,7 +458,9 @@ def test_apply_root_filters_include_unknowns():
 def test_apply_root_filters_include_both():
     data = load("spouse.ged")
     roots = get_roots(data)
-    result = apply_root_filters(data, roots, include_spouse_suppressed=True, include_unknowns=True)
+    result = apply_root_filters(
+        data, roots, include_spouse_suppressed=True, include_unknowns=True
+    )
     ids = {i.id for i in result}
     raw_ids = {i.id for i in roots}
     assert ids == raw_ids

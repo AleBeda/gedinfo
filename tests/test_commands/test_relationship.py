@@ -10,7 +10,8 @@ MULTI = str(FIXTURES / "multi_tree.ged")
 def run_rel(*args):
     result = subprocess.run(
         [sys.executable, "-m", "gedinfo", "relationship"] + list(args),
-        capture_output=True, text=True,
+        capture_output=True,
+        text=True,
     )
     return result.returncode, result.stdout, result.stderr.strip()
 
@@ -33,10 +34,7 @@ def test_parent_child():
     # I001 (John Smith) is the direct father of I003 (Alice Smith)
     code, out, _ = run_rel("I001", "I003", SIMPLE)
     assert code == 0
-    expected = (
-        "1  John Smith\n"
-        "2  Alice Smith\n"
-    )
+    expected = "1  John Smith\n2  Alice Smith\n"
     assert out == expected
 
 

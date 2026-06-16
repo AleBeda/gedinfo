@@ -29,7 +29,9 @@ def _format_block(ancestor, path1, path2) -> list[str]:
     single = path2 if len(path1) == 1 else (path1 if len(path2) == 1 else None)
     if single is not None:
         gen_w = len(str(len(single)))
-        return [f"{i + 1:>{gen_w}}  {display_name(single[i])}" for i in range(len(single))]
+        return [
+            f"{i + 1:>{gen_w}}  {display_name(single[i])}" for i in range(len(single))
+        ]
 
     names1 = [display_name(p) for p in path1]
     left_w = max(len(n) for n in names1)

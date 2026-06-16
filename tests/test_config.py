@@ -58,8 +58,8 @@ def test_per_directory_beats_global(tmp_path, monkeypatch):
         '[gedcom_custom_tags]\nliving = "_LOCAL"\n', encoding="utf-8"
     )
     cfg = load_tag_config(work / "tree.ged")
-    assert cfg.living == "_LOCAL"          # per-dir wins
-    assert cfg.alternate_name == "ANAME"   # global-only key still applies
+    assert cfg.living == "_LOCAL"  # per-dir wins
+    assert cfg.alternate_name == "ANAME"  # global-only key still applies
 
 
 def test_value_is_uppercased(tmp_path, monkeypatch):

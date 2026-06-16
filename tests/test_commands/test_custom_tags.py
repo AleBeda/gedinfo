@@ -17,14 +17,7 @@ def run_cmd(args, cwd_config_dir):
     return proc.returncode, proc.stdout, proc.stderr
 
 
-_GED = (
-    "0 HEAD\n"
-    "0 @I001@ INDI\n"
-    "1 NAME Jane /Doe/\n"
-    "1 SEX F\n"
-    "1 _LIVING Y\n"
-    "0 TRLR\n"
-)
+_GED = "0 HEAD\n0 @I001@ INDI\n1 NAME Jane /Doe/\n1 SEX F\n1 _LIVING Y\n0 TRLR\n"
 
 
 def _setup(tmp_path):
@@ -57,9 +50,7 @@ def test_living_works_with_config(tmp_path):
 
 def test_givennames_second_aborts_without_config(tmp_path):
     ged, empty = _setup(tmp_path)
-    code, out, err = run_cmd(
-        ["givennames", "--second-name", "@I001@", str(ged)], empty
-    )
+    code, out, err = run_cmd(["givennames", "--second-name", "@I001@", str(ged)], empty)
     assert code == 1
     assert "secondary_name" in err
 

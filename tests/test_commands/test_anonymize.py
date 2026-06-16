@@ -74,12 +74,12 @@ def test_plac_consistent():
     code, out, _ = run_cmd(["anonymize", GED])
     assert code == 0
     plac_values = [
-        ln.split("PLAC ", 1)[1].strip()
-        for ln in out.splitlines()
-        if "PLAC " in ln
+        ln.split("PLAC ", 1)[1].strip() for ln in out.splitlines() if "PLAC " in ln
     ]
     assert len(plac_values) == 3
-    assert len(set(plac_values)) == 1  # all three occurrences map to the same fake place
+    assert (
+        len(set(plac_values)) == 1
+    )  # all three occurrences map to the same fake place
 
 
 def test_note_anonymized():
@@ -140,6 +140,7 @@ def test_fake_date_option():
     assert len(date_lines) >= 1
     # Fake dates should be in GEDCOM date format (D+ MON YYYY)
     import re
+
     date_pattern = re.compile(r"\d+ [A-Z]{3} \d{4}")
     for ln in date_lines:
         assert date_pattern.search(ln), f"Date not in expected format: {ln!r}"
@@ -179,7 +180,7 @@ def test_empty_name_preserved(tmp_path):
 
 
 def test_seed_option():
-    _, out0, _ = run_cmd(["anonymize", GED])              # default seed 0
+    _, out0, _ = run_cmd(["anonymize", GED])  # default seed 0
     _, out42, _ = run_cmd(["anonymize", "--seed", "42", GED])
     assert out0 != out42
 
@@ -191,11 +192,7 @@ def test_seed_deterministic():
 
 
 def test_no_last_name_preserved(tmp_path):
-    content = (
-        "0 HEAD\n"
-        "0 @I001@ INDI\n1 NAME John\n1 SEX M\n"
-        "0 TRLR\n"
-    )
+    content = "0 HEAD\n0 @I001@ INDI\n1 NAME John\n1 SEX M\n0 TRLR\n"
     f = tmp_path / "nolast.ged"
     f.write_text(content)
     code, out, _ = run_cmd(["anonymize", str(f)])
@@ -208,11 +205,7 @@ def test_no_last_name_preserved(tmp_path):
 
 
 def test_no_first_name_preserved(tmp_path):
-    content = (
-        "0 HEAD\n"
-        "0 @I001@ INDI\n1 NAME /Smith/\n1 SEX M\n"
-        "0 TRLR\n"
-    )
+    content = "0 HEAD\n0 @I001@ INDI\n1 NAME /Smith/\n1 SEX M\n0 TRLR\n"
     f = tmp_path / "nofirst.ged"
     f.write_text(content)
     code, out, _ = run_cmd(["anonymize", str(f)])
@@ -227,11 +220,7 @@ def test_no_first_name_preserved(tmp_path):
 
 
 def test_compound_name_tokens_unique(tmp_path):
-    content = (
-        "0 HEAD\n"
-        "0 @I001@ INDI\n1 NAME Mary Jane /Smith Jones/\n1 SEX F\n"
-        "0 TRLR\n"
-    )
+    content = "0 HEAD\n0 @I001@ INDI\n1 NAME Mary Jane /Smith Jones/\n1 SEX F\n0 TRLR\n"
     f = tmp_path / "compound.ged"
     f.write_text(content)
     code, out, _ = run_cmd(["anonymize", str(f)])
@@ -242,7 +231,9 @@ def test_compound_name_tokens_unique(tmp_path):
     # Parse first and last components
     parts = name_val.split("/")
     first_tokens = parts[0].strip().split() if parts[0].strip() else []
-    last_tokens = parts[1].strip().split() if len(parts) > 1 and parts[1].strip() else []
+    last_tokens = (
+        parts[1].strip().split() if len(parts) > 1 and parts[1].strip() else []
+    )
     # Token counts must match the original
     assert len(first_tokens) == 2
     assert len(last_tokens) == 2

@@ -9,7 +9,7 @@ from gedinfo.commands import _output
 from gedinfo.config import require_tag
 
 
-def register(subparsers: argparse._SubParsersAction) -> None:    # type: ignore
+def register(subparsers: argparse._SubParsersAction) -> None:  # type: ignore
     parser = subparsers.add_parser(
         "living",
         help="List individuals marked by the configured living-flag tag.",

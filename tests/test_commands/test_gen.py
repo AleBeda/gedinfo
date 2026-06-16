@@ -11,7 +11,8 @@ DESC = str(FIXTURES / "descendants.ged")
 def run_gen(*args):
     result = subprocess.run(
         [sys.executable, "-m", "gedinfo"] + list(args),
-        capture_output=True, text=True,
+        capture_output=True,
+        text=True,
     )
     return result.returncode, result.stdout.strip(), result.stderr.strip()
 

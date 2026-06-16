@@ -9,21 +9,56 @@ from typing import Optional, Tuple
 
 from ..config import load_tag_config
 
-_fake = None      # Faker instance, initialized lazily in run()
+_fake = None  # Faker instance, initialized lazily in run()
 _fake_cls = None  # Faker class, cached after first import
 
 _MAX_LEN_ITERS: int = 20  # max retries for length-bounded fake generation
 
-_KEEP_TAGS: frozenset[str] = frozenset({
-    "SEX", "DATE", "HUSB", "WIFE", "CHIL", "FAMC", "FAMS",
-    "BIRT", "DEAT", "MARR", "DIV", "BAPM", "CHR", "CREM", "BURI",
-    "EMIG", "IMMI", "NATU", "ADOP", "CONF", "GRAD", "RETI", "WILL",
-    "CENS", "RESI",
-})
-_ANON_TAGS: frozenset[str] = frozenset({
-    "NAME", "GIVN", "SURN", "PLAC", "ADDR", "CITY", "STAE", "CTRY", "POST",
-    "NOTE", "CONT", "CONC",
-})
+_KEEP_TAGS: frozenset[str] = frozenset(
+    {
+        "SEX",
+        "DATE",
+        "HUSB",
+        "WIFE",
+        "CHIL",
+        "FAMC",
+        "FAMS",
+        "BIRT",
+        "DEAT",
+        "MARR",
+        "DIV",
+        "BAPM",
+        "CHR",
+        "CREM",
+        "BURI",
+        "EMIG",
+        "IMMI",
+        "NATU",
+        "ADOP",
+        "CONF",
+        "GRAD",
+        "RETI",
+        "WILL",
+        "CENS",
+        "RESI",
+    }
+)
+_ANON_TAGS: frozenset[str] = frozenset(
+    {
+        "NAME",
+        "GIVN",
+        "SURN",
+        "PLAC",
+        "ADDR",
+        "CITY",
+        "STAE",
+        "CTRY",
+        "POST",
+        "NOTE",
+        "CONT",
+        "CONC",
+    }
+)
 _MINIMAL_HEAD: list[str] = ["0 HEAD", "1 GEDC", "2 VERS 5.5.1", "1 CHAR UTF-8"]
 
 
@@ -34,6 +69,7 @@ def _ensure_fake(seed: int = 0) -> None:
             from faker import Faker  # type: ignore[import-not-found]
         except ImportError:
             import subprocess
+
             print("Installing required dependency: faker...", file=sys.stderr)
             subprocess.check_call([sys.executable, "-m", "pip", "install", "faker"])
             from faker import Faker  # type: ignore[import-not-found]
@@ -91,9 +127,13 @@ def _split_gedcom_name(raw: str) -> Tuple[Optional[str], Optional[str]]:
 
 
 def _gen_fake_first(sex: str, orig_tokens: list[str]) -> str:
-    method = (_fake.first_name_male if sex == "M"
-              else _fake.first_name_female if sex == "F"
-              else _fake.first_name)
+    method = (
+        _fake.first_name_male
+        if sex == "M"
+        else _fake.first_name_female
+        if sex == "F"
+        else _fake.first_name
+    )
     used: set[str] = set()
     parts: list[str] = []
     for t in orig_tokens:
@@ -134,8 +174,7 @@ def _gen_fake_last(orig_tokens: list[str]) -> str:
 def _gen_fake_place(original: str) -> str:
     components = [c.strip() for c in original.split(",")]
     return ", ".join(
-        _shortest_within(_fake.city, len(c)) if c else c
-        for c in components
+        _shortest_within(_fake.city, len(c)) if c else c for c in components
     )
 
 
@@ -262,19 +301,29 @@ def _anonymize_value(tag_up: str, value: str, mappings: dict) -> str:
         return mappings["place_map"].get(v) or _gen_fake_place(v)
     if tag_up == "ADDR":
         v = value.strip()
-        return mappings["addr_map"].get(v) or (_shortest_within(_fake.street_address, len(v)) if v else v)
+        return mappings["addr_map"].get(v) or (
+            _shortest_within(_fake.street_address, len(v)) if v else v
+        )
     if tag_up == "CITY":
         v = value.strip()
-        return mappings["city_map"].get(v) or (_shortest_within(_fake.city, len(v)) if v else v)
+        return mappings["city_map"].get(v) or (
+            _shortest_within(_fake.city, len(v)) if v else v
+        )
     if tag_up == "STAE":
         v = value.strip()
-        return mappings["stae_map"].get(v) or (_shortest_within(_fake.state_abbr, len(v)) if v else v)
+        return mappings["stae_map"].get(v) or (
+            _shortest_within(_fake.state_abbr, len(v)) if v else v
+        )
     if tag_up == "CTRY":
         v = value.strip()
-        return mappings["ctry_map"].get(v) or (_shortest_within(_fake.country, len(v)) if v else v)
+        return mappings["ctry_map"].get(v) or (
+            _shortest_within(_fake.country, len(v)) if v else v
+        )
     if tag_up == "POST":
         v = value.strip()
-        return mappings["post_map"].get(v) or (_shortest_within(_fake.postcode, len(v)) if v else v)
+        return mappings["post_map"].get(v) or (
+            _shortest_within(_fake.postcode, len(v)) if v else v
+        )
     if tag_up in ("NOTE", "CONT", "CONC"):
         n = max(1, len(value.split()))
         return _fake.sentence(nb_words=n).rstrip(".")
@@ -285,7 +334,17 @@ def _fake_value(tag_up: str, value: str, mappings: dict) -> str:
     if tag_up == "DATE":
         d = _fake.date_of_birth()
         return f"{d.day} {d.strftime('%b').upper()} {d.year}"
-    if tag_up in ("NAME", "GIVN", "SURN", "PLAC", "ADDR", "CITY", "STAE", "CTRY", "POST"):
+    if tag_up in (
+        "NAME",
+        "GIVN",
+        "SURN",
+        "PLAC",
+        "ADDR",
+        "CITY",
+        "STAE",
+        "CTRY",
+        "POST",
+    ):
         return _anonymize_value(tag_up, value, mappings)
     n = max(1, len(value.split()))
     return _fake.sentence(nb_words=n).rstrip(".")
@@ -374,24 +433,37 @@ def register(subparsers: argparse._SubParsersAction) -> None:  # type: ignore
         description="Output an anonymized version of a GEDCOM file",
     )
     sub.add_argument(
-        "-o", "--output",
+        "-o",
+        "--output",
         help="Write output to FILE instead of stdout",
         metavar="FILE",
     )
     sub.add_argument(
-        "--keep", action="append", default=[], metavar="FIELD",
+        "--keep",
+        action="append",
+        default=[],
+        metavar="FIELD",
         help="Keep FIELD unchanged (repeatable)",
     )
     sub.add_argument(
-        "--remove", action="append", default=[], metavar="FIELD",
+        "--remove",
+        action="append",
+        default=[],
+        metavar="FIELD",
         help="Strip FIELD from output (repeatable)",
     )
     sub.add_argument(
-        "--fake", action="append", default=[], metavar="FIELD",
+        "--fake",
+        action="append",
+        default=[],
+        metavar="FIELD",
         help="Anonymize FIELD with realistic fake data (repeatable)",
     )
     sub.add_argument(
-        "--seed", type=int, default=0, metavar="NUMBER",
+        "--seed",
+        type=int,
+        default=0,
+        metavar="NUMBER",
         help="Random seed for deterministic output (default: 0)",
     )
     sub.add_argument("gedcom_file", help="Path to GEDCOM file")
@@ -403,11 +475,13 @@ def run(args) -> None:
     seed = getattr(args, "seed", 0)
     _ensure_fake(seed)
 
-    keep_set   = {f.upper() for f in (args.keep   or [])}
+    keep_set = {f.upper() for f in (args.keep or [])}
     remove_set = {f.upper() for f in (args.remove or [])}
-    fake_set   = {f.upper() for f in (args.fake   or [])}
+    fake_set = {f.upper() for f in (args.fake or [])}
 
-    conflicts = (keep_set & remove_set) | (keep_set & fake_set) | (remove_set & fake_set)
+    conflicts = (
+        (keep_set & remove_set) | (keep_set & fake_set) | (remove_set & fake_set)
+    )
     if conflicts:
         raise ValueError(
             f"Conflicting options for field(s): {', '.join(sorted(conflicts))}"

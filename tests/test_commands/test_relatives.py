@@ -147,8 +147,9 @@ def test_marriage_self_blank():
 def test_marriage_child_blank():
     code, out, _ = run_cmd(["relatives", "-m", "@I001@", GED])
     assert code == 0
-    child_lines = [ln for ln in _lines(out)
-                   if ln.split("\t")[0] in ("son:", "daughter:", "child:")]
+    child_lines = [
+        ln for ln in _lines(out) if ln.split("\t")[0] in ("son:", "daughter:", "child:")
+    ]
     for ln in child_lines:
         assert ln.split("\t")[-1] == ""
 

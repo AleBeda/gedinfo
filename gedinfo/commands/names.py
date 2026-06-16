@@ -11,14 +11,17 @@ from ..queries import display_name, find_by_id, id_sort_key
 from ._output import add_sort_option, get_sort_key, strip_id_delimiters
 
 
-def register(subparsers: argparse._SubParsersAction) -> None:      # type: ignore
+def register(subparsers: argparse._SubParsersAction) -> None:  # type: ignore
     """Register the ``names`` subcommand with the top-level parser."""
     sub = subparsers.add_parser(
         "names",
         help="Batch print names for a file containing individual IDs",
         description="Batch print names for a file containing individual IDs",
     )
-    sub.add_argument("ids_file", help="Path to file with one individual ID per line, or '-' to read from stdin")
+    sub.add_argument(
+        "ids_file",
+        help="Path to file with one individual ID per line, or '-' to read from stdin",
+    )
     sub.add_argument("gedcom_file", help="Path to GEDCOM file")
     add_sort_option(sub)
     sub.set_defaults(func=run)

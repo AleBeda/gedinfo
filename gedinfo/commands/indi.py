@@ -7,10 +7,16 @@ from typing import Any
 
 from ..parser import parse
 from ..queries import get_all_individuals
-from ._output import add_output_options, add_sort_option, format_individual, validate_output_mode, get_sort_key
+from ._output import (
+    add_output_options,
+    add_sort_option,
+    format_individual,
+    validate_output_mode,
+    get_sort_key,
+)
 
 
-def register(subparsers: argparse._SubParsersAction) -> None:    # type: ignore
+def register(subparsers: argparse._SubParsersAction) -> None:  # type: ignore
     sub = subparsers.add_parser(
         "indi",
         help="List all individuals",

@@ -7,7 +7,13 @@ from typing import Any
 
 from ..parser import parse
 from ..queries import get_noname
-from ._output import add_output_options, add_sort_option, validate_output_mode, format_individual, get_sort_key
+from ._output import (
+    add_output_options,
+    add_sort_option,
+    validate_output_mode,
+    format_individual,
+    get_sort_key,
+)
 
 
 def register(subparsers: argparse._SubParsersAction) -> None:  # type: ignore

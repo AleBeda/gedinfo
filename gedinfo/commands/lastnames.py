@@ -51,7 +51,8 @@ def register(subparsers: argparse._SubParsersAction) -> None:  # type: ignore
         ),
     )
     sub.add_argument(
-        "-d", "--direction",
+        "-d",
+        "--direction",
         choices=["ancestors", "descendants", "up", "down"],
         default="ancestors",
         help=(
@@ -86,8 +87,16 @@ def run(args: Any) -> None:
                 records = get_ancestor_details(data, args.indi_id, max_generations=g)
         else:
             if is_desc:
-                desc_records = get_descendant_details(data, args.indi_id, max_generations=g)
-                surnames = sorted({r["individual"].last_name for r in desc_records if r["individual"].last_name})
+                desc_records = get_descendant_details(
+                    data, args.indi_id, max_generations=g
+                )
+                surnames = sorted(
+                    {
+                        r["individual"].last_name
+                        for r in desc_records
+                        if r["individual"].last_name
+                    }
+                )
             else:
                 surnames = get_ancestors(data, args.indi_id, max_generations=g)
     except ValueError as exc:
@@ -101,7 +110,11 @@ def run(args: Any) -> None:
     # Filter out nameless records unless --unknown was requested
     include_unknown = getattr(args, "unknown", False)
     if not include_unknown:
-        records = [r for r in records if r["individual"].first_name or r["individual"].last_name]
+        records = [
+            r
+            for r in records
+            if r["individual"].first_name or r["individual"].last_name
+        ]
 
     # Filter to branch-tip records only
     def is_branch_tip_anc(rec: dict) -> bool:
@@ -136,7 +149,7 @@ def run(args: Any) -> None:
     tips = [r for r in records if is_tip(r)]
 
     def path_to_sort_key(path: str) -> tuple:
-        char_map = {'p': 0, 's': 0, '?': 1, 'm': 1, 'd': 2}
+        char_map = {"p": 0, "s": 0, "?": 1, "m": 1, "d": 2}
         return tuple(char_map.get(ch, 3) for ch in path)
 
     sort_key = getattr(args, "sort", None) or "path"
@@ -144,9 +157,23 @@ def run(args: Any) -> None:
     if sort_key == "generation":
         tips.sort(key=lambda r: (r["generation"], path_to_sort_key(r["path"])))
     elif sort_key == "path":
-        tips.sort(key=lambda r: (path_to_sort_key(r["path"]), (r["individual"].last_name or "").lower(), r["individual"].id))
+        tips.sort(
+            key=lambda r: (
+                path_to_sort_key(r["path"]),
+                (r["individual"].last_name or "").lower(),
+                r["individual"].id,
+            )
+        )
     elif sort_key == "name":
-        tips.sort(key=lambda r: ((r["individual"].last_name or "").lower() if r["individual"].last_name else "~", path_to_sort_key(r["path"]), r["individual"].id))
+        tips.sort(
+            key=lambda r: (
+                (r["individual"].last_name or "").lower()
+                if r["individual"].last_name
+                else "~",
+                path_to_sort_key(r["path"]),
+                r["individual"].id,
+            )
+        )
     elif sort_key == "id":
         tips.sort(key=lambda r: r["individual"].id)
 

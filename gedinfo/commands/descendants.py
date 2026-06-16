@@ -8,7 +8,12 @@ from typing import Any
 
 from ..parser import parse
 from ..queries import get_descendant_details, find_by_id, display_name
-from ._output import add_output_options, validate_output_mode, format_individual, strip_id_delimiters
+from ._output import (
+    add_output_options,
+    validate_output_mode,
+    format_individual,
+    strip_id_delimiters,
+)
 
 
 def register(subparsers: argparse._SubParsersAction) -> None:  # type: ignore
@@ -20,23 +25,30 @@ def register(subparsers: argparse._SubParsersAction) -> None:  # type: ignore
     )
     add_output_options(sub)
     sub.add_argument(
-        "-g", "--generations",
-        type=int, default=None,
+        "-g",
+        "--generations",
+        type=int,
+        default=None,
         help="Limit traversal to N generations (>=1)",
     )
     sub.add_argument(
-        "-l", "--long",
+        "-l",
+        "--long",
         action="store_true",
         help="Print long output (generation, path, last name, ID)",
     )
     sub.add_argument(
-        "-s", "--sort",
-        choices=["generation", "path", "name", "id"], default=None,
+        "-s",
+        "--sort",
+        choices=["generation", "path", "name", "id"],
+        default=None,
         help="Sort order for --long mode",
     )
     sub.add_argument(
-        "-u", "--unknown",
-        action="store_true", default=False,
+        "-u",
+        "--unknown",
+        action="store_true",
+        default=False,
         help="Include descendants with no name in --long mode",
     )
     sub.add_argument("indi_id", help="Individual ID")
@@ -45,7 +57,7 @@ def register(subparsers: argparse._SubParsersAction) -> None:  # type: ignore
 
 
 def _path_to_sort_key(path: str) -> tuple:
-    char_map = {'s': 0, '?': 1, 'd': 2}
+    char_map = {"s": 0, "?": 1, "d": 2}
     return tuple(char_map.get(ch, 3) for ch in path)
 
 
@@ -79,7 +91,8 @@ def run(args: Any) -> None:
     # Long mode
     if not args.unknown:
         records = [
-            r for r in records
+            r
+            for r in records
             if r["generation"] == 1
             or r["individual"].first_name
             or r["individual"].last_name
@@ -89,18 +102,24 @@ def run(args: Any) -> None:
     if sort_key == "generation":
         records.sort(key=lambda r: (r["generation"], _path_to_sort_key(r["path"])))
     elif sort_key == "path":
-        records.sort(key=lambda r: (
-            _path_to_sort_key(r["path"]),
-            (r["individual"].last_name or "").lower(),
-            r["individual"].id,
-        ))
+        records.sort(
+            key=lambda r: (
+                _path_to_sort_key(r["path"]),
+                (r["individual"].last_name or "").lower(),
+                r["individual"].id,
+            )
+        )
     elif sort_key == "name":
-        records.sort(key=lambda r: (
-            (r["individual"].last_name or "").lower() if r["individual"].last_name else "~",
-            (r["individual"].first_name or "").lower(),
-            _path_to_sort_key(r["path"]),
-            r["individual"].id,
-        ))
+        records.sort(
+            key=lambda r: (
+                (r["individual"].last_name or "").lower()
+                if r["individual"].last_name
+                else "~",
+                (r["individual"].first_name or "").lower(),
+                _path_to_sort_key(r["path"]),
+                r["individual"].id,
+            )
+        )
     elif sort_key == "id":
         records.sort(key=lambda r: r["individual"].id)
 

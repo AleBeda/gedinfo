@@ -84,6 +84,7 @@ def test_roots_all_flag():
     lines = [line for line in out.splitlines() if line.strip()]
     # compute expected raw roots from parser to avoid hard-coded fixture counts
     from gedinfo import parser, queries
+
     data = parser.parse(FIXTURES / "spouse.ged")
     expected = len(queries.get_roots(data))
     assert len(lines) == expected

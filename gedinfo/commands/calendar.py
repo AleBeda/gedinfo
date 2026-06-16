@@ -9,13 +9,32 @@ from pathlib import Path
 from typing import Optional
 
 _MONTH = {
-    "JAN": 1, "FEB": 2, "MAR": 3, "APR": 4, "MAY": 5, "JUN": 6,
-    "JUL": 7, "AUG": 8, "SEP": 9, "OCT": 10, "NOV": 11, "DEC": 12,
+    "JAN": 1,
+    "FEB": 2,
+    "MAR": 3,
+    "APR": 4,
+    "MAY": 5,
+    "JUN": 6,
+    "JUL": 7,
+    "AUG": 8,
+    "SEP": 9,
+    "OCT": 10,
+    "NOV": 11,
+    "DEC": 12,
 }
 _FULL_MONTHS = {
-    "january": 1, "february": 2, "march": 3, "april": 4,
-    "may": 5, "june": 6, "july": 7, "august": 8,
-    "september": 9, "october": 10, "november": 11, "december": 12,
+    "january": 1,
+    "february": 2,
+    "march": 3,
+    "april": 4,
+    "may": 5,
+    "june": 6,
+    "july": 7,
+    "august": 8,
+    "september": 9,
+    "october": 10,
+    "november": 11,
+    "december": 12,
 }
 _DATE_RE = re.compile(r"^(\d{1,2})\s+([A-Za-z]{3})\s+(\d{4})$")
 
@@ -50,7 +69,7 @@ def _display_name(indi) -> str:
 @dataclass
 class _Event:
     date: date
-    kind: str   # "birth", "death", "marriage"
+    kind: str  # "birth", "death", "marriage"
     name: str
 
 
@@ -87,27 +106,36 @@ def register(subparsers) -> None:
     )
     sub.add_argument("gedcom_file", help="Path to GEDCOM file")
     sub.add_argument(
-        "-o", "--output", metavar="FILE",
+        "-o",
+        "--output",
+        metavar="FILE",
         help="Write output to FILE instead of stdout",
     )
     sub.add_argument(
-        "--today", action="store_true",
+        "--today",
+        action="store_true",
         help="Show only events matching today's day and month",
     )
     sub.add_argument(
-        "--thismonth", action="store_true",
+        "--thismonth",
+        action="store_true",
         help="Show only events in the current calendar month",
     )
     sub.add_argument(
-        "--month", metavar="MONTHNAME", default=None,
+        "--month",
+        metavar="MONTHNAME",
+        default=None,
         help="Show only events in the specified month (full name or 3-letter abbreviation, any case)",
     )
     sub.add_argument(
-        "--dateformat", metavar="PATTERN", default="%d %b %Y",
+        "--dateformat",
+        metavar="PATTERN",
+        default="%d %b %Y",
         help='strftime pattern for dates (default: "%%d %%b %%Y")',
     )
     sub.add_argument(
-        "--nosep", action="store_true",
+        "--nosep",
+        action="store_true",
         help="Do not print blank lines between day-month groups",
     )
     sub.set_defaults(func=run)
@@ -120,13 +148,15 @@ def run(args) -> None:
         raise ValueError("--today, --thismonth, and --month are mutually exclusive")
 
     from ..parser import parse
+
     data = parse(args.gedcom_file)
     events = _collect_events(data)
 
     today = date.today()
     if args.today:
-        events = [e for e in events
-                  if (e.date.month, e.date.day) == (today.month, today.day)]
+        events = [
+            e for e in events if (e.date.month, e.date.day) == (today.month, today.day)
+        ]
     elif args.thismonth:
         events = [e for e in events if e.date.month == today.month]
     elif args.month is not None:

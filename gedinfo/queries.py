@@ -158,7 +158,7 @@ def get_roots(data: GedcomData, sort_key: str | None = None) -> List[Individual]
     roots = [i for i in data.individuals.values() if i.id not in child_ids]
     if sort_key == "id":
         return sorted(roots, key=lambda i: id_sort_key(i.id))
-    if sort_key == 'name':
+    if sort_key == "name":
         return sorted(roots, key=lambda i: display_name(i).lower())
     return roots
 
@@ -189,7 +189,9 @@ def get_leaves(data: GedcomData, sort_key: str | None = None) -> List[Individual
     return leaves
 
 
-def get_all_individuals(data: GedcomData, sort_key: str | None = None) -> List[Individual]:
+def get_all_individuals(
+    data: GedcomData, sort_key: str | None = None
+) -> List[Individual]:
     """Return all individuals in the GEDCOM data.
 
     If sort_key is 'id', sort by numeric ID. If 'name', sort by display name.
@@ -304,6 +306,7 @@ def get_all_families(data: GedcomData, sort_key: str | None = None) -> List[Fami
     if sort_key == "name":
         return sorted(families, key=lambda f: family_name_key(f, data))
     return families
+
 
 def get_ancestors(
     data: GedcomData, indi_id: str, max_generations: Optional[int] = None
@@ -495,9 +498,7 @@ def get_descendant_details(
     return results
 
 
-def find_relationships(
-    data: GedcomData, id1: str, id2: str
-) -> list[tuple]:
+def find_relationships(data: GedcomData, id1: str, id2: str) -> list[tuple]:
     """Find all common ancestors of two individuals.
 
     Returns a list of (ancestor, path1, path2) tuples where path1 and path2
@@ -507,6 +508,7 @@ def find_relationships(
     exists. Sorted by total path length ascending (closest first), then by
     ancestor display name for ties.
     """
+
     def _all_paths_up(start_id: str) -> dict:
         """DFS upward collecting ALL distinct paths to every ancestor.
 
@@ -555,7 +557,8 @@ def find_relationships(
     # Drop entries where any individual below the CA appears in both paths —
     # such an individual is itself a closer common ancestor that covers this one.
     results = [
-        (anc, p1, p2) for anc, p1, p2 in results
+        (anc, p1, p2)
+        for anc, p1, p2 in results
         if not ({x.id for x in p1[1:]} & {x.id for x in p2[1:]})
     ]
     return results
@@ -786,7 +789,9 @@ def apply_leaf_filters(
     if not leaves:
         return []
     spouse_suppressed = get_leaf_spouse_suppressed(data, leaves)
-    unknowns = {leaf.id for leaf in leaves if not leaf.first_name and not leaf.last_name}
+    unknowns = {
+        leaf.id for leaf in leaves if not leaf.first_name and not leaf.last_name
+    }
     result: list[Individual] = []
     for leaf in leaves:
         if leaf.id in spouse_suppressed and not include_spouse_suppressed:
@@ -846,7 +851,9 @@ def count_generations(data: GedcomData) -> int:
 
 def get_noname(data: GedcomData, sort_key: str | None = None) -> List[Individual]:
     """Return all individuals with neither first nor last name."""
-    result = [i for i in data.individuals.values() if not i.first_name and not i.last_name]
+    result = [
+        i for i in data.individuals.values() if not i.first_name and not i.last_name
+    ]
     if sort_key == "id":
         return sorted(result, key=lambda i: id_sort_key(i.id))
     if sort_key == "name":

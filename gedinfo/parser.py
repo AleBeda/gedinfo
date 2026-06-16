@@ -16,12 +16,16 @@ from .models import Family, GedcomData, Individual
 
 
 # truthy set for _LIVING parsing
-_LIVING_TRUTHY: frozenset[str] = frozenset({
-    "y",
-    "yes",
-    "true",
-    "1",
-})
+_LIVING_TRUTHY: frozenset[str] = frozenset(
+    {
+        "y",
+        "yes",
+        "true",
+        "1",
+    }
+)
+
+
 class GedcomParseError(Exception):
     """Raised when a GEDCOM file cannot be parsed.
 
@@ -130,9 +134,14 @@ def _parse_line(line: str) -> Tuple[int, str, str, Optional[str]]:
     return level, tag, value, xref
 
 
-def _populate_individual(indi: Individual, tag: str, value: str,
-                         level: int = 1, ctx: dict | None = None,
-                         cfg: TagConfig | None = None) -> None:
+def _populate_individual(
+    indi: Individual,
+    tag: str,
+    value: str,
+    level: int = 1,
+    ctx: dict | None = None,
+    cfg: TagConfig | None = None,
+) -> None:
     if ctx is None:
         ctx = {}
     if cfg is None:
@@ -188,8 +197,9 @@ def _populate_individual(indi: Individual, tag: str, value: str,
     # ignore other tags
 
 
-def _populate_family(fam: Family, tag: str, value: str,
-                     level: int = 1, ctx: dict | None = None) -> None:
+def _populate_family(
+    fam: Family, tag: str, value: str, level: int = 1, ctx: dict | None = None
+) -> None:
     if ctx is None:
         ctx = {}
     tag = tag.upper()

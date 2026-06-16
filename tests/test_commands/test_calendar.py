@@ -38,7 +38,9 @@ def test_sort_order():
     assert code == 0
     lines = _event_lines(out)
     dates = [ln.split("\t")[0] for ln in lines]
-    assert dates == sorted(dates, key=lambda s: datetime.datetime.strptime(s, "%d %b %Y").timetuple()[1:3])
+    assert dates == sorted(
+        dates, key=lambda s: datetime.datetime.strptime(s, "%d %b %Y").timetuple()[1:3]
+    )
 
 
 def test_same_day_sorted_by_year():
@@ -47,8 +49,9 @@ def test_same_day_sorted_by_year():
     lines = _event_lines(out)
     mar_lines = [ln for ln in lines if "Mar" in ln]
     # 15 Mar 1820 (Jane Smith) must come before 15 Mar 1855 (Bob Jones)
-    assert mar_lines.index(next(l for l in mar_lines if "Jane Smith" in l)) < \
-           mar_lines.index(next(l for l in mar_lines if "Bob Jones" in l))
+    assert mar_lines.index(
+        next(l for l in mar_lines if "Jane Smith" in l)
+    ) < mar_lines.index(next(l for l in mar_lines if "Bob Jones" in l))
 
 
 def test_blank_line_separator():
@@ -128,7 +131,9 @@ def test_month_by_full_name():
     assert all("Jan" in ln for ln in lines)
     assert any("John Doe" in ln and "birth" in ln for ln in lines)
     assert any("John Doe" in ln and "death" in ln for ln in lines)
-    assert not any("Mar" in ln or "Apr" in ln or "Jun" in ln or "Sep" in ln for ln in lines)
+    assert not any(
+        "Mar" in ln or "Apr" in ln or "Jun" in ln or "Sep" in ln for ln in lines
+    )
 
 
 def test_month_by_abbreviated_uppercase():

@@ -17,16 +17,16 @@ from ._output import (
 )
 
 
-def register(subparsers: argparse._SubParsersAction) -> None:     # type: ignore
+def register(subparsers: argparse._SubParsersAction) -> None:  # type: ignore
     sub = subparsers.add_parser(
-          "fam",
+        "fam",
         help="List all families with their components",
         description=(
-              "List all family records showing the family ID, husband, wife, "
-              "and children. Missing parents show as '(none)'. Families with "
-              "no children show '(none)' in the children column."
-          ),
-      )
+            "List all family records showing the family ID, husband, wife, "
+            "and children. Missing parents show as '(none)'. Families with "
+            "no children show '(none)' in the children column."
+        ),
+    )
     add_output_options(sub)
     add_sort_option(sub)
     sub.add_argument("gedcom_file", help="Path to GEDCOM file")
@@ -40,13 +40,19 @@ def _format_family_line(family, data, mode):
     In 'id' mode: IDs without @ delimiters.
     In 'name' mode: display names.
     In 'both' mode: ID\tName for parents, comma-separated names for children.
-     """
+    """
     fam_id = strip_id_delimiters(family.id)
 
     if mode == "id":
-        husband = strip_id_delimiters(family.husband_id) if family.husband_id else "(none)"
+        husband = (
+            strip_id_delimiters(family.husband_id) if family.husband_id else "(none)"
+        )
         wife = strip_id_delimiters(family.wife_id) if family.wife_id else "(none)"
-        children = ", ".join(strip_id_delimiters(c) for c in family.child_ids) if family.child_ids else "(none)"
+        children = (
+            ", ".join(strip_id_delimiters(c) for c in family.child_ids)
+            if family.child_ids
+            else "(none)"
+        )
         return f"{fam_id}\t{husband}\t{wife}\t{children}"
     elif mode == "name":
         husband = _name_or_none(family.husband_id, data)
@@ -54,7 +60,7 @@ def _format_family_line(family, data, mode):
         children = _children_names(family.child_ids, data)
         return f"{fam_id}\t{husband}\t{wife}\t{children}"
     else:
-         # 'both': ID\tName for parents, comma-separated names for children
+        # 'both': ID\tName for parents, comma-separated names for children
         husband = _both_or_none(family.husband_id, data)
         wife = _both_or_none(family.wife_id, data)
         children = _children_names(family.child_ids, data)

@@ -12,7 +12,14 @@ from ._output import validate_output_mode, strip_id_delimiters, add_output_optio
 
 
 _CORE_INDI_FIELDS = ["first_name", "last_name", "birth_date", "death_date"]
-_EXTRA_INDI_FIELDS = ["sex", "living", "givn", "secondary_names", "alternate_names", "notes"]
+_EXTRA_INDI_FIELDS = [
+    "sex",
+    "living",
+    "givn",
+    "secondary_names",
+    "alternate_names",
+    "notes",
+]
 _CORE_FAM_FIELDS = ["husband_id", "wife_id", "child_ids", "marriage_date"]
 _EXTRA_FAM_FIELDS = ["notes"]
 _ID_FIELDS = {"husband_id", "wife_id"}
@@ -45,7 +52,9 @@ def _format_value(val: Any, field_name: str) -> str:
     return str(val)
 
 
-def _changed_fields(obj1: Any, obj2: Any, fields: list[str]) -> list[tuple[str, Any, Any]]:
+def _changed_fields(
+    obj1: Any, obj2: Any, fields: list[str]
+) -> list[tuple[str, Any, Any]]:
     changes = []
     for f in fields:
         v1 = getattr(obj1, f)
@@ -55,8 +64,9 @@ def _changed_fields(obj1: Any, obj2: Any, fields: list[str]) -> list[tuple[str, 
     return changes
 
 
-def _print_entry(label: str, code: str, mode: str, long: bool,
-                 changes: list[tuple[str, Any, Any]]) -> None:
+def _print_entry(
+    label: str, code: str, mode: str, long: bool, changes: list[tuple[str, Any, Any]]
+) -> None:
     id_part, name_part = label.split("\t", 1)
     if mode == "id":
         print(f"{id_part}\t{code}")
@@ -79,12 +89,26 @@ def register(subparsers: Any) -> None:
         description="Compare two GEDCOM files and report added, removed, or changed individuals and families",
     )
     add_output_options(sub)
-    sub.add_argument("-l", "--long", action="store_true",
-                     help="Show changed field details for CHG entries")
-    sub.add_argument("-s", "--sort", choices=["id", "name"], default="id",
-                     help="Sort output: 'id' (default) or 'name'")
-    sub.add_argument("-a", "--all", action="store_true", dest="all_fields",
-                     help="Compare all model fields including sex, living, name variants, and notes")
+    sub.add_argument(
+        "-l",
+        "--long",
+        action="store_true",
+        help="Show changed field details for CHG entries",
+    )
+    sub.add_argument(
+        "-s",
+        "--sort",
+        choices=["id", "name"],
+        default="id",
+        help="Sort output: 'id' (default) or 'name'",
+    )
+    sub.add_argument(
+        "-a",
+        "--all",
+        action="store_true",
+        dest="all_fields",
+        help="Compare all model fields including sex, living, name variants, and notes",
+    )
     sub.add_argument("gedcom1", help="First GEDCOM file")
     sub.add_argument("gedcom2", help="Second GEDCOM file")
     sub.set_defaults(func=run)
@@ -94,10 +118,16 @@ def run(args: Any) -> None:
     """Handler invoked when ``gedinfo diff`` is run."""
     mode = validate_output_mode(args)
     if args.long and getattr(args, "id", False):
-        print("Conflicting output flags: -i and --long are not compatible", file=sys.stderr)
+        print(
+            "Conflicting output flags: -i and --long are not compatible",
+            file=sys.stderr,
+        )
         sys.exit(1)
     if args.long and getattr(args, "name", False):
-        print("Conflicting output flags: -n and --long are not compatible", file=sys.stderr)
+        print(
+            "Conflicting output flags: -n and --long are not compatible",
+            file=sys.stderr,
+        )
         sys.exit(1)
 
     data1 = parse(args.gedcom1)

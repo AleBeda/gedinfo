@@ -22,9 +22,7 @@ class _DescriptionFirstParser(argparse.ArgumentParser):
         formatter = self._get_formatter()
         if self.description:
             formatter.add_text(self.description)
-        formatter.add_usage(
-            self.usage, self._actions, self._mutually_exclusive_groups
-        )
+        formatter.add_usage(self.usage, self._actions, self._mutually_exclusive_groups)
         for action_group in self._action_groups:
             formatter.start_section(action_group.title)
             formatter.add_text(action_group.description)
@@ -42,7 +40,9 @@ def main() -> None:
     )
     parser.add_argument("--version", action="store_true", help="Print version and exit")
     parser.add_argument("--debug", action="store_true", help="Show tracebacks on error")
-    subparsers = parser.add_subparsers(dest="command", parser_class=_DescriptionFirstParser)
+    subparsers = parser.add_subparsers(
+        dest="command", parser_class=_DescriptionFirstParser
+    )
     subparsers.required = False
 
     # register built-in subcommands

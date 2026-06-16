@@ -21,7 +21,9 @@ def run_cmd(args):
 
 
 def test_short_mode():
-    code, out, _ = run_cmd(["ancestors", "@I001@", str(FIXTURES / "long_ancestors.ged")])
+    code, out, _ = run_cmd(
+        ["ancestors", "@I001@", str(FIXTURES / "long_ancestors.ged")]
+    )
     assert code == 0
     lines = out.strip().splitlines()
     assert len(lines) == 9  # subject + 8 ancestors
@@ -30,7 +32,9 @@ def test_short_mode():
 
 
 def test_short_g1():
-    code, out, _ = run_cmd(["ancestors", "-g", "1", "@I001@", str(FIXTURES / "long_ancestors.ged")])
+    code, out, _ = run_cmd(
+        ["ancestors", "-g", "1", "@I001@", str(FIXTURES / "long_ancestors.ged")]
+    )
     assert code == 0
     lines = out.strip().splitlines()
     assert len(lines) == 1
@@ -38,7 +42,9 @@ def test_short_g1():
 
 
 def test_short_g2():
-    code, out, _ = run_cmd(["ancestors", "-g", "2", "@I001@", str(FIXTURES / "long_ancestors.ged")])
+    code, out, _ = run_cmd(
+        ["ancestors", "-g", "2", "@I001@", str(FIXTURES / "long_ancestors.ged")]
+    )
     assert code == 0
     lines = out.strip().splitlines()
     assert len(lines) == 3  # subject + 2 parents
@@ -47,7 +53,9 @@ def test_short_g2():
 
 
 def test_short_id_only():
-    code, out, _ = run_cmd(["ancestors", "-i", "@I001@", str(FIXTURES / "long_ancestors.ged")])
+    code, out, _ = run_cmd(
+        ["ancestors", "-i", "@I001@", str(FIXTURES / "long_ancestors.ged")]
+    )
     assert code == 0
     lines = out.strip().splitlines()
     assert len(lines) == 9
@@ -56,7 +64,9 @@ def test_short_id_only():
 
 
 def test_short_name_only():
-    code, out, _ = run_cmd(["ancestors", "-n", "@I001@", str(FIXTURES / "long_ancestors.ged")])
+    code, out, _ = run_cmd(
+        ["ancestors", "-n", "@I001@", str(FIXTURES / "long_ancestors.ged")]
+    )
     assert code == 0
     lines = out.strip().splitlines()
     assert len(lines) == 9
@@ -65,13 +75,17 @@ def test_short_name_only():
 
 
 def test_subject_in_output():
-    code, out, _ = run_cmd(["ancestors", "@I001@", str(FIXTURES / "long_ancestors.ged")])
+    code, out, _ = run_cmd(
+        ["ancestors", "@I001@", str(FIXTURES / "long_ancestors.ged")]
+    )
     assert code == 0
     assert "I001" in out
 
 
 def test_long_all():
-    code, out, _ = run_cmd(["ancestors", "-l", "@I001@", str(FIXTURES / "long_ancestors.ged")])
+    code, out, _ = run_cmd(
+        ["ancestors", "-l", "@I001@", str(FIXTURES / "long_ancestors.ged")]
+    )
     assert code == 0
     lines = out.strip().splitlines()
     assert len(lines) == 9
@@ -84,7 +98,9 @@ def test_long_all():
 
 
 def test_long_g3():
-    code, out, _ = run_cmd(["ancestors", "-l", "-g", "3", "@I001@", str(FIXTURES / "long_ancestors.ged")])
+    code, out, _ = run_cmd(
+        ["ancestors", "-l", "-g", "3", "@I001@", str(FIXTURES / "long_ancestors.ged")]
+    )
     assert code == 0
     lines = out.strip().splitlines()
     assert len(lines) == 7  # gen 1 + 2 + 4
@@ -93,7 +109,16 @@ def test_long_g3():
 
 
 def test_long_sort_generation():
-    code, out, _ = run_cmd(["ancestors", "-l", "-s", "generation", "@I001@", str(FIXTURES / "long_ancestors.ged")])
+    code, out, _ = run_cmd(
+        [
+            "ancestors",
+            "-l",
+            "-s",
+            "generation",
+            "@I001@",
+            str(FIXTURES / "long_ancestors.ged"),
+        ]
+    )
     assert code == 0
     lines = out.strip().splitlines()
     gens = [int(ln.split("\t")[0]) for ln in lines]
@@ -102,7 +127,16 @@ def test_long_sort_generation():
 
 
 def test_long_sort_path():
-    code, out, _ = run_cmd(["ancestors", "-l", "-s", "path", "@I001@", str(FIXTURES / "long_ancestors.ged")])
+    code, out, _ = run_cmd(
+        [
+            "ancestors",
+            "-l",
+            "-s",
+            "path",
+            "@I001@",
+            str(FIXTURES / "long_ancestors.ged"),
+        ]
+    )
     assert code == 0
     lines = out.strip().splitlines()
     # subject (empty path) must be first
@@ -116,7 +150,16 @@ def test_long_sort_path():
 
 
 def test_long_sort_name():
-    code, out, _ = run_cmd(["ancestors", "-l", "-s", "name", "@I001@", str(FIXTURES / "long_ancestors.ged")])
+    code, out, _ = run_cmd(
+        [
+            "ancestors",
+            "-l",
+            "-s",
+            "name",
+            "@I001@",
+            str(FIXTURES / "long_ancestors.ged"),
+        ]
+    )
     assert code == 0
     lines = out.strip().splitlines()
     # name column contains "First Last"; sort is by last name (primary) then first name
@@ -133,7 +176,9 @@ def test_long_sort_name():
 
 
 def test_long_sort_id():
-    code, out, _ = run_cmd(["ancestors", "-l", "-s", "id", "@I001@", str(FIXTURES / "long_ancestors.ged")])
+    code, out, _ = run_cmd(
+        ["ancestors", "-l", "-s", "id", "@I001@", str(FIXTURES / "long_ancestors.ged")]
+    )
     assert code == 0
     lines = out.strip().splitlines()
     ids = [ln.split("\t")[-1] for ln in lines]
@@ -181,36 +226,48 @@ def test_long_unknown_included(tmp_path):
 
 
 def test_sort_requires_long():
-    code, out, err = run_cmd(["ancestors", "-s", "name", "@I001@", str(FIXTURES / "long_ancestors.ged")])
+    code, out, err = run_cmd(
+        ["ancestors", "-s", "name", "@I001@", str(FIXTURES / "long_ancestors.ged")]
+    )
     assert code == 1
     assert "--sort requires --long" in err
 
 
 def test_id_name_conflict():
-    code, _, err = run_cmd(["ancestors", "-i", "-n", "@I001@", str(FIXTURES / "long_ancestors.ged")])
+    code, _, err = run_cmd(
+        ["ancestors", "-i", "-n", "@I001@", str(FIXTURES / "long_ancestors.ged")]
+    )
     assert code == 1
 
 
 def test_long_with_id_flag():
-    code, _, err = run_cmd(["ancestors", "-l", "-i", "@I001@", str(FIXTURES / "long_ancestors.ged")])
+    code, _, err = run_cmd(
+        ["ancestors", "-l", "-i", "@I001@", str(FIXTURES / "long_ancestors.ged")]
+    )
     assert code == 1
     assert "--long cannot be combined with --id or --name" in err
 
 
 def test_long_with_name_flag():
-    code, _, err = run_cmd(["ancestors", "-l", "-n", "@I001@", str(FIXTURES / "long_ancestors.ged")])
+    code, _, err = run_cmd(
+        ["ancestors", "-l", "-n", "@I001@", str(FIXTURES / "long_ancestors.ged")]
+    )
     assert code == 1
     assert "--long cannot be combined with --id or --name" in err
 
 
 def test_invalid_g():
-    code, _, err = run_cmd(["ancestors", "-g", "0", "@I001@", str(FIXTURES / "long_ancestors.ged")])
+    code, _, err = run_cmd(
+        ["ancestors", "-g", "0", "@I001@", str(FIXTURES / "long_ancestors.ged")]
+    )
     assert code == 1
     assert "Invalid generations value" in err
 
 
 def test_unknown_id():
-    code, _, err = run_cmd(["ancestors", "@I999@", str(FIXTURES / "long_ancestors.ged")])
+    code, _, err = run_cmd(
+        ["ancestors", "@I999@", str(FIXTURES / "long_ancestors.ged")]
+    )
     assert code == 1
     assert "Unknown individual ID" in err
 
