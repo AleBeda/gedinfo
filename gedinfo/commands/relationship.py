@@ -32,9 +32,7 @@ def _format_block(ancestor, path1, path2) -> list[str]:
         return [f"{i + 1:>{gen_w}}  {display_name(single[i])}" for i in range(len(single))]
 
     names1 = [display_name(p) for p in path1]
-    names2 = [display_name(p) for p in path2]
     left_w = max(len(n) for n in names1)
-    right_w = max(len(n) for n in names2)
 
     max_gen = max(len(path1), len(path2))
     gen_w = len(str(max_gen))

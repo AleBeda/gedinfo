@@ -1321,10 +1321,20 @@ pytest -q
 Formatting & linting
 --------------------
 
-Development dependencies include `ruff` and `black`. To check formatting and
-linting run:
+[Ruff](https://docs.astral.sh/ruff/) handles both linting and formatting. To
+check (as CI does) run:
 
 ```bash
-ruff check gedinfo/ tests/
-black --check gedinfo/ tests/
+ruff check .            # lint
+ruff format --check .   # formatting
 ```
+
+To auto-fix and format in place:
+
+```bash
+ruff check --fix .
+ruff format .
+```
+
+A `.pre-commit-config.yaml` is provided; run `pre-commit install` to enforce
+both on every commit.

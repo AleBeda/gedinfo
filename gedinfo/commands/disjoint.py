@@ -7,7 +7,7 @@ from typing import Any
 from ..models import Individual
 
 from ..parser import parse
-from ..queries import get_connected_components, get_roots, apply_root_filters
+from ..queries import get_connected_components, apply_root_filters
 from ..models import GedcomData
 import sys
 from ._output import add_output_options, validate_output_mode, format_individual

@@ -11,6 +11,8 @@ from collections import deque
 from typing import List, Optional, Set
 import re
 
+from .models import Family, GedcomData, Individual
+
 # Regex to parse IDs like @I123@ or I123 -> prefix 'I', number 123
 _ID_RE = re.compile(r"^@?([A-Za-z]+)(\d+)@?$")
 
@@ -28,9 +30,6 @@ def id_sort_key(id_str: str):
         num = int(m.group(2))
         return (prefix, num)
     return (id_str, -1)
-
-
-from .models import Family, GedcomData, Individual
 
 
 def normalise_id(indi_id: str) -> str:
@@ -653,8 +652,6 @@ def get_spouse_suppressed(data: GedcomData, roots: list[Individual]) -> set[str]
     """
     suppressed: set[str] = set()
     for root in roots:
-        # must have at least one spouse
-        had_spouse = False
         for fam_id in root.family_ids_as_spouse:
             fam = data.families.get(fam_id)
             if not fam:
@@ -667,7 +664,6 @@ def get_spouse_suppressed(data: GedcomData, roots: list[Individual]) -> set[str]
                 spouses.append(fam.wife_id)
             if not spouses:
                 continue
-            had_spouse = True
             # for each spouse that has parents, check parents for a known name
             for spouse_id in spouses:
                 spouse = data.individuals.get(spouse_id)
