@@ -285,7 +285,7 @@ def family_name_key(family: Family, data: GedcomData) -> str:
     Priority: husband display name > wife display name > first child display name
     > stripped family ID. Returns lowercase string for case-insensitive sorting.
     """
-    for fid in (family.husband_id, family.wife_id) + family.child_ids:
+    for fid in (family.husband_id, family.wife_id, *family.child_ids):
         ind = data.individuals.get(fid)
         if ind:
             dn = display_name(ind)

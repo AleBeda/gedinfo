@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import argparse
-import sys
 from pathlib import Path
 from typing import Optional, Tuple
 
@@ -67,12 +66,12 @@ def _ensure_fake(seed: int = 0) -> None:
     if _fake_cls is None:
         try:
             from faker import Faker  # type: ignore[import-not-found]
-        except ImportError:
-            import subprocess
-
-            print("Installing required dependency: faker...", file=sys.stderr)
-            subprocess.check_call([sys.executable, "-m", "pip", "install", "faker"])
-            from faker import Faker  # type: ignore[import-not-found]
+        except ImportError as e:
+            raise ValueError(
+                "The 'anonymize' command requires the 'faker' package. "
+                "Install gedinfo's dependencies (e.g. `pip install gedinfo` "
+                "or `pip install faker`) and try again."
+            ) from e
         _fake_cls = Faker
     _fake_cls.seed(seed)
     _fake = _fake_cls()

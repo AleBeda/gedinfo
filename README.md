@@ -1,8 +1,12 @@
 # gedinfo
 
+[![CI](https://github.com/AleBeda/gedinfo/actions/workflows/ci.yml/badge.svg)](https://github.com/AleBeda/gedinfo/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+![Python](https://img.shields.io/badge/python-3.11%2B-blue.svg)
+
 A command-line utility for querying GEDCOM genealogy files.
 
-Version: 0.21.0
+Version: 0.22.0
 
 Installation
 ------------
@@ -87,33 +91,103 @@ Behaviour when a tag is not configured:
 Commands
 --------
 
+Commands are grouped below by purpose.
+
+**Browsing & lookup**
+
 | Command | Description |
 |---------|-------------|
+| [indi](#indi) | List all individuals in the file |
 | [name](#name) | Print the full name of an individual by ID |
 | [id](#id) | Search for individuals by partial name match |
 | [names](#names) | Print distinct last names for a list of individual IDs |
-| [ancestors](#ancestors) | List all ancestors of an individual |
-| [descendants](#descendants) | List all descendants of an individual |
-| [gen](#gen) | Count ancestor and descendant generations for an individual |
-| [relationship](#relationship) | Show all relationships between two individuals |
-| [lastnames](#lastnames) | Print distinct ancestor surnames with lineage paths |
-| [roots](#roots) | List root individuals (those with no recorded parents) |
-| [living](#living) | List individuals with a `_LIVING` flag |
-| [leaves](#leaves) | List leaf individuals (those with no recorded children) |
-| [indi](#indi) | List all individuals in the file |
 | [males](#males) | List all male individuals |
 | [females](#females) | List all female individuals |
 | [nosex](#nosex) | List individuals with unknown or unspecified sex |
 | [noname](#noname) | List individuals with no name recorded |
-| [stat](#stat) | Print file statistics (individual count, family count, roots, leaves) |
-| [disjoint](#disjoint) | List the sizes of connected family components |
-| [givennames](#givennames) | Frequency count of given names among ancestors or descendants |
+| [living](#living) | List individuals flagged as living by the configured living tag |
+
+**Lineage & relationships**
+
+| Command | Description |
+|---------|-------------|
 | [relatives](#relatives) | Show the immediate family of an individual (parents, spouses, children) |
-| [anonymize](#anonymize) | Output a privacy-safe derivative with fake names and locations |
-| [calendar](#calendar) | List birth, death, and marriage anniversaries from a GEDCOM file |
+| [ancestors](#ancestors) | List all ancestors of an individual |
+| [descendants](#descendants) | List all descendants of an individual |
+| [lastnames](#lastnames) | Print distinct ancestor surnames with lineage paths |
+| [givennames](#givennames) | Frequency count of given names among ancestors or descendants |
+| [gen](#gen) | Count ancestor and descendant generations for an individual |
+| [relationship](#relationship) | Show all relationships between two individuals |
+
+**Families & structure**
+
+| Command | Description |
+|---------|-------------|
+| [fam](#fam) | List all family records with husband, wife, and children |
+| [roots](#roots) | List root individuals (those with no recorded parents) |
+| [leaves](#leaves) | List leaf individuals (those with no recorded children) |
+| [disjoint](#disjoint) | List the sizes of connected family components |
+
+**File reports & transforms**
+
+| Command | Description |
+|---------|-------------|
+| [stat](#stat) | Print file statistics (individual count, family count, roots, leaves) |
 | [tags](#tags) | List all GEDCOM tags found in a file with occurrence counts |
+| [calendar](#calendar) | List birth, death, and marriage anniversaries from a GEDCOM file |
 | [diff](#diff) | Compare two GEDCOM files |
+| [anonymize](#anonymize) | Output a privacy-safe derivative with fake names and locations |
+
+**Interactive**
+
+| Command | Description |
+|---------|-------------|
 | [explore](#explore-tui-mode) | Browse a GEDCOM file interactively in the terminal |
+
+### indi
+
+List all individuals in the GEDCOM file.
+
+**Syntax:**
+```
+gedinfo indi [options] <gedcom_file>
+```
+
+**Arguments:**
+- `<gedcom_file>`: Path to the GEDCOM file
+
+**Options:**
+- `-i`: Print IDs only (without @ delimiters), one per line
+- `-n`: Print names only, one per line
+- (default): Print ID and name pairs in the format `ID	Name`
+
+**Output:**
+All individuals sorted by ID.
+
+**Examples:**
+
+```bash
+# IDs and names (default)
+$ gedinfo indi tests/fixtures/simple.ged
+I001	John Smith
+I002	Mary Jones
+I003	Alice Smith
+I004	Bob Smith
+
+# IDs only
+$ gedinfo indi -i tests/fixtures/simple.ged
+I001
+I002
+I003
+I004
+
+# Names only
+$ gedinfo indi -n tests/fixtures/simple.ged
+John Smith
+Mary Jones
+Alice Smith
+Bob Smith
+```
 
 ### name
 
@@ -192,454 +266,6 @@ I004
 $ gedinfo names ids.txt tests/fixtures/simple.ged
 Johnson
 Smith
-```
-
-### ancestors
-
-List all ancestors of an individual, including the individual themselves (generation 1).
-
-**Syntax:**
-```
-gedinfo ancestors [options] <indi_id> <gedcom_file>
-```
-
-**Arguments:**
-- `<indi_id>`: The GEDCOM individual ID (with or without @ delimiters)
-- `<gedcom_file>`: Path to the GEDCOM file
-
-**Options:**
-- `-g N, --generations N`: Limit traversal to N generations (N ≥ 1). Generation 1 is the subject, generation 2 is parents, etc.
-- `-l, --long`: Enable long output mode (generation, path, last name, ID). Cannot be combined with `-i` or `-n`.
-- `-s MODE, --sort MODE`: Sort order for `--long` mode. Choices: `generation`, `path`, `name`, `id`. Default: `generation`. Requires `--long`.
-- `-u, --unknown`: Include ancestors with no name in `--long` mode. By default, nameless ancestors are excluded from long-mode output.
-- `-i`: Print IDs only (without @ delimiters), one per line (short mode only).
-- `-n`: Print names only, one per line (short mode only).
-
-**Output (short mode — default):**
-One line per ancestor in BFS traversal order (subject first, then parents, grandparents, etc.).
-Each line: `ID\tFull Name`. Use `-i` or `-n` for ID-only or name-only output.
-
-**Output (long mode — with `-l`):**
-Tab-separated values: generation, path, full name (first name then last name, or `(unknown)` if nameless and `-u` is set), ID.
-The path uses `p` (father), `m` (mother), `?` (unknown sex) to describe the relationship chain from the subject.
-When `-s name` is used, sorting is by last name (primary) then first name (secondary).
-
-**Examples:**
-
-```bash
-# Short mode: all ancestors from I001
-$ gedinfo ancestors I001 tests/fixtures/long_ancestors.ged
-I001	Jan Novak
-I002	Pieter Novak
-I003	Anna Muller
-I004	Hans Novak
-I005	Greta Bauer
-I006	Ernst Muller
-I007	Lena Weber
-I008	Otto Novak
-I009	Unknown Svensson
-
-# Long mode: all ancestors
-$ gedinfo ancestors -l I001 tests/fixtures/long_ancestors.ged
-1		Jan Novak	I001
-2	p	Pieter Novak	I002
-2	m	Anna Muller	I003
-3	pp	Hans Novak	I004
-3	pm	Greta Bauer	I005
-3	mp	Ernst Muller	I006
-3	mm	Lena Weber	I007
-4	ppp	Otto Novak	I008
-4	pp?	Unknown Svensson	I009
-
-# Long mode: limit to 2 generations, sort by path
-$ gedinfo ancestors -l -g 2 -s path I001 tests/fixtures/long_ancestors.ged
-1		Jan Novak	I001
-2	p	Pieter Novak	I002
-2	m	Anna Muller	I003
-```
-
-### descendants
-
-List all descendants of an individual, including the individual themselves (generation 1).
-
-**Syntax:**
-```
-gedinfo descendants [options] <indi_id> <gedcom_file>
-```
-
-**Arguments:**
-- `<indi_id>`: The GEDCOM individual ID (with or without @ delimiters)
-- `<gedcom_file>`: Path to the GEDCOM file
-
-**Options:**
-- `-g N, --generations N`: Limit traversal to N generations (N ≥ 1). Generation 1 is the subject, generation 2 is children, etc.
-- `-l, --long`: Enable long output mode (generation, path, last name, ID). Cannot be combined with `-i` or `-n`.
-- `-s MODE, --sort MODE`: Sort order for `--long` mode. Choices: `generation`, `path`, `name`, `id`. Default: `generation`. Requires `--long`.
-- `-u, --unknown`: Include descendants with no name in `--long` mode. By default, nameless descendants are excluded from long-mode output.
-- `-i`: Print IDs only (without @ delimiters), one per line (short mode only).
-- `-n`: Print names only, one per line (short mode only).
-
-**Output (short mode — default):**
-One line per descendant in BFS traversal order (subject first, then children, grandchildren, etc.).
-Each line: `ID\tFull Name`. Use `-i` or `-n` for ID-only or name-only output.
-
-**Output (long mode — with `-l`):**
-Tab-separated values: generation, path, full name (first name then last name, or `(unknown)` if nameless and `-u` is set), ID.
-The path uses `s` (son/male), `d` (daughter/female), `?` (unknown sex) to describe the relationship chain from the subject.
-When `-s name` is used, sorting is by last name (primary) then first name (secondary).
-
-**Examples:**
-
-```bash
-# Short mode: all descendants from I001
-$ gedinfo descendants I001 tests/fixtures/descendants.ged
-I001	John Smith
-I003	Peter Smith
-I004	Anna Smith
-I006	Tom Smith
-I007	Sue Smith
-
-# Long mode: all descendants, sorted by path
-$ gedinfo descendants -l -s path I001 tests/fixtures/descendants.ged
-1		John Smith	I001
-2	s	Peter Smith	I003
-3	ss	Tom Smith	I006
-3	sd	Sue Smith	I007
-2	d	Anna Smith	I004
-
-# Long mode: limit to 2 generations
-$ gedinfo descendants -l -g 2 I001 tests/fixtures/descendants.ged
-1		John Smith	I001
-2	s	Peter Smith	I003
-2	d	Anna Smith	I004
-```
-
-### gen
-
-Count the maximum number of ascending and descending generations relative to an
-individual. `generations` is an alias for `gen`.
-
-**Syntax:**
-```
-gedinfo gen <indi_id> <gedcom_file>
-```
-
-**Arguments:**
-- `<indi_id>`: The GEDCOM individual ID (with or without @ delimiters, e.g. I001)
-- `<gedcom_file>`: Path to the GEDCOM file
-
-**Output:**
-A single line with three tab-separated fields:
-
-```
-ancestors: NGA	descendants: NGD	total: NGT
-```
-
-- **ancestors** — generations above the individual (parents = 1, grandparents = 2, …); 0 if none known
-- **descendants** — generations below the individual (children = 1, grandchildren = 2, …); 0 if none known
-- **total** — ancestors + descendants + 1 (the individual themselves counts as 1)
-
-**Example:**
-```bash
-$ gedinfo gen I003 tests/fixtures/descendants.ged
-ancestors: 1	descendants: 1	total: 3
-```
-
-### relationship
-
-Find all common ancestors of two individuals and print each relationship as a
-formatted block showing the lineage paths from the shared ancestor down to
-each individual.
-
-**Syntax:**
-```
-gedinfo relationship <first_id> <second_id> <gedcom_file>
-```
-
-**Arguments:**
-- `<first_id>`: First individual ID (with or without @ delimiters, e.g. I001)
-- `<second_id>`: Second individual ID (with or without @ delimiters, e.g. I002)
-- `<gedcom_file>`: Path to the GEDCOM file
-
-**Output:**
-One block per common ancestor, with a blank line between blocks. Nothing is
-printed when the two individuals share no common ancestor.
-
-Each block has one row per generation. The generation number is shown on the
-left. When both individuals descend from the common ancestor, row 1 shows the
-ancestor name in both columns; subsequent rows show the lineage to each
-individual side by side. When one individual is the direct ancestor of the
-other, a single column is printed.
-
-**Example:**
-```bash
-$ gedinfo relationship I003 I004 tests/fixtures/simple.ged
-1  John Smith   John Smith
-2  Alice Smith  Bob Smith
-
-1  Mary Jones   Mary Jones
-2  Alice Smith  Bob Smith
-```
-
-### lastnames
-
-Print the ancestors of an individual. Supports two output modes: short (names only) 
-and long (detailed paths). In long mode, ancestors from each lineage branch are 
-sorted from purely paternal lines (ppp) to purely maternal lines (mmm).
-
-**Syntax:**
-```
-gedinfo lastnames [options] <indi_id> <gedcom_file>
-```
-
-**Arguments:**
-- `<indi_id>`: The GEDCOM individual ID (with or without @ delimiters, e.g. I001)
-- `<gedcom_file>`: Path to the GEDCOM file
-
-**Options:**
-- `-g N, --generations N`: Limit traversal to N generations (N ≥ 1). Generation 1 is the subject, 
-  generation 2 is parents, generation 3 is grandparents, etc. If not specified, traverses all 
-  generations.
-- `-l, --long`: Enable long output mode. Shows detailed ancestor information including generation, 
-  path (relationship notation), last name, and ID.
-- `-s MODE, --sort MODE`: Sort the output by one of: `generation`, `path`, `name`, or `id`. 
-  This option is only valid with `-l`. Default sort order depends on mode:
-  - Long mode (`-l`): sorts by `path` (paternal to maternal)
-  - Short mode: sorts by `name` (alphabetically)
-- `-u, --unknown`: Include ancestors with no name (no NAME tag in the GEDCOM file).
-  By default, nameless ancestors are suppressed. In short mode this flag has no visible effect
-  (nameless ancestors have no last name to print). In `--long` mode, nameless ancestors 
-  appear with '(unknown)' in the last-name field.
-- `-d DIRECTION, --direction DIRECTION`: Traversal direction: `ancestors`/`up` (default) or
-  `descendants`/`down`. Controls whether surnames are collected from ancestors or descendants.
-
-**Output (Short Mode - default):**
-Prints the distinct last names of all traversed relatives, one per line, sorted alphabetically.
-Nameless ancestors are always excluded (they have no last name to print).
-
-**Output (Long Mode - with `-l`):**
-Tab-separated values with four columns:
-- Generation number (2 for parents, 3 for grandparents, etc.)
-- Path (lowercase string of p/m/? characters, see below)
-- Last name (or "(unknown)" if no surname and `-u` is set)
-- Individual ID (without @ delimiters)
-
-When the last name is fewer than 8 characters, an extra tab is added to align 
-the ID column. By default, nameless ancestors are omitted from long-mode output;
-use `-u/--unknown` to include them.
-
-**Path Notation:**
-The path string indicates the sex of each ancestor in the lineage:
-- `p` — paternal (male parent)
-- `m` — maternal (female parent)
-- `?` — unknown or unspecified sex
-
-For example, `pp` means paternal grandfather, `pm` means paternal grandmother, 
-`mp` means maternal grandfather, `mm` means maternal grandmother.
-
-**Branch-Tip Filtering:**
-In long mode, only the most remote reachable ancestor in each lineage branch is 
-shown. Intermediate ancestors are omitted. With `-g N`, ancestors at generation N 
-and all roots encountered before that limit are printed.
-
-**Examples:**
-
-```bash
-# Short mode: all ancestor surnames, alphabetical order
-$ gedinfo lastnames I001 tests/fixtures/long_ancestors.ged
-Bauer
-Muller
-Novak
-Svensson
-Weber
-
-# Long mode: paternal to maternal sorting (default)
-$ gedinfo lastnames -l I001 tests/fixtures/long_ancestors.ged
-4       ppp     Novak           I008
-4       pp?     Svensson        I009
-3       pm      Bauer           I005
-3       mp      Muller          I006
-3       mm      Weber           I007
-
-# Long mode: limit to 3 generations
-$ gedinfo lastnames -l -g 3 I001 tests/fixtures/long_ancestors.ged
-3       pp      Novak           I004
-3       pm      Bauer           I005
-3       mp      Muller          I006
-3       mm      Weber           I007
-
-# Long mode: sort by generation
-$ gedinfo lastnames -l -s generation I001 tests/fixtures/long_ancestors.ged
-3       pm      Bauer           I005
-3       mp      Muller          I006
-3       mm      Weber           I007
-4       ppp     Novak           I008
-4       pp?     Svensson        I009
-
-# Long mode: sort by last name
-$ gedinfo lastnames -l -s name I001 tests/fixtures/long_ancestors.ged
-3       pm      Bauer           I005
-3       mp      Muller          I006
-4       ppp     Novak           I008
-4       pp?     Svensson        I009
-3       mm      Weber           I007
-```
-
-### roots
-
-Print the root individuals (those with no recorded parents) in the GEDCOM file.
-
-**Syntax:**
-```
-gedinfo roots [options] <gedcom_file>
-```
-
-**Arguments:**
-- `<gedcom_file>`: Path to the GEDCOM file
-
-**Options:**
-- `-i`: Print IDs only (without @ delimiters), one per line
-- `-n`: Print names only, one per line
-- `-s, --sort {id,name}`: Sort output by numeric ID order or alphabetically by name. Default is GEDCOM file order.
-- `--spouse`: Include roots whose spouse has parents with at least one known name. By default such individuals are suppressed because they likely married into a documented family rather than representing an independent lineage starting point.
-- `-u, --unknown`: Include roots with no name at all (no NAME tag in the GEDCOM file). By default, nameless individuals are suppressed.
-- `-a, --all`: Include all roots without any suppression. Equivalent to combining `--spouse` and `--unknown`. Cannot be combined with `--spouse` or `--unknown`.
-
-**Output:**
-Root individuals in GEDCOM file order (or sorted if `--sort` is given).
-Default format: `ID	Name` per line.
-
-**Examples:**
-
-```bash
-# IDs and names (default)
-$ gedinfo roots tests/fixtures/simple.ged
-I001	John Smith
-I002	Mary Jones
-
-# IDs only
-$ gedinfo roots -i tests/fixtures/simple.ged
-I001
-I002
-
-# Names only
-$ gedinfo roots -n tests/fixtures/simple.ged
-John Smith
-Mary Jones
-```
-
-### living
-
-List individuals with a `_LIVING` flag set to a truthy value (`Y`, `yes`, `true`).
-
-**Syntax:**
-```
-gedinfo living [options] <gedcom_file>
-```
-
-**Arguments:**
-- `<gedcom_file>`: Path to the GEDCOM file
-
-**Options:**
-- `-i`: Print IDs only (without @ delimiters), one per line
-- `-n`: Print names only, one per line
-- `-s, --sort {id,name}`: Sort output by numeric ID order or alphabetically by name. Default is GEDCOM file order.
-- `-v, --invert`: Invert the match and list individuals who are not explicitly marked as living (includes those with `_LIVING` set to N/no/false, those with an empty `_LIVING` value, and those with no `_LIVING` tag).
-
-**Output:**
-Matching individuals in GEDCOM file order (or sorted if `--sort` is given).
-Default format: `ID	Name` per line.
-
-### leaves
-
-Print the leaf individuals (those with no recorded children) in the GEDCOM file.
-
-By default, two categories are suppressed (matching `roots` behaviour):
-- **Nameless leaves** — individuals with no NAME tag
-- **Married-in leaves** — individuals in a childless family whose spouse has children with another partner
-
-**Syntax:**
-```
-gedinfo leaves [options] <gedcom_file>
-```
-
-**Arguments:**
-- `<gedcom_file>`: Path to the GEDCOM file
-
-**Options:**
-- `-i`: Print IDs only (without @ delimiters), one per line
-- `-n`: Print names only, one per line
-- `-s, --sort {id,name}`: Sort output
-- `--spouse`: Include married-in leaves (whose spouse has children with another partner). By default such individuals are suppressed.
-- `-u, --unknown`: Include leaves with no name at all. By default, nameless individuals are suppressed.
-- `-a, --all`: Include all leaves without any suppression. Cannot be combined with `--spouse` or `--unknown`.
-- (default): Print ID and name pairs in the format `ID	Name`
-
-**Output:**
-Leaf individuals (after suppression filters) sorted by GEDCOM file order, or by sort key if `--sort` is given.
-
-**Examples:**
-
-```bash
-# IDs and names (default)
-$ gedinfo leaves tests/fixtures/simple.ged
-I003	Alice Smith
-I004	Bob Smith
-
-# IDs only
-$ gedinfo leaves -i tests/fixtures/simple.ged
-I003
-I004
-
-# Names only
-$ gedinfo leaves -n tests/fixtures/simple.ged
-Alice Smith
-Bob Smith
-```
-
-### indi
-
-List all individuals in the GEDCOM file.
-
-**Syntax:**
-```
-gedinfo indi [options] <gedcom_file>
-```
-
-**Arguments:**
-- `<gedcom_file>`: Path to the GEDCOM file
-
-**Options:**
-- `-i`: Print IDs only (without @ delimiters), one per line
-- `-n`: Print names only, one per line
-- (default): Print ID and name pairs in the format `ID	Name`
-
-**Output:**
-All individuals sorted by ID.
-
-**Examples:**
-
-```bash
-# IDs and names (default)
-$ gedinfo indi tests/fixtures/simple.ged
-I001	John Smith
-I002	Mary Jones
-I003	Alice Smith
-I004	Bob Smith
-
-# IDs only
-$ gedinfo indi -i tests/fixtures/simple.ged
-I001
-I002
-I003
-I004
-
-# Names only
-$ gedinfo indi -n tests/fixtures/simple.ged
-John Smith
-Mary Jones
-Alice Smith
-Bob Smith
 ```
 
 ### males
@@ -783,102 +409,309 @@ gedinfo noname [options] <gedcom_file>
 **Output:**
 Unnamed individuals in GEDCOM file order (or sorted if `--sort` is given).
 
-### stat
+### living
 
-Print a statistics summary for the GEDCOM file, including counts of individuals
-(broken down by sex, name completeness, living status, and whether they are roots
-or leaves), families, generation depth, and number of disjoint family forests.
+List individuals whose configured *living* tag (e.g. `_LIVING`) is set to a truthy
+value (`Y`, `yes`, `true`). The tag name is read from your settings and has no built-in
+default; the command aborts with guidance if it is unconfigured (see
+[Configuration](#configuration)).
 
 **Syntax:**
 ```
-gedinfo stat [options] <gedcom_file>
+gedinfo living [options] <gedcom_file>
 ```
 
 **Arguments:**
 - `<gedcom_file>`: Path to the GEDCOM file
 
 **Options:**
-- `--spouse`: Include spouse-suppressed individuals in the root count (same criteria as `roots --spouse`).
-- `-u, --unknown`: Include nameless individuals in the root count.
-- `-a, --all`: Include all roots in the count. Cannot be combined with `--spouse` or `--unknown`.
+- `-i`: Print IDs only (without @ delimiters), one per line
+- `-n`: Print names only, one per line
+- `-s, --sort {id,name}`: Sort output by numeric ID order or alphabetically by name. Default is GEDCOM file order.
+- `-v, --invert`: Invert the match and list individuals who are not explicitly marked as living (includes those with `_LIVING` set to N/no/false, those with an empty `_LIVING` value, and those with no `_LIVING` tag).
 
 **Output:**
-Human-readable multi-section statistics report.
+Matching individuals in GEDCOM file order (or sorted if `--sort` is given).
+Default format: `ID	Name` per line.
+
+### relatives
+
+Show the immediate family of an individual: parents, the individual themselves,
+spouses, and children per spouse.
+
+**Syntax:**
+```
+gedinfo relatives [options] <indi_id> <gedcom_file>
+```
+
+**Arguments:**
+- `<indi_id>`: The GEDCOM individual ID (with or without @ delimiters)
+- `<gedcom_file>`: Path to the GEDCOM file
+
+**Options:**
+- `-i, --id`: Print IDs only (suppress names), one per relative
+- `-n, --name`: Print names only (suppress IDs), one per relative
+- `-b, --birth`: Also print birth date column
+- `-d, --death`: Also print death date column
+- `-m, --marriage`: Also print marriage date column (parents' marriage for parent rows; individual's marriage to that spouse for spouse rows; blank for self and children)
+- `-l, --long`: Equivalent to `-b -d -m` (adds all date columns; ID and name follow the `-i`/`-n` convention)
+
+If none of `-i`, `-n`, `-b`, `-d`, `-m`, `-l` is specified, the default output shows both ID and name.
+
+**Output:**
+One row per relative, tab-separated. The first column is a relationship label:
+`father:`, `mother:`, `parent:` (unknown sex), `self:`, `husband:`, `wife:`,
+`son:`, `daughter:`, `child:` (unknown sex). When the individual has children in a family with
+no recorded other parent, a standalone `(unknown spouse):` header line is printed before those
+children. Families with no other parent and no children are skipped.
 
 **Example:**
-
 ```bash
-$ gedinfo stat tests/fixtures/simple.ged
-Individuals: 4
-  Males: 2
-  Females: 2
-  Unknown sex: 0
-  Roots (no parents): 2
-  Leaves (no children): 2
-  No name: 0
-  Incomplete name: 0
-  Living (_LIVING = Y): 0
+$ gedinfo relatives @I001@ tests/fixtures/relatives.ged
+father:	I002	John Smith
+mother:	I003	Jane Doe
+self:	I001	Bob Smith
+wife:	I004	Alice Brown
+son:	I005	Charlie Smith
+daughter:	I006	Diana Smith
+wife:	I007	Eve Green
+(unknown spouse):
+child:	I008	Eddie Smith
 
-Families: 1
-  Families with unnamed/incomplete parent: 0
-  Families with no children: 0
-
-Generations: 2
-
-Disjoint forests: 1
+$ gedinfo relatives -l @I001@ tests/fixtures/relatives.ged
+father:	I002	John Smith	1 JAN 1900	1 JAN 1970	15 JUN 1925
+mother:	I003	Jane Doe	5 MAR 1905		15 JUN 1925
+self:	I001	Bob Smith	3 APR 1930		
+wife:	I004	Alice Brown	7 JUL 1932		10 OCT 1955
+son:	I005	Charlie Smith			
+daughter:	I006	Diana Smith			
+wife:	I007	Eve Green			
+(unknown spouse):
+child:	I008	Eddie Smith			
 ```
 
-### disjoint
+### ancestors
 
-Print the sizes of all connected components (disjoint family groups) in the GEDCOM file.
+List all ancestors of an individual, including the individual themselves (generation 1).
 
 **Syntax:**
 ```
-gedinfo disjoint [options] <gedcom_file>
+gedinfo ancestors [options] <indi_id> <gedcom_file>
 ```
 
 **Arguments:**
+- `<indi_id>`: The GEDCOM individual ID (with or without @ delimiters)
 - `<gedcom_file>`: Path to the GEDCOM file
 
 **Options:**
-- `-i`: Print IDs from each component (without @ delimiters), grouped by component
-- `-n`: Print names from each component, grouped by component
-- `--spouse`: As per the roots command: include roots whose spouse has parents with at least one known name. When this flag is passed and suppression removes all roots from a connected component, that component is shown with a single placeholder line "(roots suppressed)" instead of individual entries.
-- `-u, --unknown`: Include nameless roots (no NAME tag). By default nameless individuals are suppressed.
-- `-a, --all`: Include all roots without suppression. Cannot be combined with `--spouse` or `--unknown`.
-- (default): Print the size of each component, one per line
+- `-g N, --generations N`: Limit traversal to N generations (N ≥ 1). Generation 1 is the subject, generation 2 is parents, etc.
+- `-l, --long`: Enable long output mode (generation, path, last name, ID). Cannot be combined with `-i` or `-n`.
+- `-s MODE, --sort MODE`: Sort order for `--long` mode. Choices: `generation`, `path`, `name`, `id`. Default: `generation`. Requires `--long`.
+- `-u, --unknown`: Include ancestors with no name in `--long` mode. By default, nameless ancestors are excluded from long-mode output.
+- `-i`: Print IDs only (without @ delimiters), one per line (short mode only).
+- `-n`: Print names only, one per line (short mode only).
 
-**Output:**
-The sizes of disjoint components, one per line. If `-i` or `-n` is specified, 
-individuals are grouped by their component with a blank line between groups.
+**Output (short mode — default):**
+One line per ancestor in BFS traversal order (subject first, then parents, grandparents, etc.).
+Each line: `ID\tFull Name`. Use `-i` or `-n` for ID-only or name-only output.
+
+**Output (long mode — with `-l`):**
+Tab-separated values: generation, path, full name (first name then last name, or `(unknown)` if nameless and `-u` is set), ID.
+The path uses `p` (father), `m` (mother), `?` (unknown sex) to describe the relationship chain from the subject.
+When `-s name` is used, sorting is by last name (primary) then first name (secondary).
 
 **Examples:**
 
 ```bash
-# Component sizes (default)
-$ gedinfo disjoint tests/fixtures/simple.ged
-5
-2
+# Short mode: all ancestors from I001
+$ gedinfo ancestors I001 tests/fixtures/long_ancestors.ged
+I001	Jan Novak
+I002	Pieter Novak
+I003	Anna Muller
+I004	Hans Novak
+I005	Greta Bauer
+I006	Ernst Muller
+I007	Lena Weber
+I008	Otto Novak
+I009	Unknown Svensson
 
-# IDs by component
-$ gedinfo disjoint -i tests/fixtures/simple.ged
-I001
-I002
-I003
-I004
+# Long mode: all ancestors
+$ gedinfo ancestors -l I001 tests/fixtures/long_ancestors.ged
+1		Jan Novak	I001
+2	p	Pieter Novak	I002
+2	m	Anna Muller	I003
+3	pp	Hans Novak	I004
+3	pm	Greta Bauer	I005
+3	mp	Ernst Muller	I006
+3	mm	Lena Weber	I007
+4	ppp	Otto Novak	I008
+4	pp?	Unknown Svensson	I009
 
-I005
-I006
+# Long mode: limit to 2 generations, sort by path
+$ gedinfo ancestors -l -g 2 -s path I001 tests/fixtures/long_ancestors.ged
+1		Jan Novak	I001
+2	p	Pieter Novak	I002
+2	m	Anna Muller	I003
+```
 
-# Names by component
-$ gedinfo disjoint -n tests/fixtures/simple.ged
-John /Smith/
-Alice /Smith/
-Jane /Johnson/
-Bob /Johnson/
+### descendants
 
-Charlie /Brown/
-Diana /Brown/
+List all descendants of an individual, including the individual themselves (generation 1).
+
+**Syntax:**
+```
+gedinfo descendants [options] <indi_id> <gedcom_file>
+```
+
+**Arguments:**
+- `<indi_id>`: The GEDCOM individual ID (with or without @ delimiters)
+- `<gedcom_file>`: Path to the GEDCOM file
+
+**Options:**
+- `-g N, --generations N`: Limit traversal to N generations (N ≥ 1). Generation 1 is the subject, generation 2 is children, etc.
+- `-l, --long`: Enable long output mode (generation, path, last name, ID). Cannot be combined with `-i` or `-n`.
+- `-s MODE, --sort MODE`: Sort order for `--long` mode. Choices: `generation`, `path`, `name`, `id`. Default: `generation`. Requires `--long`.
+- `-u, --unknown`: Include descendants with no name in `--long` mode. By default, nameless descendants are excluded from long-mode output.
+- `-i`: Print IDs only (without @ delimiters), one per line (short mode only).
+- `-n`: Print names only, one per line (short mode only).
+
+**Output (short mode — default):**
+One line per descendant in BFS traversal order (subject first, then children, grandchildren, etc.).
+Each line: `ID\tFull Name`. Use `-i` or `-n` for ID-only or name-only output.
+
+**Output (long mode — with `-l`):**
+Tab-separated values: generation, path, full name (first name then last name, or `(unknown)` if nameless and `-u` is set), ID.
+The path uses `s` (son/male), `d` (daughter/female), `?` (unknown sex) to describe the relationship chain from the subject.
+When `-s name` is used, sorting is by last name (primary) then first name (secondary).
+
+**Examples:**
+
+```bash
+# Short mode: all descendants from I001
+$ gedinfo descendants I001 tests/fixtures/descendants.ged
+I001	John Smith
+I003	Peter Smith
+I004	Anna Smith
+I006	Tom Smith
+I007	Sue Smith
+
+# Long mode: all descendants, sorted by path
+$ gedinfo descendants -l -s path I001 tests/fixtures/descendants.ged
+1		John Smith	I001
+2	s	Peter Smith	I003
+3	ss	Tom Smith	I006
+3	sd	Sue Smith	I007
+2	d	Anna Smith	I004
+
+# Long mode: limit to 2 generations
+$ gedinfo descendants -l -g 2 I001 tests/fixtures/descendants.ged
+1		John Smith	I001
+2	s	Peter Smith	I003
+2	d	Anna Smith	I004
+```
+
+### lastnames
+
+Print the ancestors of an individual. Supports two output modes: short (names only) 
+and long (detailed paths). In long mode, ancestors from each lineage branch are 
+sorted from purely paternal lines (ppp) to purely maternal lines (mmm).
+
+**Syntax:**
+```
+gedinfo lastnames [options] <indi_id> <gedcom_file>
+```
+
+**Arguments:**
+- `<indi_id>`: The GEDCOM individual ID (with or without @ delimiters, e.g. I001)
+- `<gedcom_file>`: Path to the GEDCOM file
+
+**Options:**
+- `-g N, --generations N`: Limit traversal to N generations (N ≥ 1). Generation 1 is the subject, 
+  generation 2 is parents, generation 3 is grandparents, etc. If not specified, traverses all 
+  generations.
+- `-l, --long`: Enable long output mode. Shows detailed ancestor information including generation, 
+  path (relationship notation), last name, and ID.
+- `-s MODE, --sort MODE`: Sort the output by one of: `generation`, `path`, `name`, or `id`. 
+  This option is only valid with `-l`. Default sort order depends on mode:
+  - Long mode (`-l`): sorts by `path` (paternal to maternal)
+  - Short mode: sorts by `name` (alphabetically)
+- `-u, --unknown`: Include ancestors with no name (no NAME tag in the GEDCOM file).
+  By default, nameless ancestors are suppressed. In short mode this flag has no visible effect
+  (nameless ancestors have no last name to print). In `--long` mode, nameless ancestors 
+  appear with '(unknown)' in the last-name field.
+- `-d DIRECTION, --direction DIRECTION`: Traversal direction: `ancestors`/`up` (default) or
+  `descendants`/`down`. Controls whether surnames are collected from ancestors or descendants.
+
+**Output (Short Mode - default):**
+Prints the distinct last names of all traversed relatives, one per line, sorted alphabetically.
+Nameless ancestors are always excluded (they have no last name to print).
+
+**Output (Long Mode - with `-l`):**
+Tab-separated values with four columns:
+- Generation number (2 for parents, 3 for grandparents, etc.)
+- Path (lowercase string of p/m/? characters, see below)
+- Last name (or "(unknown)" if no surname and `-u` is set)
+- Individual ID (without @ delimiters)
+
+When the last name is fewer than 8 characters, an extra tab is added to align 
+the ID column. By default, nameless ancestors are omitted from long-mode output;
+use `-u/--unknown` to include them.
+
+**Path Notation:**
+The path string indicates the sex of each ancestor in the lineage:
+- `p` — paternal (male parent)
+- `m` — maternal (female parent)
+- `?` — unknown or unspecified sex
+
+For example, `pp` means paternal grandfather, `pm` means paternal grandmother, 
+`mp` means maternal grandfather, `mm` means maternal grandmother.
+
+**Branch-Tip Filtering:**
+In long mode, only the most remote reachable ancestor in each lineage branch is 
+shown. Intermediate ancestors are omitted. With `-g N`, ancestors at generation N 
+and all roots encountered before that limit are printed.
+
+**Examples:**
+
+```bash
+# Short mode: all ancestor surnames, alphabetical order
+$ gedinfo lastnames I001 tests/fixtures/long_ancestors.ged
+Bauer
+Muller
+Novak
+Svensson
+Weber
+
+# Long mode: paternal to maternal sorting (default)
+$ gedinfo lastnames -l I001 tests/fixtures/long_ancestors.ged
+4       ppp     Novak           I008
+4       pp?     Svensson        I009
+3       pm      Bauer           I005
+3       mp      Muller          I006
+3       mm      Weber           I007
+
+# Long mode: limit to 3 generations
+$ gedinfo lastnames -l -g 3 I001 tests/fixtures/long_ancestors.ged
+3       pp      Novak           I004
+3       pm      Bauer           I005
+3       mp      Muller          I006
+3       mm      Weber           I007
+
+# Long mode: sort by generation
+$ gedinfo lastnames -l -s generation I001 tests/fixtures/long_ancestors.ged
+3       pm      Bauer           I005
+3       mp      Muller          I006
+3       mm      Weber           I007
+4       ppp     Novak           I008
+4       pp?     Svensson        I009
+
+# Long mode: sort by last name
+$ gedinfo lastnames -l -s name I001 tests/fixtures/long_ancestors.ged
+3       pm      Bauer           I005
+3       mp      Muller          I006
+4       ppp     Novak           I008
+4       pp?     Svensson        I009
+3       mm      Weber           I007
 ```
 
 ### givennames
@@ -974,127 +807,349 @@ Masculine names:
 1	James
 ```
 
-### relatives
+### gen
 
-Show the immediate family of an individual: parents, the individual themselves,
-spouses, and children per spouse.
+Count the maximum number of ascending and descending generations relative to an
+individual. `generations` is an alias for `gen`.
 
 **Syntax:**
 ```
-gedinfo relatives [options] <indi_id> <gedcom_file>
+gedinfo gen <indi_id> <gedcom_file>
 ```
 
 **Arguments:**
-- `<indi_id>`: The GEDCOM individual ID (with or without @ delimiters)
+- `<indi_id>`: The GEDCOM individual ID (with or without @ delimiters, e.g. I001)
 - `<gedcom_file>`: Path to the GEDCOM file
-
-**Options:**
-- `-i, --id`: Print IDs only (suppress names), one per relative
-- `-n, --name`: Print names only (suppress IDs), one per relative
-- `-b, --birth`: Also print birth date column
-- `-d, --death`: Also print death date column
-- `-m, --marriage`: Also print marriage date column (parents' marriage for parent rows; individual's marriage to that spouse for spouse rows; blank for self and children)
-- `-l, --long`: Equivalent to `-b -d -m` (adds all date columns; ID and name follow the `-i`/`-n` convention)
-
-If none of `-i`, `-n`, `-b`, `-d`, `-m`, `-l` is specified, the default output shows both ID and name.
 
 **Output:**
-One row per relative, tab-separated. The first column is a relationship label:
-`father:`, `mother:`, `parent:` (unknown sex), `self:`, `husband:`, `wife:`,
-`son:`, `daughter:`, `child:` (unknown sex). When the individual has children in a family with
-no recorded other parent, a standalone `(unknown spouse):` header line is printed before those
-children. Families with no other parent and no children are skipped.
+A single line with three tab-separated fields:
+
+```
+ancestors: NGA	descendants: NGD	total: NGT
+```
+
+- **ancestors** — generations above the individual (parents = 1, grandparents = 2, …); 0 if none known
+- **descendants** — generations below the individual (children = 1, grandchildren = 2, …); 0 if none known
+- **total** — ancestors + descendants + 1 (the individual themselves counts as 1)
 
 **Example:**
 ```bash
-$ gedinfo relatives @I001@ tests/fixtures/relatives.ged
-father:	I002	John Smith
-mother:	I003	Jane Doe
-self:	I001	Bob Smith
-wife:	I004	Alice Brown
-son:	I005	Charlie Smith
-daughter:	I006	Diana Smith
-wife:	I007	Eve Green
-(unknown spouse):
-child:	I008	Eddie Smith
-
-$ gedinfo relatives -l @I001@ tests/fixtures/relatives.ged
-father:	I002	John Smith	1 JAN 1900	1 JAN 1970	15 JUN 1925
-mother:	I003	Jane Doe	5 MAR 1905		15 JUN 1925
-self:	I001	Bob Smith	3 APR 1930		
-wife:	I004	Alice Brown	7 JUL 1932		10 OCT 1955
-son:	I005	Charlie Smith			
-daughter:	I006	Diana Smith			
-wife:	I007	Eve Green			
-(unknown spouse):
-child:	I008	Eddie Smith			
+$ gedinfo gen I003 tests/fixtures/descendants.ged
+ancestors: 1	descendants: 1	total: 3
 ```
 
-### anonymize
+### relationship
 
-Output an anonymized derivative of a GEDCOM file. Names, locations, and notes
-are replaced with fake-but-realistic data while the family structure (IDs,
-relationships, dates, sex) is preserved. The output is deterministic: the same
-input always produces the same anonymized output.
+Find all common ancestors of two individuals and print each relationship as a
+formatted block showing the lineage paths from the shared ancestor down to
+each individual.
 
 **Syntax:**
 ```
-gedinfo anonymize [options] <gedcom_file>
+gedinfo relationship <first_id> <second_id> <gedcom_file>
+```
+
+**Arguments:**
+- `<first_id>`: First individual ID (with or without @ delimiters, e.g. I001)
+- `<second_id>`: Second individual ID (with or without @ delimiters, e.g. I002)
+- `<gedcom_file>`: Path to the GEDCOM file
+
+**Output:**
+One block per common ancestor, with a blank line between blocks. Nothing is
+printed when the two individuals share no common ancestor.
+
+Each block has one row per generation. The generation number is shown on the
+left. When both individuals descend from the common ancestor, row 1 shows the
+ancestor name in both columns; subsequent rows show the lineage to each
+individual side by side. When one individual is the direct ancestor of the
+other, a single column is printed.
+
+**Example:**
+```bash
+$ gedinfo relationship I003 I004 tests/fixtures/simple.ged
+1  John Smith   John Smith
+2  Alice Smith  Bob Smith
+
+1  Mary Jones   Mary Jones
+2  Alice Smith  Bob Smith
+```
+
+### fam
+
+List all family records, showing the family ID, husband, wife, and children.
+
+**Syntax:**
+```
+gedinfo fam [options] <gedcom_file>
 ```
 
 **Arguments:**
 - `<gedcom_file>`: Path to the GEDCOM file
 
 **Options:**
-- `-o FILE` / `--output FILE`: write output to FILE instead of stdout
-- `--keep FIELD`: keep FIELD unchanged (repeatable)
-- `--remove FIELD`: strip FIELD from output (repeatable)
-- `--fake FIELD`: anonymize FIELD with realistic fake data (repeatable)
-- `--seed NUMBER`: seed for the random name/location generator (default: 0)
+- `-i`: Print IDs only (without @ delimiters)
+- `-n`: Print names only
+- `-s, --sort {id,name}`: Sort by numeric ID order or alphabetically by family name. Default is GEDCOM file order.
+- (default): Print ID and name pairs for the parents
 
-If the same GEDCOM field is specified in more than one of `--keep`, `--remove`,
-or `--fake`, the command exits with an error naming the conflicting field.
+**Output:**
+One row per family, tab-separated: family ID, husband, wife, then children. A
+missing husband or wife shows as `(none)`; a family with no children shows
+`(none)` in the children column. Multiple children are comma-separated.
 
-**What is kept unchanged:**
-- All date fields (`DATE`)
-- Sex of individuals (`SEX`)
-- All structural IDs and family links (`HUSB`, `WIFE`, `CHIL`, `FAMC`, `FAMS`)
-- `_LIVING` fields
-- Event container tags (`BIRT`, `DEAT`, `MARR`, etc.)
+**Examples:**
 
-**What is anonymized:**
-- Names (`NAME`, `GIVN`, `SURN`) — fake names matching the original structure:
-  - Token count is preserved (two-word first name → two-word fake first name)
-  - Name structure is preserved: first-name-only individuals have no slashes in
-    output; last-name-only individuals retain the `/Surname/` format
-  - Individuals with an empty name (`NAME //`) have the NAME tag stripped entirely
-  - Individuals sharing the same original last name receive the same fake last name
-  - Compound names (multiple tokens) always have distinct tokens — no repetition
-  - Fake tokens are length-bounded: up to 20 attempts are made to find a token no
-    longer than the original; the shortest candidate is used if none qualifies
-- Locations (`PLAC`, `ADDR`, `CITY`, `STAE`, `CTRY`, `POST`) — fake place names
-  with the same length-bounding as names; the same original value always maps to
-  the same fake value
-- Notes (`NOTE` and continuation lines)
+```bash
+# IDs and names (default)
+$ gedinfo fam tests/fixtures/relatives.ged
+F000	I002	John Smith	I003	Jane Doe	Bob Smith
+F001	I001	Bob Smith	I004	Alice Brown	Charlie Smith, Diana Smith
+F002	I001	Bob Smith	I007	Eve Green	(none)
+F003	I001	Bob Smith	(none)	Eddie Smith
 
-**What is stripped:**
-- GEDCOM header content (replaced with a minimal valid header)
-- All other fields not listed above
+# IDs only
+$ gedinfo fam -i tests/fixtures/relatives.ged
+F000	I002	I003	I001
+F001	I001	I004	I005, I006
+F002	I001	I007	(none)
+F003	I001	(none)	I008
+
+# Names only
+$ gedinfo fam -n tests/fixtures/relatives.ged
+F000	John Smith	Jane Doe	Bob Smith
+F001	Bob Smith	Alice Brown	Charlie Smith, Diana Smith
+F002	Bob Smith	Eve Green	(none)
+F003	Bob Smith	(none)	Eddie Smith
+```
+
+### roots
+
+Print the root individuals (those with no recorded parents) in the GEDCOM file.
+
+**Syntax:**
+```
+gedinfo roots [options] <gedcom_file>
+```
+
+**Arguments:**
+- `<gedcom_file>`: Path to the GEDCOM file
+
+**Options:**
+- `-i`: Print IDs only (without @ delimiters), one per line
+- `-n`: Print names only, one per line
+- `-s, --sort {id,name}`: Sort output by numeric ID order or alphabetically by name. Default is GEDCOM file order.
+- `--spouse`: Include roots whose spouse has parents with at least one known name. By default such individuals are suppressed because they likely married into a documented family rather than representing an independent lineage starting point.
+- `-u, --unknown`: Include roots with no name at all (no NAME tag in the GEDCOM file). By default, nameless individuals are suppressed.
+- `-a, --all`: Include all roots without any suppression. Equivalent to combining `--spouse` and `--unknown`. Cannot be combined with `--spouse` or `--unknown`.
+
+**Output:**
+Root individuals in GEDCOM file order (or sorted if `--sort` is given).
+Default format: `ID	Name` per line.
+
+**Examples:**
+
+```bash
+# IDs and names (default)
+$ gedinfo roots tests/fixtures/simple.ged
+I001	John Smith
+I002	Mary Jones
+
+# IDs only
+$ gedinfo roots -i tests/fixtures/simple.ged
+I001
+I002
+
+# Names only
+$ gedinfo roots -n tests/fixtures/simple.ged
+John Smith
+Mary Jones
+```
+
+### leaves
+
+Print the leaf individuals (those with no recorded children) in the GEDCOM file.
+
+By default, two categories are suppressed (matching `roots` behaviour):
+- **Nameless leaves** — individuals with no NAME tag
+- **Married-in leaves** — individuals in a childless family whose spouse has children with another partner
+
+**Syntax:**
+```
+gedinfo leaves [options] <gedcom_file>
+```
+
+**Arguments:**
+- `<gedcom_file>`: Path to the GEDCOM file
+
+**Options:**
+- `-i`: Print IDs only (without @ delimiters), one per line
+- `-n`: Print names only, one per line
+- `-s, --sort {id,name}`: Sort output
+- `--spouse`: Include married-in leaves (whose spouse has children with another partner). By default such individuals are suppressed.
+- `-u, --unknown`: Include leaves with no name at all. By default, nameless individuals are suppressed.
+- `-a, --all`: Include all leaves without any suppression. Cannot be combined with `--spouse` or `--unknown`.
+- (default): Print ID and name pairs in the format `ID	Name`
+
+**Output:**
+Leaf individuals (after suppression filters) sorted by GEDCOM file order, or by sort key if `--sort` is given.
+
+**Examples:**
+
+```bash
+# IDs and names (default)
+$ gedinfo leaves tests/fixtures/simple.ged
+I003	Alice Smith
+I004	Bob Smith
+
+# IDs only
+$ gedinfo leaves -i tests/fixtures/simple.ged
+I003
+I004
+
+# Names only
+$ gedinfo leaves -n tests/fixtures/simple.ged
+Alice Smith
+Bob Smith
+```
+
+### disjoint
+
+Print the sizes of all connected components (disjoint family groups) in the GEDCOM file.
+
+**Syntax:**
+```
+gedinfo disjoint [options] <gedcom_file>
+```
+
+**Arguments:**
+- `<gedcom_file>`: Path to the GEDCOM file
+
+**Options:**
+- `-i`: Print IDs from each component (without @ delimiters), grouped by component
+- `-n`: Print names from each component, grouped by component
+- `--spouse`: As per the roots command: include roots whose spouse has parents with at least one known name. When this flag is passed and suppression removes all roots from a connected component, that component is shown with a single placeholder line "(roots suppressed)" instead of individual entries.
+- `-u, --unknown`: Include nameless roots (no NAME tag). By default nameless individuals are suppressed.
+- `-a, --all`: Include all roots without suppression. Cannot be combined with `--spouse` or `--unknown`.
+- (default): Print the size of each component, one per line
+
+**Output:**
+The sizes of disjoint components, one per line. If `-i` or `-n` is specified, 
+individuals are grouped by their component with a blank line between groups.
+
+**Examples:**
+
+```bash
+# Component sizes (default)
+$ gedinfo disjoint tests/fixtures/simple.ged
+5
+2
+
+# IDs by component
+$ gedinfo disjoint -i tests/fixtures/simple.ged
+I001
+I002
+I003
+I004
+
+I005
+I006
+
+# Names by component
+$ gedinfo disjoint -n tests/fixtures/simple.ged
+John /Smith/
+Alice /Smith/
+Jane /Johnson/
+Bob /Johnson/
+
+Charlie /Brown/
+Diana /Brown/
+```
+
+### stat
+
+Print a statistics summary for the GEDCOM file, including counts of individuals
+(broken down by sex, name completeness, living status, and whether they are roots
+or leaves), families, generation depth, and number of disjoint family forests.
+
+**Syntax:**
+```
+gedinfo stat [options] <gedcom_file>
+```
+
+**Arguments:**
+- `<gedcom_file>`: Path to the GEDCOM file
+
+**Options:**
+- `--spouse`: Include spouse-suppressed individuals in the root count (same criteria as `roots --spouse`).
+- `-u, --unknown`: Include nameless individuals in the root count.
+- `-a, --all`: Include all roots in the count. Cannot be combined with `--spouse` or `--unknown`.
+
+**Output:**
+Human-readable multi-section statistics report.
+
+**Example:**
+
+```bash
+$ gedinfo stat tests/fixtures/simple.ged
+Individuals: 4
+  Males: 2
+  Females: 2
+  Unknown sex: 0
+  Roots (no parents): 2
+  Leaves (no children): 2
+  No name: 0
+  Incomplete name: 0
+  Living (_LIVING = Y): 0
+
+Families: 1
+  Families with unnamed/incomplete parent: 0
+  Families with no children: 0
+
+Generations: 2
+
+Disjoint forests: 1
+```
+
+### tags
+
+List all GEDCOM tags found in a file, with occurrence counts and a flag for non-standard tags.
+
+**Syntax:**
+```
+gedinfo tags <gedcom_file>
+```
+
+**Arguments:**
+- `<gedcom_file>`: Path to the GEDCOM file
+
+**Output:**
+One line per unique tag found in the file, sorted alphabetically. Each line has three
+TAB-separated fields:
+1. Tag name
+2. Occurrence count, right-justified
+3. `not in GEDCOM 5.5.1` if the tag is non-standard; empty otherwise
+
+Non-standard tags are those not listed in GEDCOM 5.5.1 Appendix A. Custom tags (e.g., `_LIVING`, `_UID`) are always non-standard.
 
 **Example:**
 ```bash
-$ gedinfo anonymize family.ged
-0 HEAD
-1 GEDC
-2 VERS 5.5.1
-1 CHAR UTF-8
-0 @I001@ INDI
-1 NAME Richard /Sullivan/
-1 SEX M
-...
-
-$ gedinfo anonymize --keep OCCU --remove DATE family.ged
-$ gedinfo anonymize -o anonymized.ged family.ged
+$ gedinfo tags tests/fixtures/tags.ged
+BIRT	2	
+CHIL	1	
+DATE	3	
+DEAT	1	
+FAM	1	
+FAMC	1	
+FAMS	2	
+HEAD	1	
+HUSB	1	
+INDI	3	
+NAME	3	
+SEX	3	
+TRLR	1	
+WIFE	1	
+_LIVING	2	not in GEDCOM 5.5.1
+_UID	1	not in GEDCOM 5.5.1
 ```
 
 ### calendar
@@ -1163,48 +1218,6 @@ $ gedinfo calendar --dateformat "%Y-%m-%d" --nosep tests/fixtures/calendar.ged
 1870-09-20	marriage	(unknown) & Jane Smith
 ```
 
-### tags
-
-List all GEDCOM tags found in a file, with occurrence counts and a flag for non-standard tags.
-
-**Syntax:**
-```
-gedinfo tags <gedcom_file>
-```
-
-**Arguments:**
-- `<gedcom_file>`: Path to the GEDCOM file
-
-**Output:**
-One line per unique tag found in the file, sorted alphabetically. Each line has three
-TAB-separated fields:
-1. Tag name
-2. Occurrence count, right-justified
-3. `not in GEDCOM 5.5.1` if the tag is non-standard; empty otherwise
-
-Non-standard tags are those not listed in GEDCOM 5.5.1 Appendix A. Custom tags (e.g., `_LIVING`, `_UID`) are always non-standard.
-
-**Example:**
-```bash
-$ gedinfo tags tests/fixtures/tags.ged
-BIRT	2	
-CHIL	1	
-DATE	3	
-DEAT	1	
-FAM	1	
-FAMC	1	
-FAMS	2	
-HEAD	1	
-HUSB	1	
-INDI	3	
-NAME	3	
-SEX	3	
-TRLR	1	
-WIFE	1	
-_LIVING	2	not in GEDCOM 5.5.1
-_UID	1	not in GEDCOM 5.5.1
-```
-
 ### diff
 
 Compare two GEDCOM files and report individuals and families that were added, removed, or changed. Comparison is ID-based: the same GEDCOM xref ID means the same entity.
@@ -1257,6 +1270,73 @@ F001    John Smith & Mary Jones CHG
   child_ids
     < I003, I004
     > I003
+```
+
+### anonymize
+
+Output an anonymized derivative of a GEDCOM file. Names, locations, and notes
+are replaced with fake-but-realistic data while the family structure (IDs,
+relationships, dates, sex) is preserved. The output is deterministic: the same
+input always produces the same anonymized output.
+
+**Syntax:**
+```
+gedinfo anonymize [options] <gedcom_file>
+```
+
+**Arguments:**
+- `<gedcom_file>`: Path to the GEDCOM file
+
+**Options:**
+- `-o FILE` / `--output FILE`: write output to FILE instead of stdout
+- `--keep FIELD`: keep FIELD unchanged (repeatable)
+- `--remove FIELD`: strip FIELD from output (repeatable)
+- `--fake FIELD`: anonymize FIELD with realistic fake data (repeatable)
+- `--seed NUMBER`: seed for the random name/location generator (default: 0)
+
+If the same GEDCOM field is specified in more than one of `--keep`, `--remove`,
+or `--fake`, the command exits with an error naming the conflicting field.
+
+**What is kept unchanged:**
+- All date fields (`DATE`)
+- Sex of individuals (`SEX`)
+- All structural IDs and family links (`HUSB`, `WIFE`, `CHIL`, `FAMC`, `FAMS`)
+- `_LIVING` fields
+- Event container tags (`BIRT`, `DEAT`, `MARR`, etc.)
+
+**What is anonymized:**
+- Names (`NAME`, `GIVN`, `SURN`) — fake names matching the original structure:
+  - Token count is preserved (two-word first name → two-word fake first name)
+  - Name structure is preserved: first-name-only individuals have no slashes in
+    output; last-name-only individuals retain the `/Surname/` format
+  - Individuals with an empty name (`NAME //`) have the NAME tag stripped entirely
+  - Individuals sharing the same original last name receive the same fake last name
+  - Compound names (multiple tokens) always have distinct tokens — no repetition
+  - Fake tokens are length-bounded: up to 20 attempts are made to find a token no
+    longer than the original; the shortest candidate is used if none qualifies
+- Locations (`PLAC`, `ADDR`, `CITY`, `STAE`, `CTRY`, `POST`) — fake place names
+  with the same length-bounding as names; the same original value always maps to
+  the same fake value
+- Notes (`NOTE` and continuation lines)
+
+**What is stripped:**
+- GEDCOM header content (replaced with a minimal valid header)
+- All other fields not listed above
+
+**Example:**
+```bash
+$ gedinfo anonymize family.ged
+0 HEAD
+1 GEDC
+2 VERS 5.5.1
+1 CHAR UTF-8
+0 @I001@ INDI
+1 NAME Richard /Sullivan/
+1 SEX M
+...
+
+$ gedinfo anonymize --keep OCCU --remove DATE family.ged
+$ gedinfo anonymize -o anonymized.ged family.ged
 ```
 
 ### explore (TUI mode)
@@ -1338,3 +1418,8 @@ ruff format .
 
 A `.pre-commit-config.yaml` is provided; run `pre-commit install` to enforce
 both on every commit.
+
+License
+-------
+
+Licensed under the MIT License — see [LICENSE](LICENSE).

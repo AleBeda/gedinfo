@@ -1,9 +1,27 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "gedinfo"
-version = "0.21.0"
+version = "0.22.0"
 requires-python = ">=3.11"
 description = "GEDCOM query utility"
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "Alex Bedarida", email = "alex.bedarida@gmail.com" }]
+keywords = ["gedcom", "genealogy", "cli"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Environment :: Console",
+    "Topic :: Sociology :: Genealogy",
+]
 dependencies = ["faker", "textual"]
+
+[project.urls]
+Homepage = "https://github.com/AleBeda/gedinfo"
+Repository = "https://github.com/AleBeda/gedinfo"
 
 [tool.setuptools]
 packages = {find = {where = ["."]}}

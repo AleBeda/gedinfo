@@ -32,7 +32,12 @@ dev_docs/
 
 # Misc
 *.log
+.DS_Store
 
 
 # Claude Code internal files
-.claude/
+/.claude/
+
+# Private workflow artifacts (relocated under .claude/)
+/prompts/
+/metaprompts/
