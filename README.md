@@ -1419,6 +1419,18 @@ ruff format .
 A `.pre-commit-config.yaml` is provided; run `pre-commit install` to enforce
 both on every commit.
 
+
+
+Related projects
+----------------
+
+  - **[genechart](https://github.com/AleBeda/genechart)** — a command-line tool (Rust) for
+    *rendering* GEDCOM files as family-tree charts in text, SVG, or PDF (descendant, ancestor
+    /pedigree fan, cascading, and boxed-couple layouts, with photos, highlights, and
+    multi-page poster tiling). It complements gedinfo: once you've used gedinfo to find the
+    individuals and relationships you care about, pass their IDs to `genechart` to produce a
+    visual chart. Both read GEDCOM 5.5.1 and support custom GEDCOM tags via TOML.
+
 License
 -------
 
