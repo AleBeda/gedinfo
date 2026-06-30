@@ -24,6 +24,7 @@ from . import (
     noname,
     relatives,
     anonymize,
+    strip,
     calendar,
     tags,
     diff,

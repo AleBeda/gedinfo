@@ -6,6 +6,13 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.23.0]
+### Added
+- `strip` command removing GEDCOM lines matching specified tag(s), along with
+  their lower-ranking (child) lines. Warns on stderr when stripping a tag that
+  can damage GEDCOM structure (`INDI`, `FAM`, `FAMS`, `FAMC`, `HUSB`, `WIFE`,
+  `CHIL`, `NAME`, `GIVN`, `SURN`, `HEAD`, `TRLR`).
+
 ## [0.22.0]
 ### Added
 - `License` section in the README and a License section pointing at `LICENSE`.

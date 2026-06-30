@@ -6,7 +6,7 @@
 
 A command-line utility for querying GEDCOM genealogy files.
 
-Version: 0.22.0
+Version: 0.23.0
 
 Installation
 ------------
@@ -137,6 +137,7 @@ Commands are grouped below by purpose.
 | [calendar](#calendar) | List birth, death, and marriage anniversaries from a GEDCOM file |
 | [diff](#diff) | Compare two GEDCOM files |
 | [anonymize](#anonymize) | Output a privacy-safe derivative with fake names and locations |
+| [strip](#strip) | Remove GEDCOM lines matching specified tag(s) and their child lines |
 
 **Interactive**
 
@@ -1337,6 +1338,48 @@ $ gedinfo anonymize family.ged
 
 $ gedinfo anonymize --keep OCCU --remove DATE family.ged
 $ gedinfo anonymize -o anonymized.ged family.ged
+```
+
+### strip
+
+Remove lines matching one or more specified GEDCOM tags from a GEDCOM file. When
+a tag is removed, all lower-ranking lines nested under it are also removed (e.g.
+stripping `NAME` also removes its `GIVN`/`SURN` sub-lines).
+
+**Syntax:**
+```
+gedinfo strip [options] <field(s)> <gedcom_file>
+```
+
+**Arguments:**
+- `<field(s)>`: One or more GEDCOM tags to remove (space-separated)
+- `<gedcom_file>`: Path to the GEDCOM file
+
+**Options:**
+- `-o FILE` / `--output FILE`: write output to FILE instead of stdout
+
+**Output:**
+The GEDCOM file with all lines for the specified tag(s) — and their child
+lines — removed. The input file is never modified unless `-o` is given the same
+path as the input.
+
+If a specified tag is one whose removal can damage the GEDCOM structure (`INDI`,
+`FAM`, `FAMS`, `FAMC`, `HUSB`, `WIFE`, `CHIL`, `NAME`, `GIVN`, `SURN`, `HEAD`,
+`TRLR`), a warning explaining the consequence is printed to stderr for each such
+tag before the file is processed; the command still proceeds and exits 0.
+
+**Example:**
+```bash
+$ gedinfo strip NOTE family.ged
+0 HEAD
+...
+
+$ gedinfo strip -o stripped.ged SOUR OBJE family.ged
+
+$ gedinfo strip FAMC family.ged
+Warning: stripping FAMC breaks the link from an individual to their family-as-child record.
+0 HEAD
+...
 ```
 
 ### explore (TUI mode)

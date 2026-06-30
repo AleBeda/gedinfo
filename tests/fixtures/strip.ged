@@ -1,0 +1,33 @@
+0 HEAD
+1 SOUR SomeApp
+1 GEDC
+2 VERS 5.5.1
+1 CHAR UTF-8
+0 @I001@ INDI
+1 NAME John /Smith/
+2 GIVN John
+2 SURN Smith
+1 SEX M
+1 BIRT
+2 DATE 1 JAN 1900
+2 PLAC Livorno, Italy
+1 NOTE A note about John.
+2 CONT More details here.
+1 FAMS @F001@
+0 @I002@ INDI
+1 NAME Jane /Doe/
+1 SEX F
+1 NOTE First note.
+1 NOTE Second note.
+1 FAMS @F001@
+0 @I003@ INDI
+1 NAME Bob /Smith/
+1 SEX M
+1 FAMC @F001@
+0 @F001@ FAM
+1 HUSB @I001@
+1 WIFE @I002@
+1 CHIL @I003@
+1 MARR
+2 DATE 15 JUN 1925
+0 TRLR
