@@ -133,3 +133,25 @@ def test_strip_preserves_unrelated_structure():
     assert "0 @I001@ INDI" in out
     assert "0 @F001@ FAM" in out
     assert "0 TRLR" in out
+
+
+def test_strip_preserves_crlf_line_endings(tmp_path):
+    content = Path(GED).read_text().replace("\n", "\r\n")
+    f = tmp_path / "crlf.ged"
+    f.write_bytes(content.encode("utf-8"))
+    out_file = tmp_path / "out.ged"
+    code, stdout, _ = run_cmd(["strip", "-o", str(out_file), "NOTE", str(f)])
+    assert code == 0
+    assert stdout == ""
+    out_bytes = out_file.read_bytes()
+    assert b"\r\n" in out_bytes
+    assert b"\n" not in out_bytes.replace(b"\r\n", b"")
+
+
+def test_strip_preserves_lf_line_endings(tmp_path):
+    out_file = tmp_path / "out.ged"
+    code, _, _ = run_cmd(["strip", "-o", str(out_file), "NOTE", GED])
+    assert code == 0
+    out_bytes = out_file.read_bytes()
+    assert b"\r\n" not in out_bytes
+    assert b"\n" in out_bytes

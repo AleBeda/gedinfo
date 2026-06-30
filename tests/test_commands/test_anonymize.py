@@ -119,6 +119,28 @@ def test_output_flag(tmp_path):
     assert "0 TRLR" in content
 
 
+def test_preserves_crlf_line_endings(tmp_path):
+    content = Path(GED).read_text().replace("\n", "\r\n")
+    f = tmp_path / "crlf.ged"
+    f.write_bytes(content.encode("utf-8"))
+    out_file = tmp_path / "out.ged"
+    code, stdout, _ = run_cmd(["anonymize", "-o", str(out_file), str(f)])
+    assert code == 0
+    assert stdout == ""
+    out_bytes = out_file.read_bytes()
+    assert b"\r\n" in out_bytes
+    assert b"\n" not in out_bytes.replace(b"\r\n", b"")
+
+
+def test_preserves_lf_line_endings(tmp_path):
+    out_file = tmp_path / "out.ged"
+    code, _, _ = run_cmd(["anonymize", "-o", str(out_file), GED])
+    assert code == 0
+    out_bytes = out_file.read_bytes()
+    assert b"\r\n" not in out_bytes
+    assert b"\n" in out_bytes
+
+
 def test_keep_option():
     code, out, _ = run_cmd(["anonymize", "--keep", "OCCU", GED])
     assert code == 0

@@ -13,6 +13,13 @@ All notable changes to this project are documented here. The format is based on
   can damage GEDCOM structure (`INDI`, `FAM`, `FAMS`, `FAMC`, `HUSB`, `WIFE`,
   `CHIL`, `NAME`, `GIVN`, `SURN`, `HEAD`, `TRLR`).
 
+### Fixed
+- `strip` and `anonymize` now preserve the input file's original line-ending
+  style (CRLF or LF) in their output instead of always normalizing to LF.
+  Previously, processing a CRLF-encoded GEDCOM file made every output line
+  differ from the input byte-for-byte, so tools like `diff` reported the
+  entire file as replaced instead of showing the actual changes.
+
 ## [0.22.0]
 ### Added
 - `License` section in the README and a License section pointing at `LICENSE`.

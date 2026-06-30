@@ -90,6 +90,17 @@ def _shortest_within(gen_fn, max_len: int) -> str:
     return best
 
 
+def _detect_line_ending(raw_text_lines: list[str]) -> str:
+    for raw in raw_text_lines:
+        if raw.endswith("\r\n"):
+            return "\r\n"
+        if raw.endswith("\r"):
+            return "\r"
+        if raw.endswith("\n"):
+            return "\n"
+    return "\n"
+
+
 def _split_line(line: str) -> Tuple[int, str, str, Optional[str]]:
     parts = line.split(" ", 2)
     try:
@@ -502,14 +513,17 @@ def run(args) -> None:
     if not p.exists():
         raise FileNotFoundError(f"File not found: {args.gedcom_file}")
 
-    with p.open(encoding="utf-8-sig", errors="replace") as fh:
-        raw_lines = [line.rstrip("\r\n") for line in fh]
+    with p.open(encoding="utf-8-sig", errors="replace", newline="") as fh:
+        raw_text_lines = fh.readlines()
+
+    line_ending = _detect_line_ending(raw_text_lines)
+    raw_lines = [line.rstrip("\r\n") for line in raw_text_lines]
 
     mappings = _collect_mappings(raw_lines)
     lines = _transform(raw_lines, mappings, action_map)
-    text = "\n".join(lines) + "\n"
+    text = line_ending.join(lines) + line_ending
 
     if args.output:
-        Path(args.output).write_text(text, encoding="utf-8")
+        Path(args.output).write_text(text, encoding="utf-8", newline="")
     else:
         print(text, end="")
