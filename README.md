@@ -133,7 +133,7 @@ Commands are grouped below by purpose.
 | Command | Description |
 |---------|-------------|
 | [stat](#stat) | Print file statistics (individual count, family count, roots, leaves) |
-| [tags](#tags) | List all GEDCOM tags found in a file with occurrence counts |
+| [tags](#tags) | List all GEDCOM tags found in a file with occurrence counts and summaries |
 | [calendar](#calendar) | List birth, death, and marriage anniversaries from a GEDCOM file |
 | [diff](#diff) | Compare two GEDCOM files |
 | [anonymize](#anonymize) | Output a privacy-safe derivative with fake names and locations |
@@ -1113,7 +1113,8 @@ Disjoint forests: 1
 
 ### tags
 
-List all GEDCOM tags found in a file, with occurrence counts and a flag for non-standard tags.
+List all GEDCOM tags found in a file, with occurrence counts, a flag for
+non-standard tags, and a one-line summary of each standard tag.
 
 **Syntax:**
 ```
@@ -1124,33 +1125,35 @@ gedinfo tags <gedcom_file>
 - `<gedcom_file>`: Path to the GEDCOM file
 
 **Output:**
-One line per unique tag found in the file, sorted alphabetically. Each line has three
+One line per unique tag found in the file, sorted alphabetically. Each line has four
 TAB-separated fields:
 1. Tag name
 2. Occurrence count, right-justified
 3. `not in GEDCOM 5.5.1` if the tag is non-standard; empty otherwise
+4. A one-line summary of the tag's meaning, taken from the GEDCOM 5.5.1
+   specification (Appendix A); empty for non-standard tags
 
 Non-standard tags are those not listed in GEDCOM 5.5.1 Appendix A. Custom tags (e.g., `_LIVING`, `_UID`) are always non-standard.
 
 **Example:**
 ```bash
 $ gedinfo tags tests/fixtures/tags.ged
-BIRT	2	
-CHIL	1	
-DATE	3	
-DEAT	1	
-FAM	1	
-FAMC	1	
-FAMS	2	
-HEAD	1	
-HUSB	1	
-INDI	3	
-NAME	3	
-SEX	3	
-TRLR	1	
-WIFE	1	
-_LIVING	2	not in GEDCOM 5.5.1
-_UID	1	not in GEDCOM 5.5.1
+BIRT	2		The event of entering into life.
+CHIL	1		The natural, adopted, or sealed (LDS) child of a father and a mother.
+DATE	3		The time of an event in a calendar format.
+DEAT	1		The event when mortal life terminates.
+FAM	1		Identifies a legal, common law, or other customary relationship of man and woman and their children, if any, or a family created by virtue of the birth of a child to its biological father and mother.
+FAMC	1		Identifies the family in which an individual appears as a child.
+FAMS	2		Identifies the family in which an individual appears as a spouse.
+HEAD	1		Identifies information pertaining to an entire GEDCOM transmission.
+HUSB	1		An individual in the family role of a married man or father.
+INDI	3		A person.
+NAME	3		A word or combination of words used to help identify an individual, title, or other item.
+SEX	3		Indicates the sex of an individual--male or female.
+TRLR	1		At level 0, specifies the end of a GEDCOM transmission.
+WIFE	1		An individual in the role as a mother and/or married woman.
+_LIVING	2	not in GEDCOM 5.5.1	
+_UID	1	not in GEDCOM 5.5.1	
 ```
 
 ### calendar

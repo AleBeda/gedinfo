@@ -20,6 +20,13 @@ All notable changes to this project are documented here. The format is based on
   differ from the input byte-for-byte, so tools like `diff` reported the
   entire file as replaced instead of showing the actual changes.
 
+### Changed
+- `tags` output gains a fourth column: a one-line summary of each standard
+  GEDCOM 5.5.1 tag, sourced from the specification's Appendix A. Empty for
+  non-standard tags. The tag data file moved from `gedcom551_tags.txt` to
+  `gedcom551_tags.tsv` (tag + summary) as the single source of truth for the
+  standard-tag set.
+
 ## [0.22.0]
 ### Added
 - `License` section in the README and a License section pointing at `LICENSE`.

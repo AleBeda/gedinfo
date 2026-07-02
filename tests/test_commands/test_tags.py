@@ -15,13 +15,13 @@ def run_cmd(args):
     return proc.returncode, proc.stdout, proc.stderr
 
 
-def _parse_lines(out: str) -> list[tuple[str, str, str]]:
-    """Return list of (tag, count_str, flag) for each output line."""
+def _parse_lines(out: str) -> list[tuple[str, str, str, str]]:
+    """Return list of (tag, count_str, flag, summary) for each output line."""
     result = []
     for line in out.splitlines():
         parts = line.split("\t")
-        assert len(parts) == 3, f"expected 3 tab-separated fields, got: {line!r}"
-        result.append((parts[0], parts[1], parts[2]))
+        assert len(parts) == 4, f"expected 4 tab-separated fields, got: {line!r}"
+        result.append((parts[0], parts[1], parts[2], parts[3]))
     return result
 
 
@@ -33,11 +33,11 @@ def test_output_is_sorted():
     assert tags == sorted(tags)
 
 
-def test_three_columns_always():
+def test_four_columns_always():
     code, out, _ = run_cmd(["tags", GED])
     assert code == 0
     for line in out.splitlines():
-        assert line.count("\t") == 2, f"expected exactly 2 tabs in: {line!r}"
+        assert line.count("\t") == 3, f"expected exactly 3 tabs in: {line!r}"
 
 
 def test_standard_tag_empty_flag():
@@ -55,6 +55,26 @@ def test_nonstandard_tag_flag():
     rows = {r[0]: r[2] for r in _parse_lines(out)}
     assert rows["_LIVING"] == "not in GEDCOM 5.5.1"
     assert rows["_UID"] == "not in GEDCOM 5.5.1"
+
+
+def test_standard_tag_has_summary():
+    code, out, _ = run_cmd(["tags", GED])
+    assert code == 0
+    rows = {r[0]: r[3] for r in _parse_lines(out)}
+    assert rows["NAME"] == (
+        "A word or combination of words used to help identify an individual, "
+        "title, or other item."
+    )
+    assert rows["SEX"] == "Indicates the sex of an individual--male or female."
+    assert rows["BIRT"] == "The event of entering into life."
+
+
+def test_nonstandard_tag_empty_summary():
+    code, out, _ = run_cmd(["tags", GED])
+    assert code == 0
+    rows = {r[0]: r[3] for r in _parse_lines(out)}
+    assert rows["_LIVING"] == ""
+    assert rows["_UID"] == ""
 
 
 def test_count_value():

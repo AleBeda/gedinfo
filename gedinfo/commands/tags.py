@@ -6,21 +6,34 @@ import argparse
 import pathlib
 from typing import Any
 
-_TAGS_FILE = pathlib.Path(__file__).parent.parent / "data" / "gedcom551_tags.txt"
+_TAGS_FILE = pathlib.Path(__file__).parent.parent / "data" / "gedcom551_tags.tsv"
+
+
+def _load_tag_summaries() -> dict[str, str]:
+    summaries: dict[str, str] = {}
+    for line in _TAGS_FILE.read_text(encoding="utf-8").splitlines():
+        if not line:
+            continue
+        tag, summary = line.split("\t", 1)
+        summaries[tag] = summary
+    return summaries
 
 
 def register(subparsers: argparse._SubParsersAction) -> None:  # type: ignore
     sub = subparsers.add_parser(
         "tags",
         help="List all GEDCOM tags found in a file with occurrence counts",
-        description="List all GEDCOM tags found in a file with occurrence counts.",
+        description=(
+            "List all GEDCOM tags found in a file with occurrence counts, plus a "
+            "one-line summary of each standard GEDCOM 5.5.1 tag."
+        ),
     )
     sub.add_argument("gedcom_file", help="Path to GEDCOM file")
     sub.set_defaults(func=run)
 
 
 def run(args: Any) -> None:
-    standard_tags = frozenset(_TAGS_FILE.read_text(encoding="utf-8").split())
+    tag_summaries = _load_tag_summaries()
 
     counts: dict[str, int] = {}
     with open(args.gedcom_file, encoding="utf-8-sig") as f:
@@ -40,5 +53,6 @@ def run(args: Any) -> None:
 
     count_width = len(str(max(counts.values())))
     for tag in sorted(counts):
-        flag = "" if tag in standard_tags else "not in GEDCOM 5.5.1"
-        print(f"{tag}\t{counts[tag]:>{count_width}}\t{flag}")
+        summary = tag_summaries.get(tag)
+        flag = "" if summary is not None else "not in GEDCOM 5.5.1"
+        print(f"{tag}\t{counts[tag]:>{count_width}}\t{flag}\t{summary or ''}")
