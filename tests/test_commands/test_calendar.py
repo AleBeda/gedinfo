@@ -64,13 +64,25 @@ def test_nosep():
     code, out, _ = run_cmd(["calendar", "--nosep", GED])
     assert code == 0
     assert "\n\n" not in out
-    assert len(_event_lines(out)) == 8
+    assert len(_event_lines(out)) == 10
 
 
 def test_incomplete_dates_ignored():
+    # A month-year date (no day) can never be a full anniversary and stays
+    # excluded regardless of qualifier.
     code, out, _ = run_cmd(["calendar", GED])
     assert code == 0
-    assert "Skip" not in out
+    assert "MonthOnly" not in out
+    assert "Mar Test" not in out
+
+
+def test_qualified_full_dates_now_listed():
+    # Behaviour change: a qualifier (ABT, BEF, ...) on an otherwise-complete
+    # day/month/year date no longer excludes the event from the calendar.
+    code, out, _ = run_cmd(["calendar", GED])
+    assert code == 0
+    assert "01 Jan 1900\tbirth   \tSkip Approx" in out
+    assert "10 Dec 1799\tbirth   \tBef Test" in out
 
 
 def test_missing_spouse_unknown():

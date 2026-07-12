@@ -18,6 +18,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
+from .errors import UserError
+
 # Generic function keys recognised in the [gedcom_custom_tags] settings table.
 _VALID_KEYS: frozenset[str] = frozenset(
     {
@@ -44,12 +46,8 @@ class TagConfig:
     alternate_name: Optional[str] = None
 
 
-class ConfigError(ValueError):
-    """Raised for invalid settings files or when a needed tag is unconfigured.
-
-    Subclasses ``ValueError`` so the CLI's existing error handling prints the
-    message to stderr without a traceback.
-    """
+class ConfigError(UserError):
+    """Raised for invalid settings files or when a needed tag is unconfigured."""
 
 
 def user_settings_path() -> Path:

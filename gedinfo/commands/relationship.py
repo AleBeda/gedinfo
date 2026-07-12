@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import sys
 from typing import Any
 
 from ..parser import parse
@@ -51,7 +52,7 @@ def _format_block(ancestor, path1, path2) -> list[str]:
 
 def run(args: Any) -> None:
     data = parse(args.gedcom_file)
-    relationships = find_relationships(data, args.first_id, args.second_id)
+    relationships, truncated = find_relationships(data, args.first_id, args.second_id)
 
     first = True
     for ancestor, path1, path2 in relationships:
@@ -60,3 +61,9 @@ def run(args: Any) -> None:
         first = False
         for line in _format_block(ancestor, path1, path2):
             print(line)
+
+    if truncated:
+        print(
+            "Warning: endogamy limit reached; only the closest lineages were considered",
+            file=sys.stderr,
+        )

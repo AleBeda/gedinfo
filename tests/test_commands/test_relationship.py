@@ -5,6 +5,7 @@ from pathlib import Path
 FIXTURES = Path(__file__).parent.parent / "fixtures"
 SIMPLE = str(FIXTURES / "simple.ged")
 MULTI = str(FIXTURES / "multi_tree.ged")
+ENDOGAMY = str(FIXTURES / "endogamy.ged")
 
 
 def run_rel(*args):
@@ -55,3 +56,10 @@ def test_unknown_second_id():
     code, _, err = run_rel("I001", "I999", SIMPLE)
     assert code == 1
     assert "I999" in err or "unknown" in err.lower()
+
+
+def test_endogamy_truncation_warning():
+    # The bottom couple of the 20-layer diamond chain triggers the path cap.
+    code, _, err = run_rel("I121", "I122", ENDOGAMY)
+    assert code == 0
+    assert "endogamy limit reached" in err

@@ -1,8 +1,11 @@
+import re
+import subprocess
 import sys
 from pathlib import Path
 
 import pytest
 
+import gedinfo
 from gedinfo import cli
 
 FIXTURES = Path(__file__).parent.parent / "fixtures"
@@ -28,7 +31,9 @@ def test_cli_version(monkeypatch, capsys):
         ["--version", "name", "@I001@", str(FIXTURES / "simple.ged")],
     )
     assert code == 0
-    assert "gedinfo 0.23.0" in out
+    assert out.strip() == f"gedinfo {gedinfo.__version__}"
+    # hardcoded sanity check so a broken __version__ can't silently pass
+    assert re.match(r"^gedinfo \d+\.\d+\.\d+$", out.strip())
     # ensure subcommand isn't executed when version flag is present
     assert "John Smith" not in out
 
@@ -63,6 +68,30 @@ def test_cli_debug_flag(monkeypatch, capsys):
     # caught and formatted
     with pytest.raises(Exception):
         run_main(monkeypatch, capsys, ["--debug", "name", "@I999@", "nonexistent.ged"])
+
+
+def test_cli_bare_valueerror_is_not_caught(tmp_path):
+    # A bare ValueError (unlike UserError/ConfigError/GedcomParseError) is a
+    # genuine programming bug and must propagate as a full traceback instead
+    # of being swallowed into a terse one-line message. Run in a subprocess
+    # so the interpreter's own traceback printer is exercised.
+    script = tmp_path / "trigger.py"
+    script.write_text(
+        "import sys\n"
+        "from gedinfo import cli\n"
+        "from gedinfo.commands import name\n"
+        "def _broken(args):\n"
+        "    raise ValueError('boom: not a user error')\n"
+        "name.run = _broken\n"
+        "sys.argv = ['gedinfo', 'name', '@I001@', 'dummy.ged']\n"
+        "cli.main()\n"
+    )
+    result = subprocess.run(
+        [sys.executable, str(script)], capture_output=True, text=True
+    )
+    assert result.returncode != 0
+    assert "Traceback" in result.stderr
+    assert "boom: not a user error" in result.stderr
 
 
 def test_direct_command_runs(tmp_path):

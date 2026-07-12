@@ -2,7 +2,12 @@
 
 This module builds an ``argparse``-based command dispatcher and provides
 centralised error handling so that subcommands can raise exceptions and
-have user-friendly messages printed.
+have user-friendly messages printed. Only ``UserError`` (and its
+subclasses, e.g. ``GedcomParseError``, ``ConfigError``) and
+``FileNotFoundError`` are treated as user errors: they print tersely to
+stderr with exit code 1. Any other exception, including a bare
+``ValueError`` raised by a genuine programming bug, is left to propagate
+as a full traceback so it doesn't masquerade as a polite user error.
 """
 
 from __future__ import annotations
@@ -10,9 +15,42 @@ from __future__ import annotations
 import argparse
 import sys
 
-from .parser import GedcomParseError
+from . import __version__
+from .errors import UserError
 
 # import command modules lazily to avoid circular imports
+
+# Order defines help output order (registration order == argparse subcommand
+# listing order), not import/filesystem order.
+_COMMAND_MODULES = [
+    "name",
+    "id_",
+    "names",
+    "lastnames",
+    "ancestors",
+    "descendants",
+    "roots",
+    "leaves",
+    "stat",
+    "disjoint",
+    "living",
+    "givennames",
+    "indi",
+    "males",
+    "females",
+    "nosex",
+    "noname",
+    "fam",
+    "relatives",
+    "anonymize",
+    "strip",
+    "calendar",
+    "tags",
+    "diff",
+    "explore",
+    "gen",
+    "relationship",
+]
 
 
 class _DescriptionFirstParser(argparse.ArgumentParser):
@@ -46,68 +84,17 @@ def main() -> None:
     subparsers.required = False
 
     # register built-in subcommands
-    from .commands import (
-        id_ as id_cmd,
-        name as name_cmd,
-        names as names_cmd,
-        lastnames as lastnames_cmd,
-        ancestors as ancestors_cmd,
-        descendants as descendants_cmd,
-        roots as roots_cmd,
-        leaves as leaves_cmd,
-        stat as stat_cmd,
-        disjoint as disjoint_cmd,
-        living as living_cmd,
-        givennames as givennames_cmd,
-        indi as indi_cmd,
-        males as males_cmd,
-        females as females_cmd,
-        nosex as nosex_cmd,
-        noname as noname_cmd,
-        fam as fam_cmd,
-        relatives as relatives_cmd,
-        anonymize as anonymize_cmd,
-        strip as strip_cmd,
-        calendar as calendar_cmd,
-        tags as tags_cmd,
-        diff as diff_cmd,
-        explore as explore_cmd,
-        gen as gen_cmd,
-        relationship as relationship_cmd,
-    )
+    import importlib
 
-    name_cmd.register(subparsers)
-    id_cmd.register(subparsers)
-    names_cmd.register(subparsers)
-    lastnames_cmd.register(subparsers)
-    ancestors_cmd.register(subparsers)
-    descendants_cmd.register(subparsers)
-    roots_cmd.register(subparsers)
-    leaves_cmd.register(subparsers)
-    stat_cmd.register(subparsers)
-    disjoint_cmd.register(subparsers)
-    living_cmd.register(subparsers)
-    givennames_cmd.register(subparsers)
-    indi_cmd.register(subparsers)
-    males_cmd.register(subparsers)
-    females_cmd.register(subparsers)
-    nosex_cmd.register(subparsers)
-    noname_cmd.register(subparsers)
-    fam_cmd.register(subparsers)
-    relatives_cmd.register(subparsers)
-    anonymize_cmd.register(subparsers)
-    strip_cmd.register(subparsers)
-    calendar_cmd.register(subparsers)
-    tags_cmd.register(subparsers)
-    diff_cmd.register(subparsers)
-    explore_cmd.register(subparsers)
-    gen_cmd.register(subparsers)
-    relationship_cmd.register(subparsers)
+    for _mod_name in _COMMAND_MODULES:
+        importlib.import_module(f".commands.{_mod_name}", __package__).register(
+            subparsers
+        )
 
     args = parser.parse_args()
 
     if args.version:
-        print("gedinfo 0.23.0")
+        print(f"gedinfo {__version__}")
         sys.exit(0)
 
     if not args.command:
@@ -118,7 +105,7 @@ def main() -> None:
         # dispatch to subcommand handler attached by register()
         assert hasattr(args, "func"), "no handler for command"
         args.func(args)
-    except (GedcomParseError, FileNotFoundError, ValueError) as e:
+    except (UserError, FileNotFoundError) as e:
         if getattr(args, "debug", False):
             raise
         print(str(e), file=sys.stderr)

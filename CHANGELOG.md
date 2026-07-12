@@ -6,6 +6,47 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.24.0]
+### Added
+- `gedinfo/dates.py`: structured GEDCOM date parsing (`parse_gedcom_date` →
+  `GedcomDate`) covering qualifiers (`ABT`, `EST`, `CAL`, `BEF`, `AFT`) and
+  ranges (`BET … AND …`, `FROM … TO …`). Never raises; unparseable text is
+  preserved verbatim.
+- `gedinfo/lines.py`: shared lexical layer for raw GEDCOM lines, now used by
+  the parser and the raw-line commands (`anonymize`, `strip`).
+- `gedinfo/reports.py`: shared aggregate computations (`collect_stats`) so the
+  CLI `stat` command and the TUI statistics screen show identical numbers.
+- `gedinfo/errors.py`: `UserError` taxonomy for user-facing error messages.
+- Design-invariants section in `CLAUDE.md` and `tests/test_conventions.py`
+  enforcing them (cycle-safe traversals, single-home helpers, no bare
+  `ValueError`, single-sourced version string).
+
+### Fixed
+- Parser no longer misattributes a source citation's `DATE` (e.g. `3 DATE`
+  under `2 SOUR` inside `BIRT`) as the birth/death/marriage date, and no
+  longer lets nested identity tags (`NAME`, `SEX`, `FAMC`, `FAMS`, `GIVN`)
+  clobber individual records from deeper levels.
+- `get_ancestors` (used by `lastnames`) no longer hangs on files containing
+  parent cycles and no longer degrades exponentially under pedigree collapse.
+- `relationship` completes on heavily endogamous trees: path enumeration is
+  breadth-first and capped at the 1000 shortest lineages, with a note printed
+  to stderr when the cap is hit.
+- `anonymize` now maps `GIVN`/`SURN` values through the same pass-1 mappings
+  as `NAME`, so a person's fake given name and surname are consistent across
+  tags (and respect the individual's sex). Same-seed output differs from
+  previous releases as a result.
+
+### Changed
+- `calendar` now lists anniversaries for qualified full dates (e.g.
+  `ABT 12 MAR 1850`); partial dates are still skipped.
+- The TUI statistics screen applies the same root-suppression filters as
+  `gedinfo stat` and gains a Living line; its given-names screen shows
+  per-sex frequency counts like the CLI command.
+- Genuine programming errors now surface as tracebacks instead of terse
+  one-line messages; user-facing errors are unchanged (message, exit code 1).
+- The version string is single-sourced from `gedinfo.__version__`
+  (`pyproject.toml` reads it dynamically).
+
 ## [0.23.0]
 ### Added
 - `strip` command removing GEDCOM lines matching specified tag(s), along with

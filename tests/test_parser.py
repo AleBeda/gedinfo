@@ -114,14 +114,25 @@ def test_parse_sex_unknown_value(tmp_path):
     assert data.individuals["@I001@"].sex == "U"
 
 
-def test_parse_malformed_line():
-    """Malformed level value in a line triggers the ValueError branch."""
-    from gedinfo.parser import _parse_line
+def test_parse_malformed_line_does_not_win(tmp_path):
+    """A malformed line (non-integer level) must not set identity fields.
 
-    lvl, tag, val, xref = _parse_line("X THIS IS BAD")
-    assert lvl == -1
-    assert tag == "THIS"
-    assert val == "IS BAD"
+    The malformed ``banana NAME`` line sits AFTER the real level-1 NAME, so if
+    the parser treated it as a NAME it would overwrite the real name.
+    """
+    text = (
+        "0 HEAD\n"
+        "0 @I001@ INDI\n"
+        "1 NAME Real /Person/\n"
+        "banana NAME Fake /Person/\n"
+        "0 TRLR\n"
+    )
+    f = tmp_path / "malformed.ged"
+    f.write_text(text)
+    data = parser.parse(f)
+    indi = data.individuals["@I001@"]
+    assert indi.first_name == "Real"
+    assert indi.last_name == "Person"
 
 
 def test_parse_encoding_replace(tmp_path):
@@ -208,3 +219,31 @@ def test_parse_custom_tag_names(tmp_path):
     assert indi.living is True
     assert indi.secondary_names == ["Janie"]
     assert indi.alternate_names == ["יוחנן"]
+
+
+def test_parse_nested_citation_date_not_birth():
+    data = load("nested_dates.ged")
+    i1 = data.individuals["@I001@"]
+    # a level-3 citation DATE inside BIRT must not become the birth date
+    assert i1.birth_date is None
+    # a nested 2 GIVN inside BIRT must not be collected
+    assert i1.givn == []
+    # a nested 2 NAME inside BIRT must not clobber the level-1 name
+    assert i1.first_name == "Cite"
+    assert i1.last_name == "Only"
+
+
+def test_parse_direct_date_wins_over_citation():
+    data = load("nested_dates.ged")
+    i2 = data.individuals["@I002@"]
+    # the direct level-2 DATE wins even though the citation date came first
+    assert i2.birth_date == "5 MAY 1950"
+    # DEAT has only a citation DATE, so death_date stays unset
+    assert i2.death_date is None
+
+
+def test_parse_nested_marriage_citation_date():
+    data = load("nested_dates.ged")
+    fam = data.families["@F001@"]
+    # a level-3 citation DATE inside MARR must not become the marriage date
+    assert fam.marriage_date is None

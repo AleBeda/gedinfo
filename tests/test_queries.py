@@ -18,6 +18,7 @@ from gedinfo.queries import (
     get_spouse_suppressed,
     get_unknown_roots,
     apply_root_filters,
+    find_relationships,
 )
 
 FIX = Path = __import__("pathlib").Path
@@ -212,6 +213,11 @@ def test_get_ancestors_unknown_id():
     data = load("deep.ged")
     with pytest.raises(ValueError):
         get_ancestors(data, "@I999@")
+
+
+def test_get_ancestors_cycle():
+    data = load("cycle.ged")
+    assert get_ancestors(data, "@I001@") == ["Loop"]
 
 
 def test_get_ancestor_details_all():
@@ -487,3 +493,26 @@ def test_get_living_and_not_living():
     not_living = [i.id for i in __import__("gedinfo").queries.get_not_living(data)]
     assert set(living) == {"@I001@", "@I002@", "@I003@", "@I009@", "@I010@", "@I011@"}
     assert set(not_living) == {"@I004@", "@I005@", "@I006@", "@I007@", "@I008@"}
+
+
+def test_find_relationships_not_truncated():
+    # I003 and I004 are siblings sharing parents I001 and I002 in simple.ged.
+    data = load("simple.ged")
+    results, truncated = find_relationships(data, "I003", "I004")
+    assert truncated is False
+    # Two common ancestors (the two shared parents), each a 2+2 path block.
+    assert {anc.id for anc, _, _ in results} == {"@I001@", "@I002@"}
+    assert all(len(p1) + len(p2) == 4 for _, p1, p2 in results)
+
+
+def test_find_relationships_endogamy_truncated():
+    # endogamy.ged is a 20-layer diamond chain; the bottom couple I121/I122
+    # have ~2**20 distinct ancestry paths, far past the 1000-path cap.
+    data = load("endogamy.ged")
+    results, truncated = find_relationships(data, "I121", "I122")
+    assert truncated is True
+    # I121/I122 are first cousins: their closest common ancestors are the
+    # layer-19 grandparents. Shortest block is I121->child->grandparent (3)
+    # plus I122->child->grandparent (3) = total path length 6.
+    first = results[0]
+    assert len(first[1]) + len(first[2]) == 6

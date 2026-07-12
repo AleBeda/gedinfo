@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "gedinfo"
-version = "0.23.0"
+dynamic = ["version"]
 requires-python = ">=3.11"
 description = "GEDCOM query utility"
 readme = "README.md"
@@ -25,6 +25,9 @@ Repository = "https://github.com/AleBeda/gedinfo"
 
 [tool.setuptools]
 packages = {find = {where = ["."]}}
+
+[tool.setuptools.dynamic]
+version = { attr = "gedinfo.__version__" }
 
 [tool.setuptools.package-data]
 gedinfo = ["data/*.txt"]

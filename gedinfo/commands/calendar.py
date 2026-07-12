@@ -2,26 +2,15 @@
 
 from __future__ import annotations
 
-import re
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 from typing import Optional
 
-_MONTH = {
-    "JAN": 1,
-    "FEB": 2,
-    "MAR": 3,
-    "APR": 4,
-    "MAY": 5,
-    "JUN": 6,
-    "JUL": 7,
-    "AUG": 8,
-    "SEP": 9,
-    "OCT": 10,
-    "NOV": 11,
-    "DEC": 12,
-}
+from ..dates import MONTH_ABBREVIATIONS, parse_gedcom_date
+from ..errors import UserError
+from ..queries import display_name
+
 _FULL_MONTHS = {
     "january": 1,
     "february": 2,
@@ -36,20 +25,20 @@ _FULL_MONTHS = {
     "november": 11,
     "december": 12,
 }
-_DATE_RE = re.compile(r"^(\d{1,2})\s+([A-Za-z]{3})\s+(\d{4})$")
 
 
-def _parse_date(s: Optional[str]) -> Optional[date]:
-    if not s:
-        return None
-    m = _DATE_RE.match(s.strip())
-    if not m:
-        return None
-    month = _MONTH.get(m.group(2).upper())
-    if month is None:
+def _parse_full_date(s: Optional[str]) -> Optional[date]:
+    """Parse a raw GEDCOM date into a full ``date``, or ``None``.
+
+    Only dates with a year, month, and day all present qualify (an
+    anniversary needs a full date); qualifiers (``ABT``, ``BEF``, …) are
+    accepted as long as the underlying date is complete.
+    """
+    gd = parse_gedcom_date(s)
+    if gd is None or gd.year is None or gd.month is None or gd.day is None:
         return None
     try:
-        return date(int(m.group(3)), month, int(m.group(1)))
+        return date(gd.year, gd.month, gd.day)
     except ValueError:
         return None
 
@@ -58,12 +47,7 @@ def _parse_month_name(name: str) -> Optional[int]:
     lower = name.lower().strip()
     if lower in _FULL_MONTHS:
         return _FULL_MONTHS[lower]
-    return _MONTH.get(lower[:3].upper())
-
-
-def _display_name(indi) -> str:
-    parts = [p for p in (indi.first_name, indi.last_name) if p]
-    return " ".join(parts) if parts else "(unknown)"
+    return MONTH_ABBREVIATIONS.get(lower[:3].upper())
 
 
 @dataclass
@@ -76,19 +60,19 @@ class _Event:
 def _collect_events(data) -> list[_Event]:
     events: list[_Event] = []
     for indi in data.individuals.values():
-        d = _parse_date(indi.birth_date)
+        d = _parse_full_date(indi.birth_date)
         if d:
-            events.append(_Event(d, "birth", _display_name(indi)))
-        d = _parse_date(indi.death_date)
+            events.append(_Event(d, "birth", display_name(indi)))
+        d = _parse_full_date(indi.death_date)
         if d:
-            events.append(_Event(d, "death", _display_name(indi)))
+            events.append(_Event(d, "death", display_name(indi)))
     for fam in data.families.values():
-        d = _parse_date(fam.marriage_date)
+        d = _parse_full_date(fam.marriage_date)
         if d:
             husb = data.individuals.get(fam.husband_id)
             wife = data.individuals.get(fam.wife_id)
-            h_name = _display_name(husb) if husb else "(unknown)"
-            w_name = _display_name(wife) if wife else "(unknown)"
+            h_name = display_name(husb) if husb else "(unknown)"
+            w_name = display_name(wife) if wife else "(unknown)"
             events.append(_Event(d, "marriage", f"{h_name} & {w_name}"))
     return events
 
@@ -145,7 +129,7 @@ def run(args) -> None:
     """Handler invoked when ``gedinfo calendar`` is run."""
     active_filters = sum([args.today, args.thismonth, args.month is not None])
     if active_filters > 1:
-        raise ValueError("--today, --thismonth, and --month are mutually exclusive")
+        raise UserError("--today, --thismonth, and --month are mutually exclusive")
 
     from ..parser import parse
 
@@ -162,7 +146,7 @@ def run(args) -> None:
     elif args.month is not None:
         month_num = _parse_month_name(args.month)
         if month_num is None:
-            raise ValueError(f"Unknown month: {args.month!r}")
+            raise UserError(f"Unknown month: {args.month!r}")
         events = [e for e in events if e.date.month == month_num]
 
     events.sort(key=lambda e: (e.date.month, e.date.day, e.date.year))

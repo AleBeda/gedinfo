@@ -11,6 +11,7 @@ from collections import deque
 from typing import List, Optional, Set
 import re
 
+from .errors import UserError
 from .models import Family, GedcomData, Individual
 
 # Regex to parse IDs like @I123@ or I123 -> prefix 'I', number 123
@@ -74,6 +75,21 @@ def display_name(individual: Individual) -> str:
     if ln:
         return ln
     return "(unknown)"
+
+
+def sort_individuals(
+    individuals: List[Individual], sort_key: str | None = None
+) -> List[Individual]:
+    """Sort a list of individuals by *sort_key*.
+
+    If sort_key is 'id', sort by numeric ID. If 'name', sort by display name.
+    Otherwise (including None), return the list unchanged.
+    """
+    if sort_key == "id":
+        return sorted(individuals, key=lambda i: id_sort_key(i.id))
+    if sort_key == "name":
+        return sorted(individuals, key=lambda i: display_name(i).lower())
+    return individuals
 
 
 def _normalise_name(s: str) -> str:
@@ -156,11 +172,7 @@ def get_roots(data: GedcomData, sort_key: str | None = None) -> List[Individual]
     for fam in data.families.values():
         child_ids.update(fam.child_ids)
     roots = [i for i in data.individuals.values() if i.id not in child_ids]
-    if sort_key == "id":
-        return sorted(roots, key=lambda i: id_sort_key(i.id))
-    if sort_key == "name":
-        return sorted(roots, key=lambda i: display_name(i).lower())
-    return roots
+    return sort_individuals(roots, sort_key)
 
 
 def get_leaves(data: GedcomData, sort_key: str | None = None) -> List[Individual]:
@@ -182,11 +194,7 @@ def get_leaves(data: GedcomData, sort_key: str | None = None) -> List[Individual
                 break
         if not has_child:
             leaves.append(indi)
-    if sort_key == "id":
-        return sorted(leaves, key=lambda i: id_sort_key(i.id))
-    if sort_key == "name":
-        return sorted(leaves, key=lambda i: display_name(i).lower())
-    return leaves
+    return sort_individuals(leaves, sort_key)
 
 
 def get_all_individuals(
@@ -198,11 +206,7 @@ def get_all_individuals(
     Otherwise (including None), return in GEDCOM file order.
     """
     individuals = list(data.individuals.values())
-    if sort_key == "id":
-        return sorted(individuals, key=lambda i: id_sort_key(i.id))
-    if sort_key == "name":
-        return sorted(individuals, key=lambda i: display_name(i).lower())
-    return individuals
+    return sort_individuals(individuals, sort_key)
 
 
 def get_males(data: GedcomData, sort_key: str | None = None) -> List[Individual]:
@@ -212,11 +216,7 @@ def get_males(data: GedcomData, sort_key: str | None = None) -> List[Individual]
     Otherwise (including None), return in GEDCOM file order.
     """
     result = [i for i in data.individuals.values() if i.sex == "M"]
-    if sort_key == "id":
-        return sorted(result, key=lambda i: id_sort_key(i.id))
-    if sort_key == "name":
-        return sorted(result, key=lambda i: display_name(i).lower())
-    return result
+    return sort_individuals(result, sort_key)
 
 
 def get_females(data: GedcomData, sort_key: str | None = None) -> List[Individual]:
@@ -226,11 +226,7 @@ def get_females(data: GedcomData, sort_key: str | None = None) -> List[Individua
     Otherwise (including None), return in GEDCOM file order.
     """
     result = [i for i in data.individuals.values() if i.sex == "F"]
-    if sort_key == "id":
-        return sorted(result, key=lambda i: id_sort_key(i.id))
-    if sort_key == "name":
-        return sorted(result, key=lambda i: display_name(i).lower())
-    return result
+    return sort_individuals(result, sort_key)
 
 
 def get_nosex(data: GedcomData, sort_key: str | None = None) -> List[Individual]:
@@ -240,11 +236,7 @@ def get_nosex(data: GedcomData, sort_key: str | None = None) -> List[Individual]
     Otherwise (including None), return in GEDCOM file order.
     """
     result = [i for i in data.individuals.values() if i.sex == "U"]
-    if sort_key == "id":
-        return sorted(result, key=lambda i: id_sort_key(i.id))
-    if sort_key == "name":
-        return sorted(result, key=lambda i: display_name(i).lower())
-    return result
+    return sort_individuals(result, sort_key)
 
 
 def get_living(data: GedcomData, sort_key: str | None = None) -> List[Individual]:
@@ -256,11 +248,7 @@ def get_living(data: GedcomData, sort_key: str | None = None) -> List[Individual
     Otherwise (including None), return in GEDCOM file order.
     """
     result = [i for i in data.individuals.values() if i.living is True]
-    if sort_key == "id":
-        return sorted(result, key=lambda i: id_sort_key(i.id))
-    if sort_key == "name":
-        return sorted(result, key=lambda i: display_name(i).lower())
-    return result
+    return sort_individuals(result, sort_key)
 
 
 def get_not_living(data: GedcomData, sort_key: str | None = None) -> List[Individual]:
@@ -272,11 +260,7 @@ def get_not_living(data: GedcomData, sort_key: str | None = None) -> List[Indivi
     Otherwise (including None), return in GEDCOM file order.
     """
     result = [i for i in data.individuals.values() if i.living is not True]
-    if sort_key == "id":
-        return sorted(result, key=lambda i: id_sort_key(i.id))
-    if sort_key == "name":
-        return sorted(result, key=lambda i: display_name(i).lower())
-    return result
+    return sort_individuals(result, sort_key)
 
 
 def family_name_key(family: Family, data: GedcomData) -> str:
@@ -318,31 +302,11 @@ def get_ancestors(
     specified, traversal stops after that many generations (must be >= 1).
 
     Raises ``ValueError`` if the supplied ``indi_id`` does not exist.
-    """
-    if max_generations is not None and max_generations < 1:
-        raise ValueError("max_generations must be >= 1")
-    indi = find_by_id(data, indi_id)
-    if indi is None:
-        raise ValueError(f"Unknown individual ID: {indi_id}")
 
-    surnames: Set[str] = set()
-    queue = deque([(indi, 1)])
-    while queue:
-        current, gen = queue.popleft()
-        if gen > 1 and current.last_name:
-            surnames.add(current.last_name)
-        if max_generations is not None and gen >= max_generations:
-            continue
-        # add parents
-        for fam_id in current.family_ids_as_child:
-            fam = data.families.get(fam_id)
-            if fam:
-                for parent_id in (fam.husband_id, fam.wife_id):
-                    if parent_id:
-                        parent = data.individuals.get(parent_id)
-                        if parent:
-                            queue.append((parent, gen + 1))
-    return sorted(surnames)
+    Delegates to :func:`get_ancestor_last_names`, which is built on the
+    cycle-safe :func:`get_ancestor_details` traversal.
+    """
+    return get_ancestor_last_names(data, indi_id, max_generations=max_generations)
 
 
 def get_connected_components(data: GedcomData) -> List[List[Individual]]:
@@ -403,10 +367,10 @@ def get_ancestor_details(
     ``indi_id`` is unknown. Traversal is cycle-safe (tracks visited IDs).
     """
     if max_generations is not None and max_generations < 1:
-        raise ValueError("max_generations must be >= 1")
+        raise UserError("max_generations must be >= 1")
     root = find_by_id(data, indi_id)
     if root is None:
-        raise ValueError(f"Unknown individual ID: {indi_id}")
+        raise UserError(f"Unknown individual ID: {indi_id}")
 
     results: List[dict] = []
     visited: Set[str] = set()
@@ -465,10 +429,10 @@ def get_descendant_details(
     counter reaches that limit (same semantics as ``get_ancestor_details``).
     """
     if max_generations is not None and max_generations < 1:
-        raise ValueError("max_generations must be >= 1")
+        raise UserError("max_generations must be >= 1")
     root = find_by_id(data, indi_id)
     if root is None:
-        raise ValueError(f"Unknown individual ID: {indi_id}")
+        raise UserError(f"Unknown individual ID: {indi_id}")
 
     results: List[dict] = []
     visited: Set[str] = set()
@@ -498,33 +462,48 @@ def get_descendant_details(
     return results
 
 
-def find_relationships(data: GedcomData, id1: str, id2: str) -> list[tuple]:
+def find_relationships(
+    data: GedcomData, id1: str, id2: str, max_paths: int = 1000
+) -> tuple[list[tuple], bool]:
     """Find all common ancestors of two individuals.
 
-    Returns a list of (ancestor, path1, path2) tuples where path1 and path2
-    are lists of Individuals starting at the common ancestor and ending at
-    the respective individual (inclusive on both ends). Raises ValueError if
-    either ID is unknown. Returns an empty list when no common ancestor
-    exists. Sorted by total path length ascending (closest first), then by
-    ancestor display name for ties.
+    Returns ``(results, truncated)``. ``results`` is a list of
+    (ancestor, path1, path2) tuples where path1 and path2 are lists of
+    Individuals starting at the common ancestor and ending at the respective
+    individual (inclusive on both ends). Raises ValueError if either ID is
+    unknown. ``results`` is empty when no common ancestor exists. Sorted by
+    total path length ascending (closest first), then by ancestor display
+    name for ties.
+
+    Ancestry-path enumeration is capped at ``max_paths`` per individual to
+    contain the exponential path explosion caused by pedigree collapse
+    (repeated cousin marriages / endogamy). Because paths are enumerated
+    shortest-first (BFS), the cap keeps the closest lineages. ``truncated``
+    is True when either individual's enumeration hit the cap, meaning some
+    distant relationships may be missing.
     """
 
-    def _all_paths_up(start_id: str) -> dict:
-        """DFS upward collecting ALL distinct paths to every ancestor.
+    def _all_paths_up(start_id: str, max_paths: int) -> tuple[dict, bool]:
+        """BFS upward collecting distinct paths to every ancestor.
 
-        Returns {ancestor_id: [[start, ..., ancestor], ...]} — one list per
-        distinct path. Per-path cycle detection prevents infinite loops in
-        endogamous trees while still finding every valid lineage.
+        Returns ``(result, truncated)`` where result is
+        {ancestor_id: [[start, ..., ancestor], ...]} — one list per distinct
+        path. Per-path cycle detection prevents infinite loops in endogamous
+        trees while still finding every valid lineage. Enumeration proceeds
+        shortest-first and stops once ``max_paths`` paths have been collected,
+        setting ``truncated`` True.
         """
         start = find_by_id(data, start_id)
         if start is None:
-            raise ValueError(f"Unknown individual ID: {start_id}")
+            raise UserError(f"Unknown individual ID: {start_id}")
         # {anc_id: [path_a, path_b, ...]} where each path goes UP from start
         result: dict = {start.id: [[start]]}
-        # stack items: (current_individual, ids_in_current_path, current_path)
-        stack = [(start, {start.id}, [start])]
-        while stack:
-            current, path_ids, path = stack.pop()
+        # queue items: (current_individual, ids_in_current_path, current_path)
+        queue = deque([(start, {start.id}, [start])])
+        count = 1  # the trivial [start] path already recorded
+        truncated = False
+        while queue and not truncated:
+            current, path_ids, path = queue.popleft()
             for fam_id in current.family_ids_as_child:
                 fam = data.families.get(fam_id)
                 if not fam:
@@ -537,11 +516,18 @@ def find_relationships(data: GedcomData, id1: str, id2: str) -> list[tuple]:
                         continue
                     new_path = path + [parent]
                     result.setdefault(parent.id, []).append(new_path)
-                    stack.append((parent, path_ids | {parent_id}, new_path))
-        return result
+                    count += 1
+                    if count >= max_paths:
+                        truncated = True
+                        break  # stop enqueueing new work and finish
+                    queue.append((parent, path_ids | {parent_id}, new_path))
+                if truncated:
+                    break
+        return result, truncated
 
-    paths1 = _all_paths_up(id1)
-    paths2 = _all_paths_up(id2)
+    paths1, truncated1 = _all_paths_up(id1, max_paths)
+    paths2, truncated2 = _all_paths_up(id2, max_paths)
+    truncated = truncated1 or truncated2
 
     results = []
     for anc_id in set(paths1) & set(paths2):
@@ -561,7 +547,7 @@ def find_relationships(data: GedcomData, id1: str, id2: str) -> list[tuple]:
         for anc, p1, p2 in results
         if not ({x.id for x in p1[1:]} & {x.id for x in p2[1:]})
     ]
-    return results
+    return results, truncated
 
 
 def count_no_name(data: GedcomData) -> int:
@@ -854,8 +840,4 @@ def get_noname(data: GedcomData, sort_key: str | None = None) -> List[Individual
     result = [
         i for i in data.individuals.values() if not i.first_name and not i.last_name
     ]
-    if sort_key == "id":
-        return sorted(result, key=lambda i: id_sort_key(i.id))
-    if sort_key == "name":
-        return sorted(result, key=lambda i: display_name(i).lower())
-    return result
+    return sort_individuals(result, sort_key)

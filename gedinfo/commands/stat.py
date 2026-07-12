@@ -6,18 +6,7 @@ import argparse
 from typing import Any
 
 from ..parser import parse
-from ..queries import (
-    count_no_name,
-    count_incomplete_name,
-    count_families_with_unnamed_parent,
-    count_families_no_children,
-    get_roots,
-    get_leaves,
-    get_connected_components,
-    apply_root_filters,
-    get_living,
-    count_generations,
-)
+from ..reports import collect_stats
 import sys
 
 
@@ -71,14 +60,8 @@ def run(args: Any) -> None:
 
     data = parse(args.gedcom_file)
 
-    total_individuals = len(data.individuals)
-    males = sum(1 for i in data.individuals.values() if i.sex == "M")
-    females = sum(1 for i in data.individuals.values() if i.sex == "F")
-    unknown = sum(1 for i in data.individuals.values() if i.sex == "U")
-    raw_roots = get_roots(data)
-    roots_list = apply_root_filters(
+    stats = collect_stats(
         data,
-        raw_roots,
         include_spouse_suppressed=(
             getattr(args, "all", False) or getattr(args, "spouse", False)
         ),
@@ -86,23 +69,12 @@ def run(args: Any) -> None:
             getattr(args, "all", False) or getattr(args, "unknown", False)
         ),
     )
-    roots = len(roots_list)
-    leaves = len(get_leaves(data))
-    no_name = count_no_name(data)
-    incomplete = count_incomplete_name(data)
-    living_count = len(get_living(data))
-
-    total_families = len(data.families)
-    unnamed_parents = count_families_with_unnamed_parent(data)
-    no_children = count_families_no_children(data)
-    disjoint = len(get_connected_components(data))
-    generations = count_generations(data)
 
     # Print report following specification formatting
-    print(f"Individuals: {total_individuals}")
-    print(f"  Males: {males}")
-    print(f"  Females: {females}")
-    print(f"  Unknown sex: {unknown}")
+    print(f"Individuals: {stats['individuals']}")
+    print(f"  Males: {stats['males']}")
+    print(f"  Females: {stats['females']}")
+    print(f"  Unknown sex: {stats['unknown_sex']}")
     # add optional note when flags change the root count
     note = ""
     if (
@@ -119,19 +91,21 @@ def run(args: Any) -> None:
             if getattr(args, "unknown", False):
                 parts.append("+unknown")
             note = "  (" + ",".join(parts) + ")"
-    print(f"  Roots (no parents): {roots}{note}")
-    print(f"  Leaves (no children): {leaves}")
-    print(f"  No name: {no_name}")
-    print(f"  Incomplete name: {incomplete}")
+    print(f"  Roots (no parents): {stats['roots']}{note}")
+    print(f"  Leaves (no children): {stats['leaves']}")
+    print(f"  No name: {stats['no_name']}")
+    print(f"  Incomplete name: {stats['incomplete_name']}")
     if data.tag_config.living:
-        print(f"  Living ({data.tag_config.living} = Y): {living_count}")
+        print(f"  Living ({data.tag_config.living} = Y): {stats['living']}")
     else:
         print("  Living: (no living tag configured)")
     print()
-    print(f"Families: {total_families}")
-    print(f"  Families with unnamed/incomplete parent: {unnamed_parents}")
-    print(f"  Families with no children: {no_children}")
+    print(f"Families: {stats['families']}")
+    print(
+        f"  Families with unnamed/incomplete parent: {stats['unnamed_parent_families']}"
+    )
+    print(f"  Families with no children: {stats['childless_families']}")
     print()
-    print(f"Generations: {generations}")
+    print(f"Generations: {stats['generations']}")
     print()
-    print(f"Disjoint forests: {disjoint}")
+    print(f"Disjoint forests: {stats['disjoint']}")

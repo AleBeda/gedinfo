@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 from typing import Any, Optional
 
+from ..errors import UserError
 from ..parser import parse
 from ..queries import find_by_id, display_name
 from ._output import add_output_options, validate_output_mode, strip_id_delimiters
@@ -56,7 +57,7 @@ def run(args: Any) -> None:
     data = parse(args.gedcom_file)
     indi = find_by_id(data, args.indi_id)
     if indi is None:
-        raise ValueError(f"Unknown individual ID: {args.indi_id}")
+        raise UserError(f"Unknown individual ID: {args.indi_id}")
 
     # Each entry: (label, individual_or_none, marriage_date_or_none)
     # None individual with label "(unknown spouse):" is a section header.

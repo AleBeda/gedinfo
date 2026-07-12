@@ -5,6 +5,8 @@ from __future__ import annotations
 import argparse
 from typing import Any
 
+from ..errors import UserError
+
 
 def register(subparsers: argparse._SubParsersAction) -> None:  # type: ignore
     sub = subparsers.add_parser(
@@ -29,7 +31,7 @@ def register(subparsers: argparse._SubParsersAction) -> None:  # type: ignore
 def run(args: Any) -> None:
     positional = args.positional
     if len(positional) > 2:
-        raise ValueError("explore: too many arguments (expected [INDIID] GEDCOMFILE)")
+        raise UserError("explore: too many arguments (expected [INDIID] GEDCOMFILE)")
 
     file_path = positional[-1] if positional else None
     initial_id = positional[0] if len(positional) == 2 else None

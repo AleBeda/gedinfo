@@ -12,6 +12,8 @@ from pathlib import Path
 from typing import Optional, Tuple
 
 from .config import TagConfig, load_tag_config
+from .errors import UserError
+from .lines import split_line
 from .models import Family, GedcomData, Individual
 
 
@@ -26,7 +28,7 @@ _LIVING_TRUTHY: frozenset[str] = frozenset(
 )
 
 
-class GedcomParseError(Exception):
+class GedcomParseError(UserError):
     """Raised when a GEDCOM file cannot be parsed.
 
     The message should be suitable for display to end users; internal
@@ -72,14 +74,14 @@ def parse(path: str | Path, tag_config: TagConfig | None = None) -> GedcomData:
 
     while idx < total:
         line = raw_lines[idx]
-        level, tag, value, xref = _parse_line(line)
+        level, tag, value, xref = split_line(line)
         if level == 0 and tag in ("INDI", "FAM") and xref:
             if tag == "INDI":
                 indi = Individual(id=xref)
                 ctx: dict = {"event": None}
                 idx += 1
                 while idx < total:
-                    lvl, t, v, _ = _parse_line(raw_lines[idx])
+                    lvl, t, v, _ = split_line(raw_lines[idx])
                     if lvl == 0:
                         break
                     _populate_individual(indi, t, v, lvl, ctx, tag_config)
@@ -91,7 +93,7 @@ def parse(path: str | Path, tag_config: TagConfig | None = None) -> GedcomData:
                 ctx = {"event": None}
                 idx += 1
                 while idx < total:
-                    lvl, t, v, _ = _parse_line(raw_lines[idx])
+                    lvl, t, v, _ = split_line(raw_lines[idx])
                     if lvl == 0:
                         break
                     _populate_family(fam, t, v, lvl, ctx)
@@ -104,34 +106,6 @@ def parse(path: str | Path, tag_config: TagConfig | None = None) -> GedcomData:
 
 
 # helpers
-
-
-def _parse_line(line: str) -> Tuple[int, str, str, Optional[str]]:
-    """Return ``(level, tag, value, xref)`` for a given GEDCOM line.
-
-    The ``xref`` value is only non-``None`` for level-0 records that use
-    the ``0 @XREF@ TAG`` syntax.
-    """
-    parts = line.split(" ", 2)
-    try:
-        level = int(parts[0])
-    except ValueError:  # malformed
-        level = -1
-    tag = ""
-    value = ""
-    xref: Optional[str] = None
-
-    if level == 0 and len(parts) >= 3 and parts[1].startswith("@"):
-        xref = parts[1]
-        rest = parts[2]
-        sub = rest.split(" ", 1)
-        tag = sub[0]
-        value = sub[1] if len(sub) > 1 else ""
-    elif len(parts) >= 2:
-        tag = parts[1]
-        if len(parts) == 3:
-            value = parts[2]
-    return level, tag, value, xref
 
 
 def _populate_individual(
@@ -149,18 +123,23 @@ def _populate_individual(
     tag = tag.upper()
     if level == 1:
         ctx["event"] = tag if tag in ("BIRT", "DEAT") else None
+        ctx["l1"] = tag
     if tag == "DATE":
-        event = ctx.get("event")
-        if event == "BIRT" and indi.birth_date is None:
-            indi.birth_date = value.strip()
-        elif event == "DEAT" and indi.death_date is None:
-            indi.death_date = value.strip()
+        # Event dates are the DATE exactly one level below the event tag.
+        # Events only open at level 1, so their direct DATE is always level 2;
+        # deeper DATEs (e.g. source-citation dates) are ignored.
+        if level == 2:
+            event = ctx.get("event")
+            if event == "BIRT" and indi.birth_date is None:
+                indi.birth_date = value.strip()
+            elif event == "DEAT" and indi.death_date is None:
+                indi.death_date = value.strip()
         return
-    if tag == "NAME":
+    if tag == "NAME" and level == 1:
         fn, ln = _split_name(value)
         indi.first_name = fn
         indi.last_name = ln
-    elif tag == "SEX":
+    elif tag == "SEX" and level == 1:
         v = value.strip().upper()
         if v == "M":
             indi.sex = "M"
@@ -168,13 +147,13 @@ def _populate_individual(
             indi.sex = "F"
         else:
             indi.sex = "U"
-    elif tag == "FAMC":
+    elif tag == "FAMC" and level == 1:
         if value:
             indi.family_ids_as_child.append(value.strip())
-    elif tag == "FAMS":
+    elif tag == "FAMS" and level == 1:
         if value:
             indi.family_ids_as_spouse.append(value.strip())
-    elif cfg.living and tag == cfg.living:
+    elif cfg.living and tag == cfg.living and level == 1:
         raw = value.strip()
         if raw == "":
             indi.living = None
@@ -182,13 +161,13 @@ def _populate_individual(
             indi.living = True
         else:
             indi.living = False
-    elif tag == "GIVN":
+    elif tag == "GIVN" and (level == 1 or (level == 2 and ctx.get("l1") == "NAME")):
         if value.strip():
             indi.givn.append(value.strip())
-    elif cfg.secondary_name and tag == cfg.secondary_name:
+    elif cfg.secondary_name and tag == cfg.secondary_name and level == 1:
         if value.strip():
             indi.secondary_names.append(value.strip())
-    elif cfg.alternate_name and tag == cfg.alternate_name:
+    elif cfg.alternate_name and tag == cfg.alternate_name and level == 1:
         if value.strip():
             indi.alternate_names.append(value.strip())
     elif tag == "NOTE" and level == 1:
@@ -205,14 +184,15 @@ def _populate_family(
     tag = tag.upper()
     if level == 1:
         ctx["event"] = tag if tag == "MARR" else None
-    if tag == "DATE" and ctx.get("event") == "MARR" and fam.marriage_date is None:
-        fam.marriage_date = value.strip()
+    if tag == "DATE":
+        if level == 2 and ctx.get("event") == "MARR" and fam.marriage_date is None:
+            fam.marriage_date = value.strip()
         return
-    if tag == "HUSB":
+    if tag == "HUSB" and level == 1:
         fam.husband_id = value.strip() or None
-    elif tag == "WIFE":
+    elif tag == "WIFE" and level == 1:
         fam.wife_id = value.strip() or None
-    elif tag == "CHIL":
+    elif tag == "CHIL" and level == 1:
         if value:
             fam.child_ids.append(value.strip())
     elif tag == "NOTE" and level == 1:

@@ -6,6 +6,7 @@ import argparse
 import sys
 from typing import Any
 
+from ..errors import UserError
 from ..parser import parse
 from ..queries import get_ancestors, get_ancestor_details, get_descendant_details
 
@@ -100,7 +101,7 @@ def run(args: Any) -> None:
             else:
                 surnames = get_ancestors(data, args.indi_id, max_generations=g)
     except ValueError as exc:
-        raise ValueError(str(exc))
+        raise UserError(str(exc))
 
     if not getattr(args, "long", False):
         for s in surnames:

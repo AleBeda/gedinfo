@@ -11,7 +11,7 @@ import argparse
 import sys
 from typing import Literal
 
-from ..queries import display_name, id_sort_key
+from ..queries import display_name
 from ..models import Individual
 
 
@@ -83,18 +83,3 @@ def add_sort_option(parser: argparse.ArgumentParser) -> None:
 def get_sort_key(args: argparse.Namespace) -> str | None:
     """Return the --sort value from *args*, or None if not specified."""
     return getattr(args, "sort", None)
-
-
-def sort_individuals(
-    individuals: list[Individual], sort_key: str | None = None
-) -> list[Individual]:
-    """Sort a list of individuals by *sort_key*.
-
-    If sort_key is 'id', sort by numeric ID. If 'name', sort by display name.
-    Otherwise (including None), return the list unchanged.
-    """
-    if sort_key == "id":
-        return sorted(individuals, key=lambda i: id_sort_key(i.id))
-    if sort_key == "name":
-        return sorted(individuals, key=lambda i: display_name(i).lower())
-    return individuals

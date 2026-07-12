@@ -6,6 +6,7 @@ import argparse
 import sys
 from typing import Any
 
+from ..errors import UserError
 from ..parser import parse
 from ..queries import get_ancestor_details, find_by_id, display_name
 from ._output import (
@@ -77,7 +78,7 @@ def run(args: Any) -> None:
     data = parse(args.gedcom_file)
     subject = find_by_id(data, args.indi_id)
     if subject is None:
-        raise ValueError(f"Unknown individual ID: {args.indi_id}")
+        raise UserError(f"Unknown individual ID: {args.indi_id}")
 
     details = get_ancestor_details(data, args.indi_id, max_generations=g)
     records = [{"individual": subject, "generation": 1, "path": ""}] + details

@@ -19,19 +19,19 @@ from textual.widget import Widget
 from textual.widgets import Footer, Header, Input, Label, ListItem, ListView, Static
 
 from .models import GedcomData, Individual
-from .parser import GedcomParseError, parse
+from .commands.givennames import _collect_names
+from .errors import UserError
+from .parser import parse
+from .reports import collect_stats
 from .queries import (
     apply_leaf_filters,
     apply_root_filters,
-    count_generations,
-    count_incomplete_name,
-    count_no_name,
     display_name,
     find_by_id,
     find_by_name,
     get_all_individuals,
     get_ancestor_details,
-    get_connected_components,
+    get_ancestor_last_names,
     get_descendant_details,
     get_leaves,
     get_roots,
@@ -92,7 +92,7 @@ def build_nav_items(
     """
     indi = find_by_id(data, focus_id)
     if indi is None:
-        raise ValueError(f"Unknown individual ID: {focus_id}")
+        raise UserError(f"Unknown individual ID: {focus_id}")
 
     left: list[NavItem] = []
     center: list[NavItem] = []
@@ -1444,15 +1444,8 @@ class GedTui(App):
             if not self.focus_id:
                 self.notify("No person in focus", severity="warning")
                 return
-            records = get_ancestor_details(self._data, self.focus_id)
             focus_name = display_name(find_by_id(self._data, self.focus_id))  # type: ignore[arg-type]
-            names = sorted(
-                {
-                    r["individual"].last_name
-                    for r in records
-                    if r["individual"].last_name
-                }
-            )
+            names = get_ancestor_last_names(self._data, self.focus_id)
             text = (
                 f"{len(names)} distinct last names · ancestors of {focus_name}\n\n"
                 + "\n".join(names)
@@ -1462,19 +1455,32 @@ class GedTui(App):
             if not self.focus_id:
                 self.notify("No person in focus", severity="warning")
                 return
-            records = get_ancestor_details(self._data, self.focus_id)
             focus_name = display_name(find_by_id(self._data, self.focus_id))  # type: ignore[arg-type]
-            names = sorted(
-                {
-                    r["individual"].first_name
-                    for r in records
-                    if r["individual"].first_name
-                }
+            # Reuse the CLI's tokenizing/counting logic so both entry points
+            # agree; keep the TUI's ancestor direction ("asc") and title.
+            masc, fem, unkn = _collect_names(
+                self._data,
+                self.focus_id,
+                None,
+                use_second=False,
+                use_alt=False,
+                direction="asc",
             )
-            text = (
-                f"{len(names)} distinct given names · ancestors of {focus_name}\n\n"
-                + "\n".join(names)
-            )
+            sections = [
+                ("Masculine names", masc),
+                ("Feminine names", fem),
+                ("Unknown sex", unkn),
+            ]
+            blocks: list[str] = []
+            for label, counter in sections:
+                if not counter:
+                    continue
+                items = sorted(counter.items(), key=lambda x: (-x[1], x[0]))
+                body = "\n".join(
+                    f"{count}\t{name.capitalize()}" for name, count in items
+                )
+                blocks.append(f"{label}:\n{body}")
+            text = f"Given names · ancestors of {focus_name}\n\n" + "\n\n".join(blocks)
             self.push_screen(TextResultScreen("Given names", text))
 
     def _on_individual_selected(self, indi_id: str | None) -> None:
@@ -1491,7 +1497,7 @@ class GedTui(App):
     def _load_file(self, path: str) -> None:
         try:
             new_data = parse(path)
-        except (GedcomParseError, FileNotFoundError, ValueError) as e:
+        except (UserError, FileNotFoundError) as e:
             self.notify(str(e), severity="error")
             return
         self._data = new_data
@@ -1509,23 +1515,19 @@ class GedTui(App):
     def _build_stat_text(self) -> str:
         data = self._data
         assert data is not None
-        n_ind = len(data.individuals)
-        n_fam = len(data.families)
-        n_roots = len(get_roots(data))
-        n_leaves = len(get_leaves(data))
-        gens = count_generations(data)
-        n_noname = count_no_name(data)
-        n_incomplete = count_incomplete_name(data)
-        n_comp = len(get_connected_components(data))
+        # Source numbers from collect_stats (default flags) so this screen
+        # matches `gedinfo stat` with no flags — the roots count is filtered.
+        s = collect_stats(data)
         lines = [
-            f"Individuals:    {n_ind}",
-            f"Families:       {n_fam}",
-            f"Roots:          {n_roots}",
-            f"Leaves:         {n_leaves}",
-            f"Generations:    {gens}",
-            f"No name:        {n_noname}",
-            f"Incomplete:     {n_incomplete}",
-            f"Components:     {n_comp}",
+            f"Individuals:    {s['individuals']}",
+            f"Families:       {s['families']}",
+            f"Roots:          {s['roots']}",
+            f"Leaves:         {s['leaves']}",
+            f"Generations:    {s['generations']}",
+            f"No name:        {s['no_name']}",
+            f"Incomplete:     {s['incomplete_name']}",
+            f"Living:         {s['living']}",
+            f"Components:     {s['disjoint']}",
         ]
         return "\n".join(lines)
 

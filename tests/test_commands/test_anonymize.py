@@ -241,6 +241,54 @@ def test_no_first_name_preserved(tmp_path):
     assert "Smith" not in name_val
 
 
+def test_givn_surn_consistent(tmp_path):
+    content = (
+        "0 HEAD\n"
+        "0 @I001@ INDI\n"
+        "1 NAME John /Smith/\n"
+        "2 GIVN John\n"
+        "2 SURN Smith\n"
+        "1 SEX M\n"
+        "0 @I002@ INDI\n"
+        "1 NAME John /Jones/\n"
+        "2 GIVN John\n"
+        "2 SURN Jones\n"
+        "1 SEX M\n"
+        "0 TRLR\n"
+    )
+    f = tmp_path / "givn_surn.ged"
+    f.write_text(content)
+    code, out, _ = run_cmd(["anonymize", str(f)])
+    assert code == 0
+
+    lines = out.splitlines()
+    records = []
+    cur: dict = {}
+    for ln in lines:
+        if ln.startswith("0 @I"):
+            if cur:
+                records.append(cur)
+            cur = {}
+        elif "1 NAME " in ln:
+            cur["name"] = ln.split("1 NAME ", 1)[1].strip()
+        elif "2 GIVN " in ln:
+            cur["givn"] = ln.split("2 GIVN ", 1)[1].strip()
+        elif "2 SURN " in ln:
+            cur["surn"] = ln.split("2 SURN ", 1)[1].strip()
+    if cur:
+        records.append(cur)
+
+    assert len(records) == 2
+    for rec in records:
+        assert "/" in rec["name"]
+        last = rec["name"].split("/")[1].strip()
+        # SURN must equal the surname component of the same person's NAME line
+        assert rec["surn"] == last
+
+    # Same original GIVN ("John") on both individuals -> same fake GIVN
+    assert records[0]["givn"] == records[1]["givn"]
+
+
 def test_compound_name_tokens_unique(tmp_path):
     content = "0 HEAD\n0 @I001@ INDI\n1 NAME Mary Jane /Smith Jones/\n1 SEX F\n0 TRLR\n"
     f = tmp_path / "compound.ged"
